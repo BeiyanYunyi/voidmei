@@ -1,6 +1,8 @@
 package ui.util;
 
 import java.awt.Color;
+import java.awt.GraphicsDevice.WindowTranslucency;
+import javax.swing.JComponent;
 import com.alee.laf.rootpane.WebFrame;
 import prog.Application;
 import prog.config.OverlaySettings;
@@ -26,11 +28,38 @@ public final class OverlayStyleHelper {
      * @param frame The WebFrame to style
      */
     public static void applyTransparentStyle(WebFrame frame) {
+        enableWindowTransparency(frame);
         frame.getWebRootPaneUI().setMiddleBg(new Color(0, 0, 0, 0));
         frame.getWebRootPaneUI().setTopBg(new Color(0, 0, 0, 0));
         frame.getWebRootPaneUI().setBorderColor(new Color(0, 0, 0, 0));
         frame.getWebRootPaneUI().setInnerBorderColor(new Color(0, 0, 0, 0));
         frame.setShadeWidth(0);
+    }
+
+    /**
+     * Enable native per-pixel alpha independently of WebLaF 1.29's legacy
+     * transparency probe. On X11 the default graphics configuration may be
+     * opaque even when the device has an ARGB configuration; Window.setBackground
+     * selects that configuration for us.
+     * Call before showing the overlay. Preview colors are painted by WebLaF.
+     */
+    public static void enableWindowTransparency(WebFrame frame) {
+        if (!frame.getGraphicsConfiguration().getDevice()
+                .isWindowTranslucencySupported(WindowTranslucency.PERPIXEL_TRANSLUCENT)) {
+            prog.util.Logger.warn("Per-pixel transparency unavailable for overlay: " + frame.getTitle());
+            return;
+        }
+        if (!frame.isUndecorated()) {
+            frame.setUndecorated(true);
+        }
+        Color transparent = new Color(0, 0, 0, 0);
+        frame.setBackground(transparent);
+        frame.getRootPane().setBackground(transparent);
+        frame.getRootPane().setOpaque(false);
+        frame.getContentPane().setBackground(transparent);
+        if (frame.getContentPane() instanceof JComponent) {
+            ((JComponent) frame.getContentPane()).setOpaque(false);
+        }
     }
 
     /**

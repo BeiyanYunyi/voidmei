@@ -15,6 +15,7 @@ public class WebLafSettings {
 		t.setShowWindowButtons(false);
 		t.setShowTitleComponent(false);
 		t.setShowResizeCorner(false);
+		ui.util.OverlayStyleHelper.enableWindowTransparency(t);
 
 		t.setDefaultCloseOperation(3);
 		t.setIgnoreRepaint(true);

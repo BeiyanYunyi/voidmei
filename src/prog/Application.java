@@ -519,6 +519,14 @@ public class Application {
 		initGlobalFont(defaultFont);
 		WebLookAndFeel.install();
 
+		// WebLaF 1.29 defaults to zero inactive shadow/rounding on Linux.
+		// Windows with an explicit shadow then try to create a 0x0 shadow
+		// image when focus is lost. Keep a minimal inactive shadow instead.
+		if (System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("linux")) {
+			com.alee.laf.rootpane.WebRootPaneStyle.inactiveShadeWidth = Math.max(
+					1, com.alee.laf.rootpane.WebRootPaneStyle.inactiveShadeWidth);
+		}
+
 		StyleConstants.textRenderingHints = new RenderingHints(RenderingHints.KEY_TEXT_ANTIALIASING,
 				RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 

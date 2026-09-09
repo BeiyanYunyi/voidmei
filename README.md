@@ -93,7 +93,32 @@ scoop install Lutra-Fs_scoop-bucket/voidmei
 scoop update voidmei
 ```
 
-## Linux执行环境配置 
+## Linux 原生运行（Nix flake）
+
+提供 `x86_64-linux` 的 Java 8 构建、运行入口和开发环境。需要启用 Nix 的 `nix-command`、`flakes` 功能，以及可用的 X11 显示服务（Wayland 桌面需 XWayland）。
+
+```bash
+nix build path:.                 # 编译、运行单元测试，产物在 result/
+nix run path:.                   # 启动图形界面
+nix develop path:.               # 进入 JDK 8 + Python 3 开发环境
+python script/build.py compile
+python script/build.py test
+python script/build.py run       # 以仓库根目录为运行目录
+```
+
+`path:.` 也能读取尚未加入 Git 的 flake 文件；文件加入 Git 后可用 `nix build` / `nix run` / `nix develop`。
+
+打包入口默认在 `${XDG_DATA_HOME:-$HOME/.local/share}/voidmei` 保存资源和运行数据，首次运行复制自带资源，后续启动保留已有文件。可用 `VOIDMEI_HOME` 指定其他目录：
+
+```bash
+VOIDMEI_HOME="$PWD" nix run path:.  # 使用当前仓库的资源、data/ 和配置
+```
+
+FM 游戏数据不随 flake 打包。请将解包生成或发行包中的 `data/` 放入运行目录；连接游戏时需要本机 `8111` 端口可用。缺少 FM 数据时无法验证完整气动模型功能。Linux 的游戏前台检测当前会直接返回 true；Wayland 原生窗口中的全局热键受 XWayland 限制。
+
+已在 Linux x86_64 / XWayland 下验证构建、7 组单元测试、主窗口显示和页面切换，原生热键库注册成功。构建时预解包 JNativeHook，避免向只读 Nix store 写入；Linux 下还修正了 WebLaF 非活动窗口的零尺寸阴影异常。依赖真实 FM 数据的 4 组测试因缺少数据而跳过，尚未验证实际游戏联动。部分系统字体配置可能产生 Fontconfig 警告，本次运行中文显示正常。
+
+## Linux执行环境配置（Wine）
 VoidMei可使用Linux wine执行(测试环境Fedora 35, GNOME 41.7, Wine 7.10),执行步骤如下: 
 - winecfg 兼容性设置为win10 
 - 安装jre8, 执行wine jre-8uXXX-windows-x64.exe /s
