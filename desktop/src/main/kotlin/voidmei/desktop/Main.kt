@@ -19,7 +19,8 @@ import kotlin.math.roundToInt
 
 @OptIn(FlowPreview::class)
 fun main(args: Array<String>) {
-    val store = SettingsStore(SettingsStore.defaultPath(), SettingsStore.desktopDefaults())
+    val defaults = SettingsStore.desktopDefaults()
+    val store = SettingsStore(SettingsStore.defaultPath(), defaults)
     val loaded = store.load()
     application {
         DisposableEffect(Unit) {
@@ -286,6 +287,15 @@ fun main(args: Array<String>) {
                                 hudState.position = resetWindowPosition(64)
                                 settings = settings.copy(mainPosition = null, hudPosition = null)
                             }) { Text("重置窗口位置") }
+                            ResetSettingsPanel(defaults, enabled = !closing && !recordingBusy && writer != null && settingsError == null,
+                                recording = recording is RecordingState.Active) { restored ->
+                                settings = restored
+                                endpoint = restored.endpoint
+                                endpointError = null
+                                recordingPath = restored.recordingDirectory
+                                mainState.position = resetWindowPosition()
+                                hudState.position = resetWindowPosition(64)
+                            }
                             LegacySettingsPanel { imported ->
                                 val updated = imported.applyTo(settings)
                                 if (imported.httpPort != null) validateEndpoint(updated.endpoint)
