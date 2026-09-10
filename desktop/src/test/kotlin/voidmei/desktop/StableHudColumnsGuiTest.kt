@@ -15,6 +15,34 @@ import voidmei.telemetry.*
 
 class StableHudColumnsGuiTest {
     @get:Rule val compose = createComposeRule()
+    @Test fun globalTextFontChangeRemeasuresColumnsWithoutChangingHudNumberFont() {
+        val base = TelemetryParser.parse("""{"valid":true,"IAS, km/h":380,"Mfuel, kg":1}""",
+            """{"valid":true,"type":"first"}""")!!
+        var telemetry by mutableStateOf(base)
+        var font by mutableStateOf<String?>(null)
+        compose.setContent {
+            MaterialTheme(typography = textTypography(resolveTextFont(font).family)) {
+                Box(Modifier.size(300.dp, 500.dp)) {
+                    HudPanel(ConnectionState.Flying(telemetry, FlightMetrics()),
+                        AppSettings(textFont = font, hudNumberFont = "monospace", hudFields = listOf("ias", "fuel"),
+                            hudAttitude = false, hudMechanization = false), emptyList(), null) {}
+                }
+            }
+        }
+        fun sameRow() = compose.onNodeWithText("IAS").fetchSemanticsNode().boundsInRoot.top ==
+            compose.onNodeWithText("燃油").fetchSemanticsNode().boundsInRoot.top
+        fun speedWidth() = compose.onNodeWithText("380 km/h").fetchSemanticsNode().boundsInRoot.width
+        assertTrue(sameRow())
+        val originalWidth = speedWidth()
+        compose.runOnIdle { telemetry = base.copy(fuelKg = 1e20) }
+        assertFalse(sameRow())
+        compose.runOnIdle { telemetry = base }
+        assertFalse(sameRow())
+        compose.runOnIdle { font = "serif" }
+        assertTrue(sameRow(), "Explicit text font changes must discard stale width measurements")
+        assertEquals(originalWidth, speedWidth(), "Dedicated numeric typography must remain independent")
+    }
+
     @Test fun flightBoundaryAndAircraftChangeResetRememberedWidths() {
         val base = TelemetryParser.parse("""{"valid":true,"IAS, km/h":380,"Mfuel, kg":1}""",
             """{"valid":true,"type":"first"}""")!!
