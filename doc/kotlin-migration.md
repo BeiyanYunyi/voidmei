@@ -2485,6 +2485,14 @@ SOFTWARE_FAST 后端 15 秒 82347 次采样无空白，透明度与 6 项窗口 
 
 共享回归验证旧格式转换/分析及发动机摘要在剩余数据前传播原取消异常，桌面回归验证分块读取响应已取消 Job 且后续仍可读取文件。JVM/JS 与桌面单元测试通过（`/tmp/voidmei-initial-analysis-cancel.log`）。本轮未重建 Nix 包，也未以真实大文件关闭窗口作交互验收。
 
+### 最近修复的 Nix 包运行验证
+
+包含 SEP 趋势、回看原始俯仰标签和初次分析取消修复的新包构建通过：`/nix/store/g28ndipic5c3jhfls6y4zndbaj5wa2x6-voidmei-kotlin-2.0.0`（`/tmp/voidmei-analysis-cancel-nix.log`）。
+
+隔离 X11 下请求 OPENGL，按已知 llvmpipe 回退检查主窗口 SOFTWARE_FAST、兼容 HUD OPENGL。真机 P-51C 静态快照回放通过，state/indicators 各 83 次请求、AWT 心跳和正常退出均通过；原抓取 SHA256 保持 `65c96d593e8f9c13734fff5eec9f26d33db0c0b6ed59f1b7b42532202d344dbf`。另一个独立显示环境的合成录制验证配对 CSV、WEP 估计及三帧油门缺失恢复，正常退出成功。日志为 `/tmp/voidmei-analysis-package-{capture,recording}.log`，报告与录制副本保存到 `/tmp/voidmei-analysis-package-artifacts/`。
+
+这些结果证明该包可启动并完成遥测/录制流程，不代替真机动态 SEP、物理 GPU 或大文件关闭分析窗口的交互验证。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
