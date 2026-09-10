@@ -3,6 +3,7 @@ package voidmei.telemetry
 import kotlin.math.*
 import kotlin.test.*
 import voidmei.physics.StandardAtmosphere
+import voidmei.recording.FlightCsv
 
 class FlightCalculationTest {
     private fun flight(fields: String = "") = TelemetryParser.parse(
@@ -60,6 +61,25 @@ class FlightCalculationTest {
         assertEquals(0.0, level.estimatedTurnRateDegps)
         assertNull(calculator.update(banked.copy(rollDeg = null), 200).estimatedTurnRadiusM)
         assertNull(calculator.update(banked.copy(tasKmh = 0.0), 300).estimatedTurnRateDegps)
+    }
+
+    @Test fun noseUpWithMatchingAoaKeepsLevelFlightCalculationAndRawRecording() {
+        val telemetry = TelemetryParser.parse(
+            """{"valid":true,"TAS, km/h":360,"Ny":1,"AoA, deg":10}""",
+            """{"valid":true,"aviahorizon_pitch":-10,"aviahorizon_roll":0}""",
+        )!!
+        val calculator = FlightCalculator()
+        assertEquals(10.0, AttitudeGeometry.fromIndicators(telemetry.pitchDeg, telemetry.rollDeg)!!.pitchDeg)
+        // The nose is above the velocity vector by the angle of attack: the flight path is level.
+        val straight = calculator.update(telemetry, 0)
+        assertEquals(0.0, straight.estimatedTurnRateDegps)
+        assertNull(straight.estimatedTurnRadiusM)
+        val banked = calculator.update(telemetry.copy(loadG = 2.0, rollDeg = 60.0), 100)
+        assertEquals(10000 / (FlightCalculator.G * sqrt(3.0)), banked.estimatedTurnRadiusM!!, 1e-8)
+        val columns = FlightCsv.flightHeader.split(',')
+        val row = FlightCsv.flightRow(1, 0, 0, ConnectionState.Flying(telemetry, straight)).split(',')
+        assertEquals(-10.0, row[columns.indexOf("pitch_deg")].toDouble())
+        assertEquals(10.0, row[columns.indexOf("aoa_deg")].toDouble())
     }
 
     @Test fun sepExactlyMatchesKineticEnergyDifferenceAtDifferentIntervals() {

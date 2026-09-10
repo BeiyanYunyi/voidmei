@@ -49,6 +49,8 @@ class FlightCalculator {
             current.verticalSpeedMps + (speed + previousSpeed) * 0.5 * acceleration / G else null
         val turnAcceleration = (if (current.loadG != null && current.rollDeg != null && current.pitchDeg != null && current.angleOfAttackDeg != null) {
             val roll = current.rollDeg * PI / 180
+            // Raw instrument pitch is nose-down positive, so this is the negative flight-path angle.
+            // Do not substitute the nose-up-positive attitude display angle here.
             val pitch = (current.pitchDeg + current.angleOfAttackDeg) * PI / 180
             G * sqrt((current.loadG * current.loadG + 1 - 2 * current.loadG * cos(roll) * cos(pitch)).coerceAtLeast(0.0))
         } else null).finite()
