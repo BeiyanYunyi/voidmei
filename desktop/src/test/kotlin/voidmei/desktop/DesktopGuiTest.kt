@@ -1998,7 +1998,7 @@ class DesktopGuiTest {
             compose.onNodeWithText("俯仰 —° · 横滚 -90.0°").assertExists()
             compose.onNodeWithTag("attitude-canvas").assertDoesNotExist()
             compose.runOnIdle { telemetry = telemetry.copy(pitchDeg = 10.0, rollDeg = null) }
-            compose.onNodeWithText("俯仰 10.0° · 横滚 —°").assertExists()
+            compose.onNodeWithText("俯仰 -10.0° · 横滚 —°").assertExists()
             compose.onNodeWithTag("attitude-canvas").assertDoesNotExist()
             compose.runOnIdle { telemetry = telemetry.copy(pitchDeg = 100.0, rollDeg = Double.NaN) }
             compose.onNodeWithText("俯仰 —° · 横滚 —°").assertExists()
@@ -2010,7 +2010,7 @@ class DesktopGuiTest {
 
     @Test fun attitudeEarthFrameFixesHorizonAndMovesAircraft() {
         var telemetry by mutableStateOf(TelemetryParser.parse("""{"valid":true}""",
-            """{"valid":true,"aviahorizon_pitch":10,"aviahorizon_roll":0}""")!!)
+            """{"valid":true,"aviahorizon_pitch":-10,"aviahorizon_roll":0}""")!!)
         var earthFixed by mutableStateOf(false)
         compose.setContent { MaterialTheme { Box(Modifier.requiredWidth(300.dp)) {
             AttitudePanel(telemetry, earthFixed = earthFixed)

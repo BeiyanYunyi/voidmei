@@ -9,15 +9,23 @@ class AttitudeGeometryTest {
         assertEquals(100.0 to 0.0, attitude.project(100.0, 0.0, 2.0))
     }
     @Test fun pitchMovesHorizonAndLadderConsistently() {
-        val attitude = AttitudeGeometry.fromIndicators(20.0, 0.0)!!
+        val attitude = AttitudeGeometry.fromIndicators(-20.0, 0.0)!!
         assertEquals(0.0 to 40.0, attitude.project(0.0, 0.0, 2.0))
         assertEquals(0.0 to 0.0, attitude.project(0.0, 20.0, 2.0))
     }
     @Test fun quarterRollRotatesHorizonAndPitchDisplacementTogether() {
-        val attitude = AttitudeGeometry.fromIndicators(10.0, 90.0)!!
+        val attitude = AttitudeGeometry.fromIndicators(-10.0, 90.0)!!
         val right = attitude.project(100.0, 0.0, 2.0)
         assertEquals(20.0, right.first, 1e-10)
         assertEquals(-100.0, right.second, 1e-10)
+    }
+    @Test fun rawPitchIsConvertedOnlyForDisplay() {
+        val telemetry = TelemetryParser.parse("""{"valid":true}""",
+            """{"valid":true,"aviahorizon_pitch":-13.177252,"aviahorizon_roll":0}""")!!
+        assertEquals(-13.177252, telemetry.pitchDeg)
+        assertEquals(13.177252, AttitudeGeometry.fromIndicators(telemetry.pitchDeg, telemetry.rollDeg)!!.pitchDeg)
+        assertEquals(-20.0, AttitudeGeometry.fromIndicators(20.0, 0.0)!!.pitchDeg)
+        assertEquals(0.0.toBits(), AttitudeGeometry.fromIndicators(0.0, 0.0)!!.pitchDeg.toBits())
     }
     @Test fun anglesWrapAndMissingValuesDoNotCreateFalseLevelFlight() {
         assertEquals(-90.0, AttitudeGeometry.fromIndicators(0.0, 270.0)!!.rollDeg)

@@ -11,9 +11,10 @@ data class AttitudeGeometry(val pitchDeg: Double, val rollDeg: Double) {
             (-horizontal * sin(angle) + vertical * cos(angle))
     }
     companion object {
+        /** War Thunder reports negative aviahorizon_pitch for nose-up; display pitch is nose-up positive. */
         fun fromIndicators(pitch: Double?, roll: Double?): AttitudeGeometry? {
             if (pitch == null || roll == null || !pitch.isFinite() || !roll.isFinite() || pitch !in -90.0..90.0) return null
-            return AttitudeGeometry(pitch, ((roll + 180) % 360 + 360) % 360 - 180)
+            return AttitudeGeometry(if (pitch == 0.0) 0.0 else -pitch, ((roll + 180) % 360 + 360) % 360 - 180)
         }
         fun heading(degrees: Double?): Double? = degrees?.takeIf { it.isFinite() }?.let { ((it % 360) + 360) % 360 }
     }

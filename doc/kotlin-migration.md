@@ -2453,6 +2453,16 @@ Nix 构建及包内检查通过，新包 `/nix/store/9q5ayy32djchrc5wa2d63nyrihw
 
 SOFTWARE_FAST 后端 15 秒 82347 次采样无空白，透明度与 6 项窗口 GUI 通过（`/tmp/voidmei-main-move-software.log`）。Nix 构建及包内检查通过，输出 `/nix/store/fzdr89fvazwsq8wf6r3w0qaqx8lwkqws-voidmei-kotlin-2.0.0`，入口 `/tmp/voidmei-kotlin-offline/bin/voidmei-kotlin` 已更新。直接加载该包的 12 项窗口/原生输入测试通过（`/tmp/voidmei-repaint-boundary-input.log`），覆盖移动、关闭、穿透及恢复。用户需完全退出后以 `nix run path:.#kotlin-offline` 重启，继续在真实游戏中复测。
 
+### 真机闪烁修复确认与姿态仪俯仰方向
+
+用户确认使用 Kotlin Nix 包和兼容 HUD 时，前述闪烁问题已修复。提供的主窗口日志显示实际 OPENGL、SkiaLayer、1× 缩放及 NVIDIA GeForce RTX 5070 Ti / 16303 MB VRAM；此反馈确认该真机场景，不代表全部平台验收。
+
+用户随后报告机头朝上时指针对应棕色地面。代码中天空原本在蓝色区域、地面在棕色区域，问题出在俯仰符号：旧 Java HUDCalculator 对 `aviahorizon_pitch` 取反，Kotlin `AttitudeGeometry.fromIndicators` 遗漏了此转换。现将原始仪表俯仰转换为抬头为正的显示角度，并避免水平时出现负零；原始 Telemetry、飞行计算与 CSV 语义保持原样。
+
+新像素回归通过实际 HudPanel 从接口 JSON 构造俯仰数据，修复前因“抬头必须对应蓝色”断言失败（`/tmp/voidmei-attitude-sign-before.log`）。修复后验证机体参考和地面参考的抬头蓝天、低头棕地、俯仰读数及倒飞天地旋转。既有部分姿态、迎角/侧滑、模型极限线回归通过；修正了旧测试把接口正值当作抬头的假定。共享 JVM/JS、桌面单元及姿态 GUI 通过（`/tmp/voidmei-attitude-sign-final.log`）。最初零值字符串断言存在 JVM/JS 格式差异，已改为比较零值位模式。
+
+`nix build path:.#kotlin-offline` 构建通过，产物为 `/nix/store/hqx864yhzl7qqhzvmf5hmdgbsw8a8799-voidmei-kotlin-2.0.0`（日志 `/tmp/voidmei-attitude-sign-nix.log`）。姿态方向修复仍待用户游戏内确认。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
