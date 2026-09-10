@@ -17,9 +17,10 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Switch(settings.hudAutoHideOnFocusLoss, { onChange(settings.copy(hudAutoHideOnFocusLoss = it)) },
             Modifier.testTag("hud-auto-hide-focus"),
-            enabled = System.getProperty("os.name", "").lowercase().startsWith("windows") || settings.hudAutoHideOnFocusLoss)
-        Text("切出游戏时隐藏 HUD（Windows）")
+            enabled = supportsGameFocus() || settings.hudAutoHideOnFocusLoss)
+        Text("切出游戏时隐藏 HUD（Windows / Linux X11）")
     }
+    if (!supportsGameFocus()) Text("当前会话无法检测游戏前台，HUD 将保持显示。", style = MaterialTheme.typography.bodySmall)
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Switch(settings.hudClickThrough, { onChange(settings.copy(hudClickThrough = it)) },
             Modifier.testTag("hud-click-through"),

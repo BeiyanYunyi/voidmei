@@ -2621,6 +2621,18 @@ HUD 专用数字字体有值时优先，留空时继承全局数字字体；两�
 
 录制活动、录制操作进行中、退出中或配置无法正常保存时禁用恢复。对话框已打开后状态改变，确认按钮也立即禁用，取消仍可用。桌面单元及隔离 GUI 回归通过（`/tmp/voidmei-reset-settings.log`），覆盖取消保留原配置、确认并重新读取平台默认值、录制和保存状态变化。测试使用实际 SettingsStore 持久化，未驱动完整 Main 原生窗口；本轮未重新构建 Nix 包。
 
+### Linux X11 游戏前台检测
+
+补齐原先仅 Windows 可启用的切出游戏隐藏 HUD。Linux X11 使用独立 XCB 连接读取 `_NET_ACTIVE_WINDOW`、`_NET_WM_PID` 和 `WM_CLIENT_MACHINE`，仅对本机窗口读取 `/proc/<pid>/exe`，匹配原生 `aces` 或直接可辨识的 `aces.exe`。查询后再次核对窗口和 PID，切换竞态返回未知；窗口销毁产生的协议错误由 XCB 回复处理，不接管 AWT/Xlib 的全局错误处理器。连接、回复及错误内存均随查询释放。
+
+Wayland、缺失属性、非本机窗口、无效 PID 或 Wine 加载器无法辨识具体程序时保持未知，HUD 保持可见。设置页现可在 Linux X11 启用，其他会话说明不支持并允许关闭已保存的启用状态。原 Windows 可执行文件匹配保持不变。
+
+桌面单元与隔离 X11 回归通过（`/tmp/voidmei-x11-focus-complete.log`），两个 GUI 测试无跳过：实际创建原生窗口并写入 EWMH 属性，验证游戏/其他进程、远程主机、错误属性类型、无效 PID、已销毁窗口、关闭后的读取以及设置开关。进程路径使用隔离 /proc 替身，尚未以真实游戏验证。最初设置测试错误使用重叠 Box 容器，修正为与主窗口一致的纵向滚动布局后通过。
+
+协议依据：[EWMH 根窗口属性](https://specifications.freedesktop.org/wm/latest/ar01s03.html)及[窗口 PID 与主机名约定](https://specifications.freedesktop.org/wm/latest/ar01s05.html)；Linux `aces` 名称也见 [War Thunder 官方 FAQ](https://warthunder.com/en/game/faq)。JNA 结构与回复字段按构建环境 libxcb 1.17 的 xcb.h/xproto.h 核对。现有 Linux 运行依赖已含 libxcb。
+
+`nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-x11-focus-nix.log`），同时包含前一轮恢复默认设置功能。真实窗口管理器、游戏及硬件 GPU 验证仍待完成。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
