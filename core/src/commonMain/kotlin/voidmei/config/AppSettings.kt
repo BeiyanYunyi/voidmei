@@ -1,0 +1,251 @@
+package voidmei.config
+
+import kotlinx.serialization.json.*
+import voidmei.telemetry.HudField
+
+data class WindowPosition(val x: Float, val y: Float) {
+    init { require(x.isFinite() && y.isFinite()) }
+}
+
+data class AppSettings(
+    val endpoint: String = "http://127.0.0.1:8111",
+    val pollIntervalMs: Long = 100,
+    val hudEnabled: Boolean = false,
+    val hudOpacity: Float = 0.85f,
+    val mainPosition: WindowPosition? = null,
+    val hudPosition: WindowPosition? = null,
+    val fmDataRoot: String = "data",
+    val recordingDirectory: String = "records",
+    val voiceEnabled: Boolean = false,
+    val hudFields: List<String> = HudField.defaults,
+    val hudHiddenLabels: List<String> = emptyList(),
+    val hudAttitude: Boolean = true,
+    val hudAttitudeEarthFixed: Boolean = false,
+    val hudCompassHeadingUp: Boolean = false,
+    val hudMechanization: Boolean = true,
+    val hudGear: Boolean = true,
+    val hudFlaps: Boolean = true,
+    val hudFlapBar: Boolean = true,
+    val hudAirbrake: Boolean = true,
+    val hudHotkeyEnabled: Boolean = false,
+    val voiceVolume: Int = 100,
+    val voiceDirectory: String = "voice",
+    val voicePack: String = "default",
+    val alertVoices: Map<String, VoiceChoice> = emptyMap(),
+    val hudFontScale: Float = 1f,
+    val hudEngineIndex: Int? = null,
+    val hudWidthDp: Int = 440,
+    val recordingAutoStart: Boolean = false,
+    val startInTray: Boolean = false,
+    val hudCompatibilityMode: Boolean = false,
+    val hudClickThrough: Boolean = false,
+    val hudAutoHideOnFocusLoss: Boolean = false,
+    val hudAoaBarWarningPercent: Double = 25.0,
+    val hudAoaWarningPercent: Double = 20.0,
+    val hudCrosshair: Boolean = false,
+    val hudCrosshairSizeDp: Int = 160,
+    val hudCrosshairImage: String = "",
+    val hudCrosshairStretch: Boolean = false,
+    val hudCrosshairRight: Boolean = false,
+    val hudLabelColor: String? = null,
+    val hudValueColor: String? = null,
+    val hudWarningColor: String? = null,
+    val hudShadeColor: String? = null,
+    val hudUnitColor: String? = null,
+    val hudAttitudeAoaLimits: Boolean = true,
+    val hudNumberFont: String? = null,
+) {
+    init {
+        require(hudNumberFont == null || (hudNumberFont.isNotBlank() && hudNumberFont.length <= 200 && hudNumberFont.none { it.isISOControl() }))
+        require(listOf(hudLabelColor, hudValueColor, hudWarningColor, hudShadeColor, hudUnitColor).all { it == null || parseHexColor(it) != null })
+        require(hudCrosshairSizeDp in 24..400)
+        require(hudAoaWarningPercent.isFinite() && hudAoaWarningPercent in 0.0..100.0)
+        require(hudAoaBarWarningPercent.isFinite() && hudAoaBarWarningPercent in 0.0..100.0)
+        require(voiceDirectory.isNotBlank())
+        require(isVoicePackName(voicePack))
+        require(voiceVolume in 0..200)
+        require(endpoint.isNotBlank())
+        require(fmDataRoot.isNotBlank())
+        require(recordingDirectory.isNotBlank())
+        require(pollIntervalMs in 20..5000)
+        require(hudOpacity.isFinite() && hudOpacity in 0f..1f)
+        require(hudFontScale.isFinite() && hudFontScale in 0.75f..2f)
+        require(hudEngineIndex == null || hudEngineIndex > 0)
+        require(hudWidthDp in 240..1000)
+    }
+}
+
+/** Unknown keys survive edits so newer settings are not silently erased by this version. */
+object SettingsJson {
+    private const val MAX_DEPTH = 64
+
+    /** Scan before recursive JSON parsing; braces inside strings do not introduce containers. */
+    private fun checkNesting(text: String) {
+        var depth = 0
+        var quoted = false
+        var escaped = false
+        for (character in text) {
+            if (quoted) {
+                when {
+                    escaped -> escaped = false
+                    character == '\\' -> escaped = true
+                    character == '"' -> quoted = false
+                }
+            } else when (character) {
+                '"' -> quoted = true
+                '{', '[' -> {
+                    depth++
+                    require(depth <= MAX_DEPTH) { "配置 JSON 嵌套超过 64 层" }
+                }
+                '}', ']' -> {
+                    depth--
+                    require(depth >= 0) { "配置 JSON 容器不匹配" }
+                }
+            }
+        }
+        // Syntax, matching container types and unterminated strings remain the JSON parser's responsibility.
+    }
+
+    fun decode(text: String, defaultHudCompatibilityMode: Boolean = false): AppSettings {
+        checkNesting(text)
+        val root = Json.parseToJsonElement(text).jsonObject
+        require(root["version"]?.jsonPrimitive?.intOrNull == 1) { "Unsupported settings version" }
+        val defaults = AppSettings()
+        fun position(key: String): WindowPosition? = root[key]?.takeUnless { it is JsonNull }?.jsonObject?.let {
+            WindowPosition(it.getValue("x").jsonPrimitive.float, it.getValue("y").jsonPrimitive.float)
+        }
+        return AppSettings(
+            hudAutoHideOnFocusLoss = root["hudAutoHideOnFocusLoss"]?.jsonPrimitive?.let {
+                require(!it.isString); it.boolean
+            } ?: defaults.hudAutoHideOnFocusLoss,
+            hudClickThrough = root["hudClickThrough"]?.jsonPrimitive?.let {
+                require(!it.isString); it.boolean
+            } ?: defaults.hudClickThrough,
+            hudCompatibilityMode = root["hudCompatibilityMode"]?.jsonPrimitive?.let {
+                require(!it.isString); it.boolean
+            } ?: defaultHudCompatibilityMode,
+            startInTray = root["startInTray"]?.jsonPrimitive?.boolean ?: defaults.startInTray,
+            recordingAutoStart = root["recordingAutoStart"]?.jsonPrimitive?.let {
+                require(!it.isString); it.boolean
+            } ?: defaults.recordingAutoStart,
+            endpoint = root["endpoint"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.endpoint,
+            pollIntervalMs = root["pollIntervalMs"]?.jsonPrimitive?.long ?: defaults.pollIntervalMs,
+            hudNumberFont = root["hudNumberFont"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
+            hudLabelColor = root["hudLabelColor"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
+            hudValueColor = root["hudValueColor"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
+            hudUnitColor = root["hudUnitColor"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
+            hudShadeColor = root["hudShadeColor"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
+            hudWarningColor = root["hudWarningColor"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
+            hudCrosshairRight = root["hudCrosshairRight"]?.jsonPrimitive?.boolean ?: defaults.hudCrosshairRight,
+            hudCrosshairStretch = root["hudCrosshairStretch"]?.jsonPrimitive?.boolean ?: defaults.hudCrosshairStretch,
+            hudCrosshairImage = root["hudCrosshairImage"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.hudCrosshairImage,
+            hudCrosshair = root["hudCrosshair"]?.jsonPrimitive?.boolean ?: defaults.hudCrosshair,
+            hudCrosshairSizeDp = root["hudCrosshairSizeDp"]?.jsonPrimitive?.int ?: defaults.hudCrosshairSizeDp,
+            hudEnabled = root["hudEnabled"]?.jsonPrimitive?.boolean ?: defaults.hudEnabled,
+            hudOpacity = root["hudOpacity"]?.jsonPrimitive?.float ?: defaults.hudOpacity,
+            hudFontScale = root["hudFontScale"]?.jsonPrimitive?.let {
+                require(!it.isString); it.float
+            } ?: defaults.hudFontScale,
+            hudEngineIndex = root["hudEngineIndex"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.let {
+                require(!it.isString); it.int
+            },
+            hudWidthDp = root["hudWidthDp"]?.jsonPrimitive?.let {
+                require(!it.isString); it.int
+            } ?: defaults.hudWidthDp,
+            mainPosition = position("mainPosition"), hudPosition = position("hudPosition"),
+            fmDataRoot = root["fmDataRoot"]?.jsonPrimitive?.content ?: defaults.fmDataRoot,
+            recordingDirectory = root["recordingDirectory"]?.jsonPrimitive?.content ?: defaults.recordingDirectory,
+            voiceEnabled = root["voiceEnabled"]?.jsonPrimitive?.boolean ?: defaults.voiceEnabled,
+            hudHiddenLabels = root["hudHiddenLabels"]?.jsonArray?.map { value ->
+                value.jsonPrimitive.let { require(it.isString); it.content }
+            }?.distinct() ?: defaults.hudHiddenLabels,
+            hudFields = root["hudFields"]?.jsonArray?.map { value ->
+                value.jsonPrimitive.let { require(it.isString); it.content }
+            }?.distinct() ?: defaults.hudFields,
+            hudCompassHeadingUp = root["hudCompassHeadingUp"]?.jsonPrimitive?.boolean ?: defaults.hudCompassHeadingUp,
+            hudAttitudeAoaLimits = root["hudAttitudeAoaLimits"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.hudAttitudeAoaLimits,
+            hudAttitudeEarthFixed = root["hudAttitudeEarthFixed"]?.jsonPrimitive?.boolean ?: defaults.hudAttitudeEarthFixed,
+            hudAttitude = root["hudAttitude"]?.jsonPrimitive?.boolean ?: defaults.hudAttitude,
+            hudGear = root["hudGear"]?.jsonPrimitive?.boolean ?: defaults.hudGear,
+            hudFlapBar = root["hudFlapBar"]?.jsonPrimitive?.boolean ?: defaults.hudFlapBar,
+            hudFlaps = root["hudFlaps"]?.jsonPrimitive?.boolean ?: defaults.hudFlaps,
+            hudAirbrake = root["hudAirbrake"]?.jsonPrimitive?.boolean ?: defaults.hudAirbrake,
+            hudAoaWarningPercent = root["hudAoaWarningPercent"]?.jsonPrimitive?.double ?: defaults.hudAoaWarningPercent,
+            hudAoaBarWarningPercent = root["hudAoaBarWarningPercent"]?.jsonPrimitive?.double ?: defaults.hudAoaBarWarningPercent,
+            hudMechanization = root["hudMechanization"]?.jsonPrimitive?.boolean ?: defaults.hudMechanization,
+            hudHotkeyEnabled = root["hudHotkeyEnabled"]?.jsonPrimitive?.boolean ?: defaults.hudHotkeyEnabled,
+            voiceVolume = root["voiceVolume"]?.jsonPrimitive?.int ?: defaults.voiceVolume,
+            voiceDirectory = root["voiceDirectory"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.voiceDirectory,
+            voicePack = root["voicePack"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.voicePack,
+            alertVoices = root["alertVoices"]?.jsonObject?.mapValues { (_, value) ->
+                val choice = value.jsonObject
+                VoiceChoice(
+                    enabled = choice["enabled"]?.jsonPrimitive?.boolean ?: true,
+                    pack = choice["pack"]?.takeUnless { it is JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
+                )
+            } ?: emptyMap(),
+        )
+    }
+
+    fun encode(settings: AppSettings, previous: String? = null): String {
+        val fields = previous?.let {
+            decode(it) // Refuse malformed or future-version documents before overwriting anything.
+            Json.parseToJsonElement(it).jsonObject.toMutableMap()
+        } ?: mutableMapOf()
+        fields["version"] = JsonPrimitive(1)
+        fields["endpoint"] = JsonPrimitive(settings.endpoint)
+        fields["pollIntervalMs"] = JsonPrimitive(settings.pollIntervalMs)
+        fields["hudLabelColor"] = settings.hudLabelColor?.let { JsonPrimitive(it) } ?: JsonNull
+        fields["hudValueColor"] = settings.hudValueColor?.let { JsonPrimitive(it) } ?: JsonNull
+        fields["hudUnitColor"] = settings.hudUnitColor?.let { JsonPrimitive(it) } ?: JsonNull
+        fields["hudShadeColor"] = settings.hudShadeColor?.let { JsonPrimitive(it) } ?: JsonNull
+        fields["hudWarningColor"] = settings.hudWarningColor?.let { JsonPrimitive(it) } ?: JsonNull
+        fields["hudCrosshairRight"] = JsonPrimitive(settings.hudCrosshairRight)
+        fields["hudCrosshairStretch"] = JsonPrimitive(settings.hudCrosshairStretch)
+        fields["hudCrosshairImage"] = JsonPrimitive(settings.hudCrosshairImage)
+        fields["hudCrosshair"] = JsonPrimitive(settings.hudCrosshair)
+        fields["hudCrosshairSizeDp"] = JsonPrimitive(settings.hudCrosshairSizeDp)
+        fields["hudEnabled"] = JsonPrimitive(settings.hudEnabled)
+        fields["hudOpacity"] = JsonPrimitive(settings.hudOpacity)
+        fields["hudFontScale"] = JsonPrimitive(settings.hudFontScale)
+        fields["hudWidthDp"] = JsonPrimitive(settings.hudWidthDp)
+        fields["hudEngineIndex"] = settings.hudEngineIndex?.let(::JsonPrimitive) ?: JsonNull
+        fields["fmDataRoot"] = JsonPrimitive(settings.fmDataRoot)
+        fields["recordingDirectory"] = JsonPrimitive(settings.recordingDirectory)
+        fields["startInTray"] = JsonPrimitive(settings.startInTray)
+        fields["recordingAutoStart"] = JsonPrimitive(settings.recordingAutoStart)
+        fields["hudCompatibilityMode"] = JsonPrimitive(settings.hudCompatibilityMode)
+        fields["hudClickThrough"] = JsonPrimitive(settings.hudClickThrough)
+        fields["hudAutoHideOnFocusLoss"] = JsonPrimitive(settings.hudAutoHideOnFocusLoss)
+        fields["voiceEnabled"] = JsonPrimitive(settings.voiceEnabled)
+        fields["voiceVolume"] = JsonPrimitive(settings.voiceVolume)
+        fields["voiceDirectory"] = JsonPrimitive(settings.voiceDirectory)
+        fields["voicePack"] = JsonPrimitive(settings.voicePack)
+        fields["alertVoices"] = JsonObject(settings.alertVoices.mapValues { (_, choice) ->
+            buildJsonObject { put("enabled", choice.enabled); put("pack", choice.pack?.let(::JsonPrimitive) ?: JsonNull) }
+        })
+        fields["hudHiddenLabels"] = JsonArray(settings.hudHiddenLabels.map(::JsonPrimitive))
+        fields["hudFields"] = JsonArray(settings.hudFields.map(::JsonPrimitive))
+        fields["hudCompassHeadingUp"] = JsonPrimitive(settings.hudCompassHeadingUp)
+        fields["hudNumberFont"] = settings.hudNumberFont?.let(::JsonPrimitive) ?: JsonNull
+        fields["hudAttitudeAoaLimits"] = JsonPrimitive(settings.hudAttitudeAoaLimits)
+        fields["hudAttitudeEarthFixed"] = JsonPrimitive(settings.hudAttitudeEarthFixed)
+        fields["hudAttitude"] = JsonPrimitive(settings.hudAttitude)
+        fields["hudGear"] = JsonPrimitive(settings.hudGear)
+        fields["hudFlapBar"] = JsonPrimitive(settings.hudFlapBar)
+        fields["hudFlaps"] = JsonPrimitive(settings.hudFlaps)
+        fields["hudAirbrake"] = JsonPrimitive(settings.hudAirbrake)
+        fields["hudAoaWarningPercent"] = JsonPrimitive(settings.hudAoaWarningPercent)
+        fields["hudAoaBarWarningPercent"] = JsonPrimitive(settings.hudAoaBarWarningPercent)
+        fields["hudMechanization"] = JsonPrimitive(settings.hudMechanization)
+        fields["hudHotkeyEnabled"] = JsonPrimitive(settings.hudHotkeyEnabled)
+        fun position(key: String, value: WindowPosition?) {
+            fields[key] = value?.let {
+                buildJsonObject { put("x", it.x); put("y", it.y) }
+            } ?: JsonNull
+        }
+        position("mainPosition", settings.mainPosition)
+        position("hudPosition", settings.hudPosition)
+        return Json { prettyPrint = true }.encodeToString(JsonObject.serializer(), JsonObject(fields))
+    }
+}

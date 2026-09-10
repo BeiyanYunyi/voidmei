@@ -32,6 +32,30 @@
           ];
         in {
           default = self.packages.${system}.voidmei;
+          kotlin-offline = pkgs.callPackage ./nix/kotlin-package.nix {};
+          kotlin-launcher = pkgs.writeShellApplication {
+            name = "voidmei-kotlin";
+            runtimeInputs = with pkgs; [ jdk21 gradle nodejs ];
+            text = ''
+              export JAVA_HOME=${pkgs.jdk21}
+              export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath (with pkgs; [
+                libx11 libxext libxrender libxi libxtst libxrandr
+                libxkbcommon libxcb libxt libxinerama libGL fontconfig freetype
+              ])}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+              project_dir="''${VOIDMEI_PROJECT_DIR:-$PWD}"
+              if [[ ! -f "$project_dir/settings.gradle.kts" || ! -f "$project_dir/desktop/build.gradle.kts" ]]; then
+                echo "Run from a VoidMei Kotlin checkout, or set VOIDMEI_PROJECT_DIR to its absolute path." >&2
+                exit 2
+              fi
+              project_dir=$(cd "$project_dir" && pwd)
+              gradle_args=(--project-dir "$project_dir" -Pvoidmei.systemNode=true)
+              if [[ -n "''${VOIDMEI_MAVEN_MIRROR:-}" ]]; then
+                gradle_args+=("-Pvoidmei.mavenMirror=$VOIDMEI_MAVEN_MIRROR")
+              fi
+              gradle "''${gradle_args[@]}" :desktop:createDistributable
+              exec "$project_dir/desktop/build/compose/binaries/main/app/VoidMei/bin/VoidMei" "$@"
+            '';
+          };
           voidmei = pkgs.stdenvNoCC.mkDerivation {
             pname = "voidmei";
             version = "unstable";
@@ -86,6 +110,16 @@
           };
         });
       apps = forAllSystems (system: {
+        kotlin-offline = {
+          type = "app";
+          program = "${self.packages.${system}.kotlin-offline}/bin/voidmei-kotlin";
+          meta.description = "Launch the standalone Kotlin application built with pinned dependencies";
+        };
+        kotlin = {
+          type = "app";
+          program = "${self.packages.${system}.kotlin-launcher}/bin/voidmei-kotlin";
+          meta.description = "Build and launch Kotlin development application from a checkout";
+        };
         default = {
           type = "app";
           program = "${self.packages.${system}.voidmei}/bin/voidmei";
@@ -94,9 +128,19 @@
       });
       devShells = forAllSystems (system:
         let pkgs = import nixpkgs { inherit system; };
-        in { default = pkgs.mkShell {
-          inputsFrom = [ self.packages.${system}.voidmei ];
-          LD_LIBRARY_PATH = self.packages.${system}.voidmei.libraryPath;
-        }; });
+        in {
+          kotlin = pkgs.mkShell {
+            packages = with pkgs; [ jdk21 gradle nodejs python3 binutils dpkg fakeroot ];
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (with pkgs; [
+              libx11 libxext libxrender libxi libxtst libxrandr
+              libxkbcommon libxcb libxt libxinerama
+              libGL fontconfig freetype
+            ]);
+          };
+          default = pkgs.mkShell {
+            inputsFrom = [ self.packages.${system}.voidmei ];
+            LD_LIBRARY_PATH = self.packages.${system}.voidmei.libraryPath;
+          };
+        });
     };
 }

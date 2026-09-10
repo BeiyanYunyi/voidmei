@@ -1,6 +1,11 @@
 target/
 result
 result-*
+.gradle/
+.kotlin/
+kotlin-js-store/
+__pycache__/
+*.py[cod]
 **/*.class
 bin/
 build/
@@ -9,7 +14,7 @@ dist/
 data/
 # 运行时生成物：用户数据与日志
 records/
-config/
+/config/
 ui_layout.user.cfg*
 output.log
 error.log
