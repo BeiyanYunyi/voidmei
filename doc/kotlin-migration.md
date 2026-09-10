@@ -2505,6 +2505,12 @@ SOFTWARE_FAST 后端 15 秒 82347 次采样无空白，透明度与 6 项窗口 
 
 共享 JVM/JS 回归覆盖默认/远程/IPv6 地址、持久化、缺省保持、非法端口/类型。桌面单元与隔离 GUI 回归通过，GUI 验证预览前后状态、显式应用及旧文件内容不变（`/tmp/voidmei-legacy-port.log`、`/tmp/voidmei-legacy-port-gui.log`）。未迁移旧版独立的 `httpIp` 或备用端口推导，本轮未重新构建 Nix 包。
 
+### 导入端口后的 HTTP 与录制链路
+
+新增双本地 HTTP 服务器集成回归：两台服务器返回同一机型、分别 300/600 km/h，通过 `LegacySettingsReader` 导入第二个端口，并依次用真实 `HttpTelemetryTransport`、`TelemetryPoller` 和 `FlightRecorder` 采样。验证两组独立配对 CSV，各两帧；每组速度单一，首帧 SEP 未知、后续恒速 SEP 为零；发动机文件仍能按编号和时间关联。测试通过（`/tmp/voidmei-imported-endpoint-recording.log`）。
+
+这证明导入结果可以用于真实 HTTP 连接、轮询初始状态能分开同机型录制，以及新轮询器不会跨来源计算 SEP；不据此宣称覆盖 Main 的按钮事件或地图来源切换。本轮仅增加回归与记录，没有重建 Nix 包。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
