@@ -20,6 +20,7 @@ class ExternalFlightModelTest {
             val bytes = Files.readAllBytes(root.resolve("$name.blkx"))
             val hash = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
             assertEquals(sample.getValue("sha256").jsonPrimitive.content, hash, name)
+            assertEquals(sample.getValue("bytes").jsonPrimitive.int, bytes.size, name)
             val document = FlightModelDocument.parse(bytes.toString(Charsets.UTF_8))
             val parameters = FlightModelExtractor.extract(document)
             if (name == "bf-109g-6") {
@@ -28,6 +29,15 @@ class ExternalFlightModelTest {
             val peaks = EnginePeakExtractor.extract(document)
             assertEquals(parameters.engineBindings.map { it.telemetryIndex }, peaks.map { it.telemetryIndex }, name)
             assertTrue(peaks.isNotEmpty() && peaks.all { it.peak.isFinite() && it.peak > 0 }, name)
+            if (name in setOf("b-25j-1", "f-14a-early")) {
+                assertEquals(listOf(1, 2), parameters.engineBindings.map { it.telemetryIndex }, name)
+                assertEquals(listOf("Engine0", "Engine1"), parameters.engineBindings.map { it.instance }, name)
+                val sources = if (name == "b-25j-1") listOf("EngineType0", "EngineType1") else listOf("EngineType0", "EngineType0")
+                assertEquals(sources, parameters.engineBindings.map { it.parameterSource }, name)
+                assertEquals(2, peaks.size, name)
+                assertEquals(peaks[0].kind, peaks[1].kind, name)
+                assertEquals(peaks[0].peak, peaks[1].peak, 1e-8, name)
+            }
             val jets = JetThrustExtractor.extract(document)
             val pistons = PistonParameterExtractor.extract(EngineInstanceResolver.resolve(document).document())
             assertTrue(assertNotNull(parameters.emptyMassKg, name) > 0, name)
@@ -36,9 +46,32 @@ class ExternalFlightModelTest {
                 assertEquals(expected, assertNotNull(parameters.basicMassKg, name), 1e-8, name)
             }
             assertTrue(parameters.wings.isNotEmpty(), name)
-            assertTrue(assertNotNull(parameters.controlSpeeds.elevatorKmh, name) > 0, name)
-            assertTrue(parameters.issues.none { it.contains("ElevatorsEffectiveSpeed") }, name)
-            if (name == "f-86a-5") {
+            if (name == "f-14a-early") {
+                // Real sample uses [1801, 1800]; directional semantics are not yet supported.
+                assertNull(parameters.controlSpeeds.elevatorKmh)
+                assertTrue(parameters.issues.any { it.contains("ElevatorsEffectiveSpeed") && it.contains("Unsupported directional thresholds") })
+            } else {
+                assertTrue(assertNotNull(parameters.controlSpeeds.elevatorKmh, name) > 0, name)
+                assertTrue(parameters.issues.none { it.contains("ElevatorsEffectiveSpeed") }, name)
+            }
+            if (name == "f-14a-early") {
+                val resolved = JetThrustExtractor.extract(EngineInstanceResolver.resolve(document).document())
+                assertTrue(resolved.issues.isEmpty(), resolved.issues.toString())
+                assertEquals(listOf("Engine0", "Engine1"), resolved.engines.map { it.source })
+                for (jet in resolved.engines) {
+                    // Sample base thrust 5400, boost 1.25 and final Mode6 multiplier 1.32.
+                    for ((altitude, speed, military) in listOf(
+                        Triple(0.0, 0.0, 4860.0), Triple(0.0, 400.0, 4914.0),
+                        Triple(3049.0, 0.0, 3726.0), Triple(1524.5, 100.0, 4306.5),
+                    )) assertEquals(military, assertNotNull(jet.thrust(altitude, speed)), 1e-8)
+                    assertEquals(8019.0, assertNotNull(jet.thrust(0.0, 0.0, true)), 1e-8)
+                    assertEquals(8513.505, assertNotNull(jet.thrust(0.0, 400.0, true)), 1e-8)
+                    for (afterburner in listOf(false, true)) {
+                        val values = jet.altitudesM.flatMap { altitude -> jet.velocitiesKmh.map { jet.thrust(altitude, it, afterburner) } }
+                        assertTrue(values.all { it != null && it.isFinite() && it >= 0 })
+                    }
+                }
+            } else if (name == "f-86a-5") {
                 assertTrue(jets.engines.isNotEmpty(), "$name: ${jets.issues}")
                 val resolved = JetThrustExtractor.extract(EngineInstanceResolver.resolve(document).document())
                 assertTrue(resolved.issues.isEmpty(), resolved.issues.toString())
@@ -67,10 +100,18 @@ class ExternalFlightModelTest {
                 }
             } else {
                 assertTrue(pistons.engines.isNotEmpty(), "$name: ${pistons.issues}")
+                if (name == "b-25j-1") assertEquals(listOf("Engine0", "Engine1"), pistons.engines.map { it.source })
                 if (name == "p-51d-20-na") assertTrue(parameters.engineCompressors.isNotEmpty(), name)
                 pistons.engines.forEach { raw ->
                     val model = PistonModelBuilder.build(raw)
                     val wep = assertNotNull(model.wepStages, "$name: ${model.wepIssue}")
+                    if (name == "b-25j-1") {
+                        assertEquals(listOf(1676.0, 4115.0), raw.stages.map { it.altitudeM })
+                        assertEquals(listOf(1700.0, 1450.0), raw.stages.map { it.powerHp })
+                        assertTrue(wep[0].wepEnabled)
+                        assertFalse(wep[1].wepEnabled)
+                        assertEquals(1700.0, assertNotNull(PistonPowerModel.powerAtAltitude(model.military.stages[0], 1676.0)), 1e-8)
+                    }
                     for ((stages, isWep) in listOf(model.military.stages to false, wep to true)) {
                         for (speed in listOf(0.0, 450.0)) {
                             val curve = PistonPowerModel.curve(stages, speedKmh = speed, stepM = 25, wep = isWep)
@@ -82,6 +123,12 @@ class ExternalFlightModelTest {
                     }
                 }
             }
+            val expectedIssues = if (name == "f-14a-early") setOf(
+                "Invalid or ambiguous structural load: Strength.CritOverload",
+                "Unsupported directional thresholds: ElevatorsEffectiveSpeed (1801.0, 1800.0)",
+            ) else emptySet()
+            assertEquals(expectedIssues, (parameters.issues + jets.issues + pistons.issues).toSet(), name)
+            if (name == "f-14a-early") assertNull(parameters.structuralLoad)
             reports += buildJsonObject {
                 put("name", name); put("sha256", hash)
                 put("emptyMassKg", parameters.emptyMassKg)
@@ -93,10 +140,11 @@ class ExternalFlightModelTest {
                 put("elevatorEffectiveSpeedKmh", parameters.controlSpeeds.elevatorKmh)
                 put("pistonEngines", pistons.engines.size)
                 put("jetModels", jets.engines.size)
+                put("resolvedJetEngines", JetThrustExtractor.extract(EngineInstanceResolver.resolve(document).document()).engines.size)
                 put("issues", JsonArray((parameters.issues + jets.issues).map(::JsonPrimitive)))
             }
         }
-        assertEquals(setOf("p-51d-20-na", "bf-109g-6", "f-86a-5"), reports.map { it.getValue("name").jsonPrimitive.content }.toSet())
+        assertEquals(setOf("p-51d-20-na", "bf-109g-6", "f-86a-5", "b-25j-1", "f-14a-early"), reports.map { it.getValue("name").jsonPrimitive.content }.toSet())
         val report = buildJsonObject {
             put("commit", manifest.getValue("commit"))
             put("samples", JsonArray(reports))

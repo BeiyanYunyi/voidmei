@@ -19,6 +19,18 @@
       "url": "https://raw.githubusercontent.com/gszabi99/War-Thunder-Datamine/5b801b3384d3220aa1a8f7d917425aad770fc2bf/aces.vromfs.bin_u/gamedata/flightmodels/fm/f-86a-5.blkx",
       "sha256": "8d43ff47c0ba2857f0ad18ba37bb87a5757440c04c25efc9c352abc6eca4b54a",
       "bytes": 44366
+    },
+    {
+      "name": "b-25j-1",
+      "url": "https://raw.githubusercontent.com/gszabi99/War-Thunder-Datamine/5b801b3384d3220aa1a8f7d917425aad770fc2bf/aces.vromfs.bin_u/gamedata/flightmodels/fm/b_25j_1.blkx",
+      "sha256": "ec402c7e0690fa4685391646926c12a1b12e4284b046fe1ac23c14d8ddeaf6c4",
+      "bytes": 65203
+    },
+    {
+      "name": "f-14a-early",
+      "url": "https://raw.githubusercontent.com/gszabi99/War-Thunder-Datamine/5b801b3384d3220aa1a8f7d917425aad770fc2bf/aces.vromfs.bin_u/gamedata/flightmodels/fm/f_14a_early.blkx",
+      "sha256": "02360d89dcf30faaab6cf830494e19caf0637c4d2fc5e448bf6e722f6735ebab",
+      "bytes": 70697
     }
   ]
 }
