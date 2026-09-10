@@ -11,7 +11,7 @@ import time
 from smoke_kmp_deb import smoke
 
 
-def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False):
+def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False, hud_renderer=None):
     flying = threading.Event()
     flying.set()
     requests = {}
@@ -112,7 +112,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 
     try:
         root = smoke(package, timeout, prepare=prepare, ready_check=ready, renderer=renderer, hud=hud, check_ui=check_ui,
-                     graceful_exit=graceful_exit, display_scale=display_scale)
+                     graceful_exit=graceful_exit, display_scale=display_scale, hud_renderer=hud_renderer)
     finally:
         print("Synthetic HTTP requests: " + json.dumps(requests), flush=True)
         server.shutdown()
@@ -234,6 +234,7 @@ if __name__ == "__main__":
     parser.add_argument("package", type=Path)
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--renderer", choices=("OPENGL", "SOFTWARE_FAST"), default="OPENGL")
+    parser.add_argument("--hud-renderer", choices=("OPENGL", "SOFTWARE_FAST"), help="Expected HUD renderer; defaults to --renderer")
     parser.add_argument("--no-hud", action="store_true", help="Isolate main-window rendering from the transparent HUD")
     parser.add_argument("--compatible-hud", action="store_true", help="Enable the full HUD through its persisted compatibility setting")
     parser.add_argument("--check-ui", action="store_true", help="Require five timely AWT heartbeats and fail on a two-second event-thread stall")
@@ -260,4 +261,4 @@ if __name__ == "__main__":
         parser.error("--tray-recovery requires --no-hud and --graceful-exit")
     if args.tray_background and (not args.graceful_exit or args.no_hud or args.tray_recovery):
         parser.error("--tray-background requires --graceful-exit and cannot use --no-hud or --tray-recovery")
-    recording_smoke(args.package.resolve(), args.timeout, args.renderer, not args.no_hud, args.check_ui, args.compatible_hud, args.graceful_exit, args.display_scale, args.jet, args.wep, args.wep_dropout, args.tray_recovery, args.tray_background)
+    recording_smoke(args.package.resolve(), args.timeout, args.renderer, not args.no_hud, args.check_ui, args.compatible_hud, args.graceful_exit, args.display_scale, args.jet, args.wep, args.wep_dropout, args.tray_recovery, args.tray_background, args.hud_renderer)

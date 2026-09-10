@@ -19,10 +19,10 @@ import wave
 import zipfile
 
 
-def check_reported_renderers(text, expected, hud=True):
+def check_reported_renderers(text, expected, hud=True, hud_renderer=None):
     """A reported fallback is a failed renderer check, not pending startup."""
-    windows = ["VoidMei · Kotlin"] + (["VoidMei HUD"] if hud else [])
-    for window in windows:
+    windows = [("VoidMei · Kotlin", expected)] + ([("VoidMei HUD", hud_renderer or expected)] if hud else [])
+    for window, expected in windows:
         reports = re.findall(r"\[" + re.escape(window) + r"\] 绘制后端：([^\r\n]+)", text)
         for actual in reports:
             if actual.strip() != expected:
@@ -31,7 +31,8 @@ def check_reported_renderers(text, expected, hud=True):
 
 
 def smoke(package, timeout, prepare=None, ready_check=None, renderer="OPENGL", hud=True, check_ui=False,
-          graceful_exit=False, display_scale=1):
+          graceful_exit=False, display_scale=1, hud_renderer=None):
+    hud_renderer = hud_renderer or renderer
     root = Path(tempfile.mkdtemp(prefix="voidmei-package-smoke-"))
     print("Smoke artifacts: %s" % root, flush=True)
     nix_package = package.is_dir()
@@ -95,7 +96,7 @@ def smoke(package, timeout, prepare=None, ready_check=None, renderer="OPENGL", h
             while time.monotonic() < deadline and process.poll() is None:
                 text = log.read_text(errors="replace")
                 try:
-                    check_reported_renderers(text, renderer, hud)
+                    check_reported_renderers(text, renderer, hud, hud_renderer)
                 except RuntimeError as error:
                     raise RuntimeError(str(error) + "; inspect " + str(log)) from error
                 latencies = [int(value) for value in re.findall(r"\[VoidMei UI\] latency_ms=(\d+)", text)]
@@ -103,7 +104,7 @@ def smoke(package, timeout, prepare=None, ready_check=None, renderer="OPENGL", h
                     raise RuntimeError("AWT event thread stalled for at least two seconds; inspect " + str(log))
                 if ((not check_ui or len(latencies) >= 5) and settings_file.exists() and
                         ("[VoidMei · Kotlin] 绘制后端：" + renderer) in text and
-                        (not hud or ("[VoidMei HUD] 绘制后端：" + renderer) in text) and
+                        (not hud or ("[VoidMei HUD] 绘制后端：" + hud_renderer) in text) and
                         (ready_check is None or ready_check(root))):
                     ready = True
                     break
@@ -146,7 +147,7 @@ def smoke(package, timeout, prepare=None, ready_check=None, renderer="OPENGL", h
         raise RuntimeError("Application wrote files into its unrelated working directory")
     report = {"package": str(package), "package_type": "nix" if nix_package else "deb",
               "sha256": None if nix_package else hashlib.sha256(package.read_bytes()).hexdigest(),
-              "packaged_voices": voices, "main_renderer": renderer, "hud_renderer": renderer if hud else None,
+              "packaged_voices": voices, "main_renderer": renderer, "hud_renderer": hud_renderer if hud else None,
               "isolated_settings": str(settings_file), "log": str(log),
               "awt_heartbeat_checked": check_ui, "awt_latency_ms": latencies if check_ui else None,
               "presentation_probe_only": "Presentation probe: SwingGraphics; full HUD bypassed" in text,
@@ -164,7 +165,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path)
     parser.add_argument("--timeout", type=float, default=45)
+    parser.add_argument("--renderer", choices=("OPENGL", "SOFTWARE_FAST"), default="OPENGL", help="Expected main-window renderer")
+    parser.add_argument("--hud-renderer", choices=("OPENGL", "SOFTWARE_FAST"), help="Expected HUD renderer; defaults to --renderer")
     args = parser.parse_args()
     if not 1 <= args.timeout <= 300:
         parser.error("timeout must be between 1 and 300 seconds")
-    smoke(args.package.resolve(), args.timeout)
+    smoke(args.package.resolve(), args.timeout, renderer=args.renderer, hud_renderer=args.hud_renderer)

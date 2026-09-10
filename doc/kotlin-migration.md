@@ -2407,6 +2407,16 @@ OpenGL 分发包回放未通过：隔离 Xvfb + xcompmgr 环境中，主窗口�
 
 修正冒烟脚本诊断：已经报告的实际后端不符合预期时立即报出窗口、预期和实际后端，以及日志位置，避免一直等到启动超时；正常的未就绪状态仍等待。3 项 Python 测试覆盖主窗/HUD 回退、初始等待和禁用 HUD 范围，CI 加入该检查，actionlint 通过。实际不匹配场景返回失败并给出明确错误（`/tmp/voidmei-renderer-mismatch-diagnostic.log`）。本轮仅更改测试工具，无应用代码变更或再次打包；物理 GPU 与真机闪烁仍待验证。
 
+### llvmpipe 主窗口回退原因与独立渲染预期
+
+对上一节失败进一步定位：移除 xcompmgr、显式选择 Mesa GLX、关闭 AWT XRender 均无改善；此前通过过的 `sb2ghri8nww6y2n5qdxyf6vy9alch7l3` 包在相同环境下也回退。`glxinfo -B` 则显示可用 OpenGL 4.6、适配器 `llvmpipe (LLVM 21.1.8, 256 bits)`。
+
+检查实际锁定 Skiko 0.9.22.2 JAR 字节码发现，Linux 原生 OpenGL redrawer 在创建上下文后还调用 `isVideoCardSupported`，而 Linux `llvmpipe.*` 与 `virgl.*` 被列为不支持；该分支抛出的消息同样是 `Cannot create Linux GL context`。因此上一节错误文字不能直接证明 GLX 无法创建上下文；当前 llvmpipe 本身已满足依赖库的回退条件。兼容 HUD 使用不同的 SwingGraphics 路径，实际仍可报告 OPENGL。没有绕过依赖库的适配器限制，也没有更改应用渲染默认值。
+
+冒烟工具增加独立 `--hud-renderer` 预期，默认仍与 `--renderer` 一致；就绪、及时失败和 JSON 报告使用各自预期。Linux CI 显式请求 OpenGL，并按 llvmpipe 环境检查主窗口 SOFTWARE_FAST、默认兼容 HUD OPENGL；普通 HUD 录制路径检查软件回退。4 项诊断测试及 actionlint 通过，远程 CI 尚未运行。
+
+本地最新 Nix 包通过默认启动、普通 HUD 录制与主窗 SOFTWARE_FAST / 兼容 HUD OPENGL 的 P-51C 回放；后者两端点各 86 次请求、UI 心跳、最终位置保存和正常退出码 0 通过。日志 `/tmp/voidmei-llvmpipe-default-package.log`、`/tmp/voidmei-llvmpipe-recording.log`、`/tmp/voidmei-capture-mixed-renderers.log`，证据副本 `/tmp/voidmei-llvmpipe-validation`。这是 Mesa 软件驱动下的行为验证，不代表主窗口硬件加速或物理 GPU 验收。本轮应用包未变。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

@@ -21,6 +21,15 @@ class RendererReportsTest(unittest.TestCase):
             check_reported_renderers("[VoidMei · Kotlin] 绘制后端：OPENGL\n"
                                      "[VoidMei · Kotlin] 绘制后端：SOFTWARE_FAST\n", "OPENGL")
 
+    def test_independent_hud_expectation_remains_strict(self):
+        reports = "[VoidMei · Kotlin] 绘制后端：SOFTWARE_FAST\n[VoidMei HUD] 绘制后端：OPENGL\n"
+        check_reported_renderers(reports, "SOFTWARE_FAST", hud_renderer="OPENGL")
+        with self.assertRaises(RuntimeError):
+            check_reported_renderers(reports, "SOFTWARE_FAST")
+        with self.assertRaises(RuntimeError):
+            check_reported_renderers(reports.replace("后端：OPENGL", "后端：SOFTWARE_FAST"),
+                                     "SOFTWARE_FAST", hud_renderer="OPENGL")
+
     def test_disabled_hud_does_not_participate_in_renderer_check(self):
         check_reported_renderers("[VoidMei · Kotlin] 绘制后端：OPENGL\n"
                                  "[VoidMei HUD] 绘制后端：SOFTWARE_FAST\n", "OPENGL", hud=False)
