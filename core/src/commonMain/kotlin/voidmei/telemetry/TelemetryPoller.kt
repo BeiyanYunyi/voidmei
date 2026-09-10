@@ -13,13 +13,14 @@ class TelemetryPoller(
     private val transport: TelemetryTransport,
     private val intervalMs: Long = 100,
     private val intervalProvider: (() -> Long)? = null,
+    private val timeSource: TimeSource = TimeSource.Monotonic,
 ) {
     init { require(intervalMs in 20..5000) }
 
     /** Cold flow: cancelling its collector cancels requests and polling together. */
     fun states(): Flow<ConnectionState> = flow {
         val calculator = FlightCalculator()
-        val origin = TimeSource.Monotonic.markNow()
+        val origin = timeSource.markNow()
         emit(ConnectionState.Connecting)
         while (currentCoroutineContext().isActive) {
             val next = try {

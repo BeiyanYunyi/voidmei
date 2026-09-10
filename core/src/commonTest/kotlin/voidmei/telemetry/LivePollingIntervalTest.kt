@@ -7,6 +7,38 @@ import kotlinx.coroutines.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LivePollingIntervalTest {
+    @Test fun customIntervalChangesKeepTheSepHistoryOnTheSameClock() = runTest {
+        var interval = 100L
+        val states = mutableListOf<ConnectionState>()
+        val transport = TelemetryTransport { path ->
+            if (path == "/state") {
+                // Constant +10 m/s energy-height rate, independent of request cadence.
+                val speed = kotlin.math.sqrt(10000.0 + 2 * FlightCalculator.G * 10 * currentTime / 1000.0) * 3.6
+                """{"valid":true,"TAS, km/h":$speed,"Vy, m/s":2}"""
+            } else """{"valid":true,"type":"test"}"""
+        }
+        val job = launch {
+            TelemetryPoller(transport, intervalProvider = { interval }, timeSource = testScheduler.timeSource)
+                .states().toList(states)
+        }
+        runCurrent()
+        advanceTimeBy(1000)
+        runCurrent()
+        interval = 80
+        advanceTimeBy(100)
+        runCurrent()
+        advanceTimeBy(800)
+        runCurrent()
+        job.cancelAndJoin()
+        val flying = states.filterIsInstance<ConnectionState.Flying>()
+        assertEquals(1, states.count { it == ConnectionState.Connecting })
+        assertEquals(22, flying.size)
+        assertNull(flying.first().metrics.specificExcessPowerMps)
+        flying.drop(1).forEach {
+            assertEquals(12.0, assertNotNull(it.metrics.specificExcessPowerMps), 1e-8)
+        }
+    }
+
     @Test fun intervalChangesPreserveOneContinuousConnectionAndCancelCleanly() = runTest {
         var interval = 100L
         val samples = mutableListOf<Long>()
