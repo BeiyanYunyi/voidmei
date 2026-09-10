@@ -2397,6 +2397,16 @@ Nix 构建及包内检查通过，新包 `/nix/store/gp3svvi9kak85nkdhd9x54w7av1
 
 Nix 构建及包内检查通过，新包 `/nix/store/1c2khw3ryxc430mhzcdxw926b5m2mww3-voidmei-kotlin-2.0.0`，试用入口 `/tmp/voidmei-kotlin-offline/bin/voidmei-kotlin` 已更新；日志 `/tmp/voidmei-radio-altitude-nix.log`。原始真机抓取未变，尚未进行真机单位换算验证。
 
+### 最新分发包完整 GUI 回归与渲染失败诊断
+
+以最新 Nix 包 `1c2khw3ryxc430mhzcdxw926b5m2mww3` 验证，144 项 GUI 测试和 12 项直接加载分发包 JAR 的窗口/输入测试全部通过，无失败、错误或跳过；日志 `/tmp/voidmei-current-full-gui.log`。结果副本 `/tmp/voidmei-current-validation-results`。
+
+本轮 P-51C 单帧回放在 SOFTWARE_FAST 下通过两端点各 84 次请求、UI 心跳、最终位置保存与正常退出码 0 检查；日志 `/tmp/voidmei-current-capture-software.log`，产物副本上述目录的 `software-capture`。原始抓取 SHA256 未变。
+
+OpenGL 分发包回放未通过：隔离 Xvfb + xcompmgr 环境中，主窗口报 `Cannot create Linux GL context` 后回退 SOFTWARE_FAST，兼容 HUD 为 OPENGL；显式选择 Mesa GLX 后仍相同。日志 `/tmp/voidmei-current-capture-opengl.log`、`/tmp/voidmei-current-capture-mesa.log`，失败产物保存在 `opengl-fallback`、`mesa-fallback`。主窗口失败原因待定位，不能将软件路径或历史 OpenGL 结果作为本轮 OpenGL 通过证据。最初未指定渲染器的回放被会话中断且无完成报告，不计通过。
+
+修正冒烟脚本诊断：已经报告的实际后端不符合预期时立即报出窗口、预期和实际后端，以及日志位置，避免一直等到启动超时；正常的未就绪状态仍等待。3 项 Python 测试覆盖主窗/HUD 回退、初始等待和禁用 HUD 范围，CI 加入该检查，actionlint 通过。实际不匹配场景返回失败并给出明确错误（`/tmp/voidmei-renderer-mismatch-diagnostic.log`）。本轮仅更改测试工具，无应用代码变更或再次打包；物理 GPU 与真机闪烁仍待验证。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

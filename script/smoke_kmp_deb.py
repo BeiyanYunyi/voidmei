@@ -19,6 +19,17 @@ import wave
 import zipfile
 
 
+def check_reported_renderers(text, expected, hud=True):
+    """A reported fallback is a failed renderer check, not pending startup."""
+    windows = ["VoidMei · Kotlin"] + (["VoidMei HUD"] if hud else [])
+    for window in windows:
+        reports = re.findall(r"\[" + re.escape(window) + r"\] 绘制后端：([^\r\n]+)", text)
+        for actual in reports:
+            if actual.strip() != expected:
+                raise RuntimeError("%s renderer mismatch: expected %s, actual %s" %
+                                   (window, expected, actual.strip()))
+
+
 def smoke(package, timeout, prepare=None, ready_check=None, renderer="OPENGL", hud=True, check_ui=False,
           graceful_exit=False, display_scale=1):
     root = Path(tempfile.mkdtemp(prefix="voidmei-package-smoke-"))
@@ -83,6 +94,10 @@ def smoke(package, timeout, prepare=None, ready_check=None, renderer="OPENGL", h
             deadline = time.monotonic() + timeout
             while time.monotonic() < deadline and process.poll() is None:
                 text = log.read_text(errors="replace")
+                try:
+                    check_reported_renderers(text, renderer, hud)
+                except RuntimeError as error:
+                    raise RuntimeError(str(error) + "; inspect " + str(log)) from error
                 latencies = [int(value) for value in re.findall(r"\[VoidMei UI\] latency_ms=(\d+)", text)]
                 if check_ui and ("[VoidMei UI] stalled_ms=" in text or any(value >= 2000 for value in latencies)):
                     raise RuntimeError("AWT event thread stalled for at least two seconds; inspect " + str(log))

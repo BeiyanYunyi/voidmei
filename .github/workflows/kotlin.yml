@@ -34,6 +34,7 @@ jobs:
         run: |
           python script/test_capture_flight_sequence.py
           python script/test_mock_messages.py
+          python script/test_smoke_renderers.py
       - name: Package desktop application
         shell: bash
         run: ./gradlew :desktop:packageDistributionForCurrentOS
