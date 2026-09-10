@@ -110,7 +110,12 @@ internal fun SwingGraphicsHudWindow(
 /** Clear every Swing container background, including children created during addNotify. */
 internal fun clearHudSwingBackgrounds(component: java.awt.Component) {
     component.background = Color(0, 0, 0, 0)
-    (component as? javax.swing.JComponent)?.isOpaque = false
+    (component as? javax.swing.JComponent)?.let {
+        it.isOpaque = it is BufferedHudComposePanel
+        // The HUD owns its complete-frame buffer. Do not route it through the
+        // RepaintManager buffer shared with other Swing windows.
+        it.isDoubleBuffered = false
+    }
     (component as? java.awt.Container)?.components?.forEach(::clearHudSwingBackgrounds)
     component.repaint()
 }

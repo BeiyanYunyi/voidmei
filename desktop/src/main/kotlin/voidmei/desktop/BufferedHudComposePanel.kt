@@ -9,13 +9,19 @@ import kotlin.math.ceil
 /** Present a complete Swing HUD frame in one blit, including its transparent pixels. */
 internal class BufferedHudComposePanel(content: javax.swing.JComponent) : javax.swing.JPanel(java.awt.BorderLayout()) {
     init {
-        isOpaque = false
+        // This component replaces every pixel, including alpha, in paint().
+        // Stop Swing from repainting/clearing transparent ancestors first.
+        isOpaque = true
+        isDoubleBuffered = false
         add(content, java.awt.BorderLayout.CENTER)
     }
     private var frame: BufferedImage? = null
 
     // Child Skia repaint requests must pass through this panel's complete-frame buffer.
     override fun isPaintingOrigin(): Boolean = true
+
+    // The offscreen frame is explicitly cleared below; never fill a Swing background.
+    override fun paintComponent(graphics: Graphics) = Unit
 
     override fun paint(graphics: Graphics) {
         if (width <= 0 || height <= 0) return

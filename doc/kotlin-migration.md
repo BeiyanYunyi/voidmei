@@ -2443,6 +2443,16 @@ Nix 构建及包内检查通过，新包 `/nix/store/rpdh1fwk5d0hpyzdm9pi3fzzn2h
 
 Nix 构建及包内检查通过，新包 `/nix/store/9q5ayy32djchrc5wa2d63nyrihwdwcxn-voidmei-kotlin-2.0.0`，试用入口已更新。P-51C 回放验证实际日志包含主窗请求 OPENGL / 实际 SOFTWARE_FAST、SkiaLayer 路径，以及 HUD OPENGL / SwingGraphics 路径、1× 缩放与设备信息限制。UI 心跳、最终位置保存和正常退出码 0 通过。日志 `/tmp/voidmei-renderer-details-nix.log`、`/tmp/voidmei-renderer-details-smoke.log`，产物 `/tmp/voidmei-renderer-details-artifacts`；仍属隔离 Mesa 软件驱动测试。
 
+### 遥测刷新与主窗口移动触发的兼容 HUD 空白
+
+用户确认使用 `nix run path:.#kotlin-offline` 和兼容 HUD，并观察到连接遥测后按刷新间隔闪烁、移动主窗口也会触发。扩展原生合成回归：每 100 ms 更新实际 HudPanel 遥测，同时移动独立 Compose 主窗口，在 HUD 不透明测试区域读取桌面像素；HUD 对象、可见性与边界保持不变。旧实现 5 秒 28425 次采样中出现 1 次底层红色（`/tmp/voidmei-main-move-before.log`）。
+
+仅关闭 HUD Swing 双缓冲仍失败，5 秒采到 2 次空白（`/tmp/voidmei-main-move-after.log`）。进一步将完整帧容器声明为 Swing 重绘边界，阻止透明祖先先参与清空/重绘，并禁止该子树叠加 Swing 双缓冲；容器自己在离屏图像中清除 alpha，覆盖 paintComponent 避免填充背景，再以 Src 提交完整像素。Swing 的 opaque 标记仅用于控制重绘传播，实际窗口透明度保留。主窗口和全局 RepaintManager 未改。
+
+修复后短测通过，再延长到 15 秒：OpenGL 88242 次采样无空白，透明、半透明和旧像素清除测试通过（`/tmp/voidmei-main-move-opengl-long.log`）；桌面单元测试包含分数缩放与 alpha 回归也通过。结果副本 `/tmp/voidmei-repaint-boundary-results/opengl`。环境为 Xvfb + xcompmgr、Mesa 软件驱动，主窗口可按 Skiko 规则回退软件渲染，不等于用户物理 NVIDIA/游戏合成路径的验收。
+
+SOFTWARE_FAST 后端 15 秒 82347 次采样无空白，透明度与 6 项窗口 GUI 通过（`/tmp/voidmei-main-move-software.log`）。Nix 构建及包内检查通过，输出 `/nix/store/fzdr89fvazwsq8wf6r3w0qaqx8lwkqws-voidmei-kotlin-2.0.0`，入口 `/tmp/voidmei-kotlin-offline/bin/voidmei-kotlin` 已更新。直接加载该包的 12 项窗口/原生输入测试通过（`/tmp/voidmei-repaint-boundary-input.log`），覆盖移动、关闭、穿透及恢复。用户需完全退出后以 `nix run path:.#kotlin-offline` 重启，继续在真实游戏中复测。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

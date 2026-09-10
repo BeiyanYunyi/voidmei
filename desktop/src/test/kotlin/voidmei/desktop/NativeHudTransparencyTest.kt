@@ -2,6 +2,12 @@ package voidmei.desktop
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.window.Window
+import voidmei.config.AppSettings
+import voidmei.telemetry.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -26,8 +32,13 @@ class NativeHudTransparencyTest {
         check(System.getenv("VOIDMEI_TEST_COMPOSITED_X11") == "1")
         var native: java.awt.Window? = null
         var phase by mutableStateOf(false)
+        var mainWindow: java.awt.Window? = null
+        val telemetry = TelemetryParser.parse("""{"valid":true,"IAS, km/h":380,"H, m":91,"Mfuel, kg":220}""", """{"valid":true,"type":"p-51c-10-nt"}""")!!
         val background = JFrame("VoidMei repaint test background")
-        val timer = javax.swing.Timer(16) { phase = !phase }
+        val timer = javax.swing.Timer(100) {
+            phase = !phase
+            mainWindow?.setLocation(if (phase) 520 else 540, 80)
+        }
         try {
             compose.runOnIdle {
                 background.isUndecorated = true
@@ -37,12 +48,23 @@ class NativeHudTransparencyTest {
                 background.isVisible = true
             }
             compose.setContent {
+                Window(onCloseRequest = {}, title = "VoidMei moving main-window regression",
+                    state = rememberWindowState(position = WindowPosition.Absolute(520.dp, 80.dp), width = 300.dp, height = 200.dp)) {
+                    SideEffect { mainWindow = window }
+                    MaterialTheme { Text("IAS ${if (phase) 380 else 381}") }
+                }
                 SwingGraphicsHudWindow(rememberWindowState(position = WindowPosition.Absolute(80.dp, 80.dp),
                     width = 240.dp, height = 120.dp), {}) {
                     SideEffect { native = window }
+                    Box(Modifier.fillMaxSize()) {
+                    MaterialTheme {
+                        HudPanel(ConnectionState.Flying(telemetry.copy(iasKmh = if (phase) 380.0 else 381.0), FlightMetrics()),
+                            AppSettings(hudAttitude = false, hudMechanization = false), emptyList(), null) { Text("HUD") }
+                    }
                     Canvas(Modifier.fillMaxSize()) {
                         drawRect(if (phase) Color.Green else Color.Cyan,
                             Offset(size.width / 3, 0f), Size(size.width * 2 / 3, size.height))
+                    }
                     }
                 }
             }
@@ -57,21 +79,24 @@ class NativeHudTransparencyTest {
             fun opaque(c: java.awt.Color) = c.red <= 3 && c.green >= 252 && (c.blue <= 3 || c.blue >= 252)
             compose.waitUntil(5000) { robot.getPixelColor(60, 60) == java.awt.Color.RED && opaque(sample()) }
             val originalBounds = window.bounds
+            val mainPositions = mutableSetOf<Int>()
             val colors = mutableSetOf<Int>()
             val unexpected = mutableMapOf<Int, Int>()
             var samples = 0
             compose.runOnIdle { timer.start() }
             val started = System.nanoTime()
-            compose.waitUntil(10000) {
+            compose.waitUntil(25000) {
+                mainWindow?.let { mainPositions += it.x }
                 val pixel = sample()
                 colors += pixel.rgb
                 if (!opaque(pixel)) unexpected[pixel.rgb] = (unexpected[pixel.rgb] ?: 0) + 1
                 assertEquals(originalBounds, window.bounds)
                 assertSame(window, native)
                 assertTrue(window.isVisible)
-                ++samples >= 200 && System.nanoTime() - started >= 5_000_000_000L
+                ++samples >= 200 && System.nanoTime() - started >= 15_000_000_000L
             }
             println("Continuous HUD repaint: $samples pixel samples over ${(System.nanoTime() - started) / 1_000_000} ms; colors=$colors unexpected=$unexpected")
+            assertTrue(mainPositions.size >= 2, "Main-window movement must occur during HUD updates")
             assertTrue(colors.size >= 2, "Repaint must actually change the sampled color")
             assertTrue(unexpected.isEmpty(), "Opaque HUD region vanished during repaint: $unexpected / $samples samples")
         } finally {
