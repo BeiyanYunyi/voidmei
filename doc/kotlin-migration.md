@@ -2571,6 +2571,14 @@ SOFTWARE_FAST 后端 15 秒 82347 次采样无空白，透明度与 6 项窗口 
 
 共享 JVM/JS 与桌面单元回归通过（`/tmp/voidmei-live-interval-sep.log`）。运行时默认行为保持不变，本轮未重建 Nix 包。
 
+### 自定义间隔的包级录制验证
+
+Nix 包构建通过：`/nix/store/l4s81lbcm5ni8q74c7zxf9qawavhcij2-voidmei-kotlin-2.0.0`，包含自定义刷新间隔及最近试听取消、语音包完整数据校验（`/tmp/voidmei-custom-interval-package.log`）。录制冒烟工具新增 `--poll-interval-ms`，校验 20–5000 整数范围，写入隔离配置并在退出后核对保存值；报告包含核对后的间隔，不把配置值当作精确实测采样周期。
+
+在隔离 X11 中使用 80 ms、兼容 HUD、WEP 及油门缺失恢复运行新包，通过 102 组配对样本、96 个 WEP 估计、三帧缺失恢复、界面心跳与正常退出（`/tmp/voidmei-custom-interval-smoke.log`；报告和 CSV 副本 `/tmp/voidmei-custom-interval-artifacts/`）。请求 OPENGL，实际主窗口 SOFTWARE_FAST、HUD OPENGL，属于已知 llvmpipe 环境。
+
+CI 的 WEP/托盘恢复录制场景加入 80 ms 参数，actionlint 通过；远程 CI 尚未运行。本结果不代替真机音频或动态飞行验收。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

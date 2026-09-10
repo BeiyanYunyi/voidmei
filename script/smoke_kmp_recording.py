@@ -11,7 +11,9 @@ import time
 from smoke_kmp_deb import smoke
 
 
-def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False, hud_renderer=None):
+def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False, hud_renderer=None, poll_interval_ms=100):
+    if not isinstance(poll_interval_ms, int) or isinstance(poll_interval_ms, bool) or not 20 <= poll_interval_ms <= 5000:
+        raise ValueError("poll interval must be an integer between 20 and 5000 ms")
     flying = threading.Event()
     flying.set()
     requests = {}
@@ -62,7 +64,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 
     def prepare(root):
         settings = {"version": 1, "recordingAutoStart": True, "hudCompatibilityMode": compatible_hud,
-                    "hudEnabled": True}
+                    "hudEnabled": True, "pollIntervalMs": poll_interval_ms}
         if tray_background:
             settings["startInTray"] = True
             (root / "require-tray-background").touch()
@@ -210,7 +212,10 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
         raise RuntimeError("Booster recording did not cover positive, zero and missing samples")
     if response_values != {None, 0.0}:
         raise RuntimeError("Recording did not preserve the transition from unknown to zero engine response")
-    report = {"samples": len(flight), "flight_csv": str(flight_file), "engine_csv": str(engine_file),
+    saved = json.loads((root / "config/settings-kmp.json").read_text())
+    if saved.get("pollIntervalMs") != poll_interval_ms:
+        raise RuntimeError("Configured poll interval was not preserved")
+    report = {"poll_interval_ms_checked": poll_interval_ms, "samples": len(flight), "flight_csv": str(flight_file), "engine_csv": str(engine_file),
               "graceful_exit_checked": graceful_exit,
               "tray_recovery_checked": tray_recovery,
               "tray_background_checked": tray_background,
@@ -232,6 +237,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path)
+    parser.add_argument("--poll-interval-ms", type=int, default=100, help="Configured polling delay, 20–5000 ms")
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--renderer", choices=("OPENGL", "SOFTWARE_FAST"), default="OPENGL")
     parser.add_argument("--hud-renderer", choices=("OPENGL", "SOFTWARE_FAST"), help="Expected HUD renderer; defaults to --renderer")
@@ -247,6 +253,8 @@ if __name__ == "__main__":
     parser.add_argument("--tray-recovery", action="store_true", help="Verify --no-hud shows the main window despite the saved tray startup preference")
     parser.add_argument("--wep-dropout", action="store_true", help="Temporarily omit throttle while flying; requires --wep")
     args = parser.parse_args()
+    if not 20 <= args.poll_interval_ms <= 5000:
+        parser.error("--poll-interval-ms must be between 20 and 5000")
     if args.wep_dropout and not args.wep:
         parser.error("--wep-dropout requires --wep")
     if args.wep and args.jet:
@@ -261,4 +269,4 @@ if __name__ == "__main__":
         parser.error("--tray-recovery requires --no-hud and --graceful-exit")
     if args.tray_background and (not args.graceful_exit or args.no_hud or args.tray_recovery):
         parser.error("--tray-background requires --graceful-exit and cannot use --no-hud or --tray-recovery")
-    recording_smoke(args.package.resolve(), args.timeout, args.renderer, not args.no_hud, args.check_ui, args.compatible_hud, args.graceful_exit, args.display_scale, args.jet, args.wep, args.wep_dropout, args.tray_recovery, args.tray_background, args.hud_renderer)
+    recording_smoke(args.package.resolve(), args.timeout, args.renderer, not args.no_hud, args.check_ui, args.compatible_hud, args.graceful_exit, args.display_scale, args.jet, args.wep, args.wep_dropout, args.tray_recovery, args.tray_background, args.hud_renderer, args.poll_interval_ms)
