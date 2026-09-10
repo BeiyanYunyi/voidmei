@@ -1,0 +1,24 @@
+{
+  "repository": "https://github.com/gszabi99/War-Thunder-Datamine",
+  "commit": "5b801b3384d3220aa1a8f7d917425aad770fc2bf",
+  "files": [
+    {
+      "name": "p-51d-20-na",
+      "url": "https://raw.githubusercontent.com/gszabi99/War-Thunder-Datamine/5b801b3384d3220aa1a8f7d917425aad770fc2bf/aces.vromfs.bin_u/gamedata/flightmodels/fm/p-51d-20-na.blkx",
+      "sha256": "e749d5e87ce39f37d8b9007aa3783f27df7fff2d9e1d2e21c31a2fcaee8b2179",
+      "bytes": 36898
+    },
+    {
+      "name": "bf-109g-6",
+      "url": "https://raw.githubusercontent.com/gszabi99/War-Thunder-Datamine/5b801b3384d3220aa1a8f7d917425aad770fc2bf/aces.vromfs.bin_u/gamedata/flightmodels/fm/bf-109g-6.blkx",
+      "sha256": "46b72e696b0a9ac288e29186c1d1b461b67b93b639c8d2a8e802337791bdbb96",
+      "bytes": 20456
+    },
+    {
+      "name": "f-86a-5",
+      "url": "https://raw.githubusercontent.com/gszabi99/War-Thunder-Datamine/5b801b3384d3220aa1a8f7d917425aad770fc2bf/aces.vromfs.bin_u/gamedata/flightmodels/fm/f-86a-5.blkx",
+      "sha256": "8d43ff47c0ba2857f0ad18ba37bb87a5757440c04c25efc9c352abc6eca4b54a",
+      "bytes": 44366
+    }
+  ]
+}

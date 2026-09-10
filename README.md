@@ -1,5 +1,23 @@
 # VoidMei - 战争雷霆8111端口Java图形前端
 
+正在迁移到 **Kotlin Multiplatform + Compose Desktop**。新代码位于 `core/` 和 `desktop/`，
+当前提供遥测主窗口与 HUD，完整替换尚未完成。运行方式、迁移范围和验收清单见
+[Kotlin 迁移说明](doc/kotlin-migration.md)。首次试用可按 [Kotlin 版试用步骤](doc/kotlin-quick-start.md)
+连接模拟遥测、调整 HUD、导入旧设置并录制。下文是原 Java 版本的构建与使用方式。
+
+NixOS 上可在源码目录运行 `nix run path:.#kotlin -- --no-hud` 启动 Kotlin 开发版，
+再从界面开启 HUD。该入口会先用 Gradle 构建应用；默认 `nix run path:.` 仍启动旧版。
+独立 Kotlin 包可用 `nix run path:.#kotlin-offline -- --no-hud` 运行，启动时无需 Gradle 或可写源码目录。
+首次构建仍需下载固定哈希的依赖；运行与迁移限制见上方说明。
+Linux 新配置默认使用兼容 HUD 显示路径，可使用 OpenGL；已有配置保留原选择。
+旧 Kotlin 配置若尚未保存过该选项，也会采用当前平台默认值。
+若开启 HUD 后无响应，可用 `--no-hud` 恢复启动，再启用“HUD 兼容显示”。
+Linux/Windows 提供“HUD 鼠标穿透”开关，默认关闭。开启后点击会交给下方窗口；
+需回到主窗口关闭穿透后才能拖动或点击 HUD。Linux 的 X11 输入测试已通过；
+Windows 实现尚待实际桌面验证，macOS 尚未支持。
+Windows 另提供“切出游戏时隐藏 HUD”，默认关闭；检测失败时保持显示，
+自动隐藏不停止遥测或录制。这项前台检测也仍待 Windows 实机验证。
+
 # 工作原理
 - 通过HTTP/GET请求读取127.0.01:8111端口中的飞行状态(state)以及飞行仪表(indicators)数据
 - 解析离线拆包的气动模型文件(FM blkx)
