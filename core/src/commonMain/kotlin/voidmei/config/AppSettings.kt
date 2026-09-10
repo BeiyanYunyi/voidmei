@@ -2,6 +2,7 @@ package voidmei.config
 
 import kotlinx.serialization.json.*
 import voidmei.telemetry.HudField
+import voidmei.telemetry.HudAltitudeMode
 
 data class WindowPosition(val x: Float, val y: Float) {
     init { require(x.isFinite() && y.isFinite()) }
@@ -54,6 +55,7 @@ data class AppSettings(
     val hudUnitColor: String? = null,
     val hudAttitudeAoaLimits: Boolean = true,
     val hudNumberFont: String? = null,
+    val hudAltitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL,
 ) {
     init {
         require(hudNumberFont == null || (hudNumberFont.isNotBlank() && hudNumberFont.length <= 200 && hudNumberFont.none { it.isISOControl() }))
@@ -130,6 +132,10 @@ object SettingsJson {
             } ?: defaults.recordingAutoStart,
             endpoint = root["endpoint"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.endpoint,
             pollIntervalMs = root["pollIntervalMs"]?.jsonPrimitive?.long ?: defaults.pollIntervalMs,
+            hudAltitudeMode = root["hudAltitudeMode"]?.jsonPrimitive?.let { value ->
+                require(value.isString)
+                HudAltitudeMode.entries.firstOrNull { it.id == value.content } ?: error("Unknown HUD altitude mode")
+            } ?: defaults.hudAltitudeMode,
             hudNumberFont = root["hudNumberFont"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
             hudLabelColor = root["hudLabelColor"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
             hudValueColor = root["hudValueColor"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
@@ -227,6 +233,7 @@ object SettingsJson {
         fields["hudHiddenLabels"] = JsonArray(settings.hudHiddenLabels.map(::JsonPrimitive))
         fields["hudFields"] = JsonArray(settings.hudFields.map(::JsonPrimitive))
         fields["hudCompassHeadingUp"] = JsonPrimitive(settings.hudCompassHeadingUp)
+        fields["hudAltitudeMode"] = JsonPrimitive(settings.hudAltitudeMode.id)
         fields["hudNumberFont"] = settings.hudNumberFont?.let(::JsonPrimitive) ?: JsonNull
         fields["hudAttitudeAoaLimits"] = JsonPrimitive(settings.hudAttitudeAoaLimits)
         fields["hudAttitudeEarthFixed"] = JsonPrimitive(settings.hudAttitudeEarthFixed)

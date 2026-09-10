@@ -477,17 +477,19 @@ private fun FlightAnalysisPanel(metrics: FlightMetrics) {
 }
 
 @Composable
-internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = false, fields: List<HudField> = HudField.selected(HudField.defaults), mechanization: Boolean = true, model: AircraftAlertModel? = null, thermal: EngineThermalObservation? = null, showGear: Boolean = true, showFlaps: Boolean = true, showAirbrake: Boolean = true, aoaBarWarningPercent: Double = 25.0, aoaWarningPercent: Double = 20.0, readingAlerts: List<FlightAlert> = emptyList(), showFlapBar: Boolean = true, compassHeadingUp: Boolean = false, hiddenLabels: List<String> = emptyList()) {
+internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = false, fields: List<HudField> = HudField.selected(HudField.defaults), mechanization: Boolean = true, model: AircraftAlertModel? = null, thermal: EngineThermalObservation? = null, showGear: Boolean = true, showFlaps: Boolean = true, showAirbrake: Boolean = true, aoaBarWarningPercent: Double = 25.0, aoaWarningPercent: Double = 20.0, readingAlerts: List<FlightAlert> = emptyList(), showFlapBar: Boolean = true, compassHeadingUp: Boolean = false, hiddenLabels: List<String> = emptyList(), altitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL) {
     val t = flight.telemetry
+    val altitude = if (compact) altitudeMode.reading(flight) else HudAltitudeMode.SEA_LEVEL.reading(flight)
+    fun readingUnit(field: HudField) = if (field == HudField.ALTITUDE) altitude.unit else field.unitFor(t, flight.metrics, model)
     val rows = fields.map { field ->
-        val value = field.value(flight, model)
+        val value = if (field == HudField.ALTITUDE) altitude.metres else field.value(flight, model)
         field.label to if (field == HudField.HEAT_TOLERANCE) {
             val range = thermal?.hudBudget(flight, model)
             formatThermalBudget(range)
         } else if (field == HudField.WEP_TIME) formatFuelTimeUpperBound(value)
         else if (field == HudField.WEP_FUEL) "${roundUpperBound(value, 1).display(1)} kg"
         else if (field == HudField.ENDURANCE_CLOCK) formatFuelTime(value)
-            else "${value.display(field.decimalsFor(flight.metrics))} ${field.unitFor(t, flight.metrics, model)}".trimEnd()
+            else "${value.display(field.decimalsFor(flight.metrics))} ${readingUnit(field)}".trimEnd()
     }
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 16.dp)) {
         val aoaMargin = if (compact && HudField.AOA in fields) PositiveAoaMargin.fromTelemetry(t, model) else null
@@ -504,7 +506,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
                 warnings[index] = alert.label
         }
         val unitRanges = fields.mapIndexedNotNull { index, field ->
-            val suffix = field.unitFor(t, flight.metrics, model)
+            val suffix = readingUnit(field)
             val unit = if (field == HudField.ENGINE1_MANIFOLD_AUTO && flight.metrics.cockpitAltitudeUnit == null) ""
                 else suffix.substringBefore(" · ")
             val value = rows[index].second

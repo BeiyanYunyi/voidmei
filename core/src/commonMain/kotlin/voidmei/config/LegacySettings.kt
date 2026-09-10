@@ -1,5 +1,7 @@
 package voidmei.config
 
+import voidmei.telemetry.HudAltitudeMode
+
 data class LegacyCrosshairImage(val name: String, val enabled: Boolean?, val sizeDp: Int?)
 
 data class UnmigratedLegacySetting(val label: String, val target: String)
@@ -12,13 +14,14 @@ data class LegacySettings(val intervalMs: Long?, val hudEnabled: Boolean?, val v
     val recordingAutoStart: Boolean? = null,
     val hudGear: Boolean? = null, val hudFlaps: Boolean? = null, val hudAirbrake: Boolean? = null,
     val hudAoaBarWarningPercent: Double? = null, val hudAoaWarningPercent: Double? = null, val hudFlapBar: Boolean? = null,
-    val hudCompassHeadingUp: Boolean? = null, val startInTray: Boolean? = null, val hiddenLabelChoices: Map<String, Boolean> = emptyMap(), val hudCrosshair: Boolean? = null, val hudCrosshairSizeDp: Int? = null, val hudCrosshairImage: String? = null, val pendingCrosshairImage: LegacyCrosshairImage? = null, val hudCrosshairStretch: Boolean? = null, val hudReadingColors: Map<String, String> = emptyMap(), val hudAttitudeAoaLimits: Boolean? = null, val hudNumberFont: String? = null) {
+    val hudCompassHeadingUp: Boolean? = null, val startInTray: Boolean? = null, val hiddenLabelChoices: Map<String, Boolean> = emptyMap(), val hudCrosshair: Boolean? = null, val hudCrosshairSizeDp: Int? = null, val hudCrosshairImage: String? = null, val pendingCrosshairImage: LegacyCrosshairImage? = null, val hudCrosshairStretch: Boolean? = null, val hudReadingColors: Map<String, String> = emptyMap(), val hudAttitudeAoaLimits: Boolean? = null, val hudNumberFont: String? = null, val hudAltitudeMode: HudAltitudeMode? = null) {
     val movesCrosshairRight: Boolean get() = hudCrosshair == true || hudCrosshairSizeDp != null || hudCrosshairImage != null
-    val hasChanges: Boolean get() = hudNumberFont != null || hudAttitudeAoaLimits != null || hudReadingColors.isNotEmpty() || intervalMs != null || hudEnabled != null || voiceEnabled != null ||
+    val hasChanges: Boolean get() = hudAltitudeMode != null || hudNumberFont != null || hudAttitudeAoaLimits != null || hudReadingColors.isNotEmpty() || intervalMs != null || hudEnabled != null || voiceEnabled != null ||
         voiceVolume != null || alertVoices.isNotEmpty() || hudFieldChoices.isNotEmpty() ||
         hudAttitude != null || hudAutoHideOnFocusLoss != null || recordingAutoStart != null ||
         hudGear != null || hudFlaps != null || hudAirbrake != null || hudAoaBarWarningPercent != null || hudAoaWarningPercent != null || hudFlapBar != null || hudCompassHeadingUp != null || startInTray != null || hiddenLabelChoices.isNotEmpty() || hudCrosshair != null || hudCrosshairSizeDp != null || hudCrosshairImage != null || hudCrosshairStretch != null
     fun applyTo(current: AppSettings) = current.copy(
+        hudAltitudeMode = hudAltitudeMode ?: current.hudAltitudeMode,
         hudNumberFont = hudNumberFont ?: current.hudNumberFont,
         hudAttitudeAoaLimits = hudAttitudeAoaLimits ?: current.hudAttitudeAoaLimits,
         hudLabelColor = hudReadingColors["fontLabel"] ?: current.hudLabelColor,
@@ -137,7 +140,7 @@ object LegacySettingsReader {
         val targets = mutableMapOf<String, Pair<String, String>>()
         val voiceKeys = voidmei.telemetry.FlightAlert.entries.map { "voice_${it.voice}" }.toSet()
         val colorKeys = setOf("fontLabel", "fontNum", "fontUnit", "fontWarn", "fontShade")
-        val supported = colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
+        val supported = colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("alwaysShowRadarAltitude", "MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
         fun walk(node: Node) {
             val children = node.children ?: return
             val kind = children.firstOrNull()?.takeUnless { it.quoted }?.atom
@@ -280,7 +283,7 @@ object LegacySettingsReader {
                 flag("disableHUDSEPLabel")?.let { put("sep", it) }
             }, showCrosshair, crosshairSize, pendingCrosshairImage = if (!vectorCrosshair)
                 LegacyCrosshairImage(crosshairName!!, flag("displayCrosshair"),
-                    targets["crosshairScale"]?.second?.toIntOrNull()?.times(2)?.takeIf { it in 24..400 }) else null, hudNumberFont = numberFont, hudReadingColors = readingColors, hudAttitudeAoaLimits = flag("attitudeIndicatorDisplayAoALimits")).also {
+                    targets["crosshairScale"]?.second?.toIntOrNull()?.times(2)?.takeIf { it in 24..400 }) else null, hudAltitudeMode = flag("alwaysShowRadarAltitude")?.let { if (it) HudAltitudeMode.ALWAYS_RADAR else HudAltitudeMode.LOW_RADAR }, hudNumberFont = numberFont, hudReadingColors = readingColors, hudAttitudeAoaLimits = flag("attitudeIndicatorDisplayAoALimits")).also {
             require(it.hasChanges || it.unmigrated.isNotEmpty()) { "未找到可迁移的设置" }
         }
     }

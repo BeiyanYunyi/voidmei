@@ -2417,6 +2417,16 @@ OpenGL 分发包回放未通过：隔离 Xvfb + xcompmgr 环境中，主窗口�
 
 本地最新 Nix 包通过默认启动、普通 HUD 录制与主窗 SOFTWARE_FAST / 兼容 HUD OPENGL 的 P-51C 回放；后者两端点各 86 次请求、UI 心跳、最终位置保存和正常退出码 0 通过。日志 `/tmp/voidmei-llvmpipe-default-package.log`、`/tmp/voidmei-llvmpipe-recording.log`、`/tmp/voidmei-capture-mixed-renderers.log`，证据副本 `/tmp/voidmei-llvmpipe-validation`。这是 Mesa 软件驱动下的行为验证，不代表主窗口硬件加速或物理 GPU 验收。本轮应用包未变。
 
+### HUD 高度来源与旧自动雷达切换
+
+新增持久化 `hudAltitudeMode`：默认 sea_level 显示海拔；low_radar 在有效雷达估计高度 ≤500 m 时切换；always_radar 始终优先使用有效雷达估计。雷达值或高度表单位推断不可用时回到海拔，海拔也缺失时显示未知。显示雷达数据时附加“雷达估计”，使用之前的同单位假定；不改变独立雷达字段、原始遥测、记录与告警。
+
+设置面板新增三种来源选择，恢复默认回到海拔。旧 `alwaysShowRadarAltitude=true` 导入为始终优先，false 导入为低空优先；缺省保留当前选择。预览说明目标来源及回退行为。非紧凑主窗口始终显示海拔。
+
+JVM/JS、桌面单元与 HUD 回归通过（`/tmp/voidmei-hud-altitude-mode.log`），覆盖严格配置解析、旧布尔值含义、500 m 边界按换算后米值判断、未知/非法雷达和数据源切换。新增界面操作回归验证选择与恢复默认，3 项 RadioAltitudeGuiTest 全部通过（`/tmp/voidmei-altitude-controls.log`）。真机雷达仪表单位假定仍未验证。
+
+Nix 构建及包内检查通过，新包 `/nix/store/4r6nb5yrff7sjprsgfhwrq863f4y3ws0-voidmei-kotlin-2.0.0`，试用入口 `/tmp/voidmei-kotlin-offline/bin/voidmei-kotlin` 已更新；日志 `/tmp/voidmei-altitude-mode-nix.log`。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

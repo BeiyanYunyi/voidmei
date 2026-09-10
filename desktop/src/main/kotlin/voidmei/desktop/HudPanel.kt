@@ -89,7 +89,7 @@ private fun HudPanelContent(
             flight?.let {
                 FlightPanel(it, compact = true, fields = fields,
                     mechanization = settings.hudMechanization, model = model, thermal = thermal,
-                    showGear = settings.hudGear, showFlaps = settings.hudFlaps, showAirbrake = settings.hudAirbrake, aoaBarWarningPercent = settings.hudAoaBarWarningPercent, aoaWarningPercent = settings.hudAoaWarningPercent, readingAlerts = alerts, showFlapBar = settings.hudFlapBar, compassHeadingUp = settings.hudCompassHeadingUp, hiddenLabels = settings.hudHiddenLabels)
+                    showGear = settings.hudGear, showFlaps = settings.hudFlaps, showAirbrake = settings.hudAirbrake, aoaBarWarningPercent = settings.hudAoaBarWarningPercent, aoaWarningPercent = settings.hudAoaWarningPercent, readingAlerts = alerts, showFlapBar = settings.hudFlapBar, compassHeadingUp = settings.hudCompassHeadingUp, hiddenLabels = settings.hudHiddenLabels, altitudeMode = settings.hudAltitudeMode)
                 if (HudField.HEADING in fields && mapEndpoint != null) key(it.telemetry.aircraft) {
                     HudMapGrid(mapEndpoint, sharedMap)
                 }

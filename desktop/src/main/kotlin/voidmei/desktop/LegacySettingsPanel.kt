@@ -70,6 +70,7 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
                 }
             }
             if (!imported.hasChanges) Text("此文件没有可应用的设置。")
+            imported.hudAltitudeMode?.let { Text("HUD 高度来源：${it.label}（雷达单位未判定时使用海拔）") }
             imported.hudNumberFont?.let { Text("HUD 表格数字字体：$it（需在当前系统安装）") }
             if (imported.hudReadingColors.isNotEmpty()) {
                 Text("配色仅应用于 HUD 飞行与发动机表格；旧版其他文字和图形填充尚未迁移。RGBA 末两位为透明度。")
