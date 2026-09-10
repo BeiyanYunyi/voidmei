@@ -274,14 +274,7 @@ fun main(args: Array<String>) {
                             Text(it, color = MaterialTheme.colorScheme.error)
                             TextButton(enabled = !closing, onClick = { closeApp(saveSettings = false) }) { Text("不保存并退出") }
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("刷新间隔 ${settings.pollIntervalMs} ms")
-                            listOf(50L, 100L, 250L, 500L).forEach { interval ->
-                                FilterChip(selected = settings.pollIntervalMs == interval,
-                                    onClick = { settings = settings.copy(pollIntervalMs = interval) },
-                                    label = { Text("$interval ms") })
-                            }
-                        }
+                        PollingIntervalSettings(settings.pollIntervalMs) { settings = settings.copy(pollIntervalMs = it) }
                         Text("HUD 背景不透明度 ${(settings.hudOpacity * 100).toInt()}%")
                         Slider(value = settings.hudOpacity, onValueChange = { settings = settings.copy(hudOpacity = it) }, valueRange = 0f..1f)
                         TextButton(onClick = {
