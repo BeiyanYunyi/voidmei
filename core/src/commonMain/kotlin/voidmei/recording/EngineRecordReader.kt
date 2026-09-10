@@ -5,9 +5,10 @@ data class EngineRecordSummary(val index: Int, val samples: Int, val firstSample
     val firstEpochMs: Long, val lastEpochMs: Long, val ranges: Map<String, RecordedRange>)
 
 object EngineRecordReader {
-    fun summarize(text: String): List<EngineRecordSummary> {
+    fun summarize(text: String, checkActive: () -> Unit = {}): List<EngineRecordSummary> {
+        checkActive()
         require(text.length <= FlightRecordReader.MAX_BYTES) { "记录超过 64 MiB 限制" }
-        val rows = FlightRecordReader.rows(text.removePrefix("\uFEFF")).iterator()
+        val rows = FlightRecordReader.rows(text.removePrefix("\uFEFF"), checkActive).iterator()
         require(rows.hasNext()) { "记录为空" }
         val header = rows.next()
         require(header.distinct().size == header.size && header.none { it.isEmpty() }) { "CSV 表头包含重复或空列名" }
@@ -20,6 +21,7 @@ object EngineRecordReader {
         var previousEpoch = -1L
         var rowCount = 0
         while (rows.hasNext()) {
+            checkActive()
             val row = rows.next()
             require(++rowCount <= 1_000_000) { "记录超过一百万条" }
             require(row.size == header.size) { "第 ${rowCount + 1} 条记录列数不符" }

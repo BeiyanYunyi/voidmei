@@ -14,13 +14,24 @@ import java.nio.file.Path
 import java.time.Instant
 import java.util.Locale
 
-internal fun readFlightText(path: Path, charset: java.nio.charset.Charset = Charsets.UTF_8): String {
+internal fun readFlightText(path: Path, charset: java.nio.charset.Charset = Charsets.UTF_8, checkActive: () -> Unit = {}): String {
+    checkActive()
     require(Files.isRegularFile(path)) { "请选择普通 CSV 文件" }
     return Files.newInputStream(path).use {
-    val bytes = it.readNBytes(FlightRecordReader.MAX_BYTES + 1)
-    require(bytes.size <= FlightRecordReader.MAX_BYTES) { "记录超过 64 MiB 限制" }
+    val output = java.io.ByteArrayOutputStream()
+    val buffer = ByteArray(8192)
+    while (true) {
+        checkActive()
+        val count = it.read(buffer)
+        if (count < 0) break
+        require(output.size() + count <= FlightRecordReader.MAX_BYTES) { "记录超过 64 MiB 限制" }
+        output.write(buffer, 0, count)
+    }
+    val bytes = output.toByteArray()
+    checkActive()
     val text = charset.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
         .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString()
+    checkActive()
     text
     }
 }
@@ -72,9 +83,11 @@ internal fun RecordingAnalysisPanel(chooseFile: (String) -> String? = ::chooseCs
             scope.launch {
                 try {
                     val loaded = withContext(Dispatchers.IO) {
-                        val original = readFlightText(Path.of(selected), if (selectedLegacy && selectedEncoding) java.nio.charset.Charset.forName("GB18030") else Charsets.UTF_8)
-                        val normalized = if (selectedLegacy) LegacyFlightRecordReader.normalize(original) else original
-                        normalized to FlightRecordPlots.analyze(normalized).let { if (selectedLegacy) it.copy(notes = LegacyFlightRecordReader.notes) else it }
+                        val context = currentCoroutineContext()
+                        val checkActive = { context.ensureActive() }
+                        val original = readFlightText(Path.of(selected), if (selectedLegacy && selectedEncoding) java.nio.charset.Charset.forName("GB18030") else Charsets.UTF_8, checkActive)
+                        val normalized = if (selectedLegacy) LegacyFlightRecordReader.normalize(original, checkActive) else original
+                        normalized to FlightRecordPlots.analyze(normalized, checkActive = checkActive).let { if (selectedLegacy) it.copy(notes = LegacyFlightRecordReader.notes) else it }
                     }
                     snapshot = loaded.first
                     val result = loaded.second

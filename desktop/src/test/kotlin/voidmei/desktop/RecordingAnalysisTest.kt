@@ -2,8 +2,26 @@ package voidmei.desktop
 
 import java.nio.file.Files
 import kotlin.test.*
+import kotlinx.coroutines.ensureActive
 
 class RecordingAnalysisTest {
+    @Test fun fileReadObservesCancellationBetweenChunksAndClosesTheStream() {
+        val file = Files.createTempFile("voidmei-cancel-read", ".csv")
+        try {
+            Files.writeString(file, "x".repeat(100000))
+            val job = kotlinx.coroutines.Job()
+            var checks = 0
+            assertFailsWith<kotlinx.coroutines.CancellationException> {
+                readFlightText(file, checkActive = {
+                    if (++checks == 4) job.cancel()
+                    job.ensureActive()
+                })
+            }
+            assertEquals(4, checks)
+            // A cancelled read leaves the file available for subsequent loads.
+            assertEquals(100000, readFlightText(file).length)
+        } finally { Files.delete(file) }
+    }
     @Test fun pairedFlightSuggestionUsesOnlyTheRecorderSuffix() {
         val directory = java.nio.file.Path.of("records", "带 空格")
         assertEquals(directory.resolve("flight-test.csv").toString(), suggestedFlightPath(directory.resolve("flight-test-engines.csv").toString()))

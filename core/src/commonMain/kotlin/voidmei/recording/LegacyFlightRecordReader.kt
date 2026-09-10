@@ -14,17 +14,20 @@ object LegacyFlightRecordReader {
         "旧版表头时间标为秒，但写入代码使用分钟；导入已按分钟转换。",
         "旧文件不含机型和 UTC 时间；仅转换已核对单位的飞行字段，未导入发动机明细。")
 
-    fun analyze(text: String): FlightRecordAnalysis = FlightRecordPlots.analyze(normalize(text)).copy(notes = notes)
+    fun analyze(text: String, checkActive: () -> Unit = {}): FlightRecordAnalysis =
+        FlightRecordPlots.analyze(normalize(text, checkActive), checkActive = checkActive).copy(notes = notes)
 
-    fun normalize(text: String): String {
+    fun normalize(text: String, checkActive: () -> Unit = {}): String {
+        checkActive()
         require(text.length <= FlightRecordReader.MAX_BYTES) { "旧记录超过 64 MiB 限制" }
-        val rows = FlightRecordReader.rows(text.removePrefix("\uFEFF")).iterator()
+        val rows = FlightRecordReader.rows(text.removePrefix("\uFEFF"), checkActive).iterator()
         require(rows.hasNext() && rows.next() == header.split(',')) { "不是受支持的旧版中文飞行 CSV 表头" }
         var samples = 0
         val normalized = buildString {
             append("sample_id,utc_epoch_ms,elapsed_ms,aircraft,")
             append(mapping.values.joinToString(",")); append('\n')
             while (rows.hasNext()) {
+                checkActive()
                 val row = rows.next()
                 require(row.size == 32 && row.last().isEmpty()) { "旧记录第 ${samples + 2} 行列数不符" }
                 val minutes = requireNotNull(row[0].toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 }) { "旧记录时间无效" }

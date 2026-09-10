@@ -37,8 +37,10 @@ internal fun EngineRecordingPanel(chooseFile: (String) -> String? = ::chooseCsvF
         scope.launch {
             try {
                 loaded = withContext(Dispatchers.IO) {
-                    val text = readFlightText(Path.of(input))
-                    LoadedEngineRecording(text, input, EngineRecordReader.summarize(text))
+                    val context = currentCoroutineContext()
+                    val checkActive = { context.ensureActive() }
+                    val text = readFlightText(Path.of(input), checkActive = checkActive)
+                    LoadedEngineRecording(text, input, EngineRecordReader.summarize(text, checkActive))
                 }
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { error = "发动机记录读取失败：${e.message}" }
