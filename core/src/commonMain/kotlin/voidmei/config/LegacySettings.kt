@@ -63,7 +63,7 @@ object LegacySettingsReader {
         "getVario" to "climb", "getSEP" to "sep", "getAcceleration" to "acceleration",
         "getRollRate" to "roll_rate", "getNy" to "load", "getTurnRate" to "turn_rate",
         "getTurnRadius" to "turn_radius", "getAoA" to "aoa", "getAoS" to "sideslip",
-        "getRadioAltitude" to "radio_altitude_raw", "getWingSweep * 100" to "wing_sweep",
+        "getRadioAltitude" to "radio_altitude_estimate", "getWingSweep * 100" to "wing_sweep",
         "getWepKg" to "wep_fuel", "getWepTime" to "wep_time",
         "getBoosterFuelKg" to "booster_fuel", "getBoosterFuelPercent" to "booster_fuel_percent",
         "getEngineResponse" to "engine_response",

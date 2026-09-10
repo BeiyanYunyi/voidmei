@@ -2387,6 +2387,16 @@ Nix 构建及包内检查通过，新包 `/nix/store/m8561w282y542g7zw6xn1bpipli
 
 Nix 构建及包内检查通过，新包 `/nix/store/gp3svvi9kak85nkdhd9x54w7av17qjcr-voidmei-kotlin-2.0.0`，入口 `/tmp/voidmei-kotlin-offline/bin/voidmei-kotlin` 已更新；日志 `/tmp/voidmei-missing-font-nix.log`。原始真机抓取 SHA256 未变。
 
+### 雷达高度米制估计与旧读数迁移
+
+新增可选字段 `radio_altitude_estimate`（雷达高度估计），复用已有连续高度变化单位推断：已判定米制时使用有效原值，英尺时乘 0.3048，未判定或雷达数据缺失/非法时显示未知，不以海拔补值。文字持续标明“按高度表单位推断”，因为高度表与雷达仪表使用同一单位是推断前提，未获各机型真机验证。原值字段与 CSV 列保持原有语义。
+
+旧 `getRadioAltitude` 原本显示换算后的高度，现导入为估计字段；已保存的原值字段继续保留。原版 MiniHUD 的自动低空切换和 `alwaysShowRadarAltitude` 选项尚未迁移，本项不改变当前高度告警。
+
+共享 JVM/JS、桌面单元与实际 HudPanel 回归通过（`/tmp/voidmei-radio-altitude-estimate.log`），验证未知/缺失值、米/英尺换算、原值并列显示、旧字段导入和配置往返。补充 FlightCalculator 全链路测试确认连续 10 秒单位判定，以及换机、长间隔和重置清除推断；JVM/JS 复测通过（`/tmp/voidmei-radio-altitude-boundaries.log`）。
+
+Nix 构建及包内检查通过，新包 `/nix/store/1c2khw3ryxc430mhzcdxw926b5m2mww3-voidmei-kotlin-2.0.0`，试用入口 `/tmp/voidmei-kotlin-offline/bin/voidmei-kotlin` 已更新；日志 `/tmp/voidmei-radio-altitude-nix.log`。原始真机抓取未变，尚未进行真机单位换算验证。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

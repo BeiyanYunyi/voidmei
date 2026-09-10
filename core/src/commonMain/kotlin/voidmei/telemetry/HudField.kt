@@ -11,6 +11,7 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
     ACCELERATION("acceleration", "加速度", "m/s²", 2), TURN_RATE("turn_rate", "转弯率估计", "°/s", 1),
     TURN_RADIUS("turn_radius", "转弯半径估计", "m", 0), THRUST("thrust", "总推力", "kgf", 0),
     POWER("power", "总功率", "hp", 0),
+    RADIO_ALTITUDE_ESTIMATE("radio_altitude_estimate", "雷达高度估计", "m", 0),
     RADIO_ALTITUDE_RAW("radio_altitude_raw", "雷达高度原值", "仪表单位", 0),
     STALL_IAS("stall_ias", "1 G 失速IAS", "km/h", 0),
     SIDESLIP("sideslip", "侧滑角", "°", 1),
@@ -48,6 +49,7 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
         if (this == ENGINE1_MANIFOLD_AUTO && metrics.cockpitAltitudeUnit == CockpitAltitudeUnit.FEET) 1 else decimals
 
     fun unitFor(telemetry: Telemetry, metrics: FlightMetrics? = null, model: AircraftAlertModel? = null): String = when (this) {
+        RADIO_ALTITUDE_ESTIMATE -> if (metrics?.cockpitAltitudeUnit == null) "m · 待判定" else "m · 按高度表单位推断"
         POWER_PERCENT -> metrics?.let { ConnectionState.Flying(telemetry, it).powerPercentReading(model) }
             ?.let { "% · ${it.source}" } ?: "%"
         ENGINE1_MANIFOLD_AUTO -> when (metrics?.cockpitAltitudeUnit) {
@@ -65,6 +67,14 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
     }
 
     fun value(flight: ConnectionState.Flying, model: AircraftAlertModel? = null): Double? = when (this) {
+        RADIO_ALTITUDE_ESTIMATE -> {
+            val raw = flight.telemetry.radioAltitudeRaw?.takeIf { it.isFinite() && it >= 0 }
+            when (flight.metrics.cockpitAltitudeUnit) {
+                CockpitAltitudeUnit.METRES -> raw
+                CockpitAltitudeUnit.FEET -> raw?.times(0.3048)
+                null -> null
+            }
+        }
         ENGINE1_MANIFOLD_AUTO -> {
             val pressure = flight.telemetry.engines.singleOrNull { it.index == 1 }?.manifoldPressureAtm
             when (flight.metrics.cockpitAltitudeUnit) {

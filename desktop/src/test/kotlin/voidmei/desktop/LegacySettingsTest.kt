@@ -24,7 +24,7 @@ class LegacySettingsTest {
         assertEquals(false, imported.hudAutoHideOnFocusLoss)
         assertEquals(true, imported.hudFieldChoices["sideslip"])
         assertEquals(true, imported.hudFieldChoices["roll_rate"])
-        assertEquals(true, imported.hudFieldChoices["radio_altitude_raw"])
+        assertEquals(true, imported.hudFieldChoices["radio_altitude_estimate"])
         assertEquals(true, imported.hudFieldChoices["heading"])
         assertEquals(true, imported.hudFieldChoices["wing_sweep"])
         assertEquals(true, imported.hudFieldChoices["power"])
