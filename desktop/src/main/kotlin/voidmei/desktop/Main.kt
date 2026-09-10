@@ -283,7 +283,12 @@ fun main(args: Array<String>) {
                             hudState.position = resetWindowPosition(64)
                             settings = settings.copy(mainPosition = null, hudPosition = null)
                         }) { Text("重置窗口位置") }
-                        LegacySettingsPanel { imported -> settings = imported.applyTo(settings) }
+                        LegacySettingsPanel { imported ->
+                            val updated = imported.applyTo(settings)
+                            if (imported.httpPort != null) validateEndpoint(updated.endpoint)
+                            settings = updated
+                            if (imported.httpPort != null) endpoint = updated.endpoint
+                        }
                         SectionHeading(MainSection.HUD, anchors)
                         HudSettingsPanel(settings) {
                             settings = it

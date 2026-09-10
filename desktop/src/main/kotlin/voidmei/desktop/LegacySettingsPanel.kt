@@ -70,6 +70,7 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
                 }
             }
             if (!imported.hasChanges) Text("此文件没有可应用的设置。")
+            imported.httpPort?.let { Text("遥测端口：$it；保留已保存的主机地址，点击“连接”后切换当前连接。") }
             imported.hudAltitudeMode?.let { Text("HUD 高度来源：${it.label}（雷达单位未判定时使用海拔）") }
             imported.hudNumberFont?.let { Text("HUD 表格数字字体：$it（需在当前系统安装）") }
             if (imported.hudReadingColors.isNotEmpty()) {
@@ -152,7 +153,10 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
             }
             imported.voiceVolume?.let { Text("语音音量：$it") }
             imported.voiceEnabled?.let { Text("语音：${if (it) "开启" else "关闭"}") }
-            Button(enabled = imported.hasChanges, onClick = { onApply(imported); preview = null; status = "已应用，随 Kotlin 设置保存" }) { Text("应用预览设置") }
+            Button(enabled = imported.hasChanges, onClick = {
+                try { onApply(imported); preview = null; status = "已应用，随 Kotlin 设置保存" }
+                catch (e: IllegalArgumentException) { status = "应用失败：${e.message}" }
+            }) { Text("应用预览设置") }
         }
         status?.let { Text(it) }
     }

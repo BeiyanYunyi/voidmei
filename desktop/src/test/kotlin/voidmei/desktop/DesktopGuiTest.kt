@@ -1687,6 +1687,7 @@ class DesktopGuiTest {
     @Test fun legacySettingsRequirePreviewAndApplyAndClearStalePreview() {
         val file = Files.createTempFile("voidmei-settings-gui", ".cfg")
         val original = """(panel p (item x :target "dataPollIntervalMs" :type slider :value 80)
+            (item port :target "httpPort" :type input :value 9222)
             (item focus :target "autoHideOnFocusLoss" :type switch :value true)
             (item logging :target "enableLogging" :type switch :value true)
             (item energy :target "showHUDEnergy" :type switch :value false)
@@ -1713,6 +1714,8 @@ class DesktopGuiTest {
             compose.onNodeWithText("预览旧设置").performClick()
             compose.waitUntil(5000) { compose.onAllNodesWithText("刷新间隔：80 ms").fetchSemanticsNodes().isNotEmpty() }
             assertEquals(100, current.pollIntervalMs)
+            assertEquals("http://127.0.0.1:8111", current.endpoint)
+            compose.onNodeWithText("遥测端口：9222；保留已保存的主机地址，点击“连接”后切换当前连接。").assertExists()
             assertFalse(current.hudAutoHideOnFocusLoss)
             assertFalse(current.recordingAutoStart)
             compose.onNodeWithText("HUD 能量高度：隐藏").assertExists()
@@ -1736,7 +1739,7 @@ class DesktopGuiTest {
             compose.onNodeWithText("下次启动自动开启记录：开启", substring = true).assertExists()
             compose.onNodeWithText("切出游戏时隐藏 HUD：开启", substring = true).assertExists()
             compose.onNodeWithText("应用预览设置").performScrollTo().performClick()
-            compose.runOnIdle { assertEquals(AppSettings(pollIntervalMs = 80, hudOpacity = .4f,
+            compose.runOnIdle { assertEquals(AppSettings(endpoint = "http://127.0.0.1:9222", pollIntervalMs = 80, hudOpacity = .4f,
                 hudAutoHideOnFocusLoss = true, recordingAutoStart = true,
                 hudFields = HudField.defaults.filter { it !in listOf("energy", "ias", "sep", "load", "aoa") },
                 hudCrosshair = true, hudCrosshairRight = true, hudCrosshairSizeDp = 200, hudHiddenLabels = listOf("ias", "mach"), hudAttitude = false, hudAttitudeEarthFixed = true, hudCompassHeadingUp = true, hudGear = false, hudFlaps = false, hudFlapBar = false, hudAirbrake = false, hudAoaBarWarningPercent = 25.5), current) }
