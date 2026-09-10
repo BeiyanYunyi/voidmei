@@ -36,8 +36,8 @@ fun main(args: Array<String>) {
         var thermalObservation by remember { mutableStateOf<EngineThermalObservation?>(null) }
         var alerts by remember { mutableStateOf<List<FlightAlert>>(emptyList()) }
         var voiceError by remember { mutableStateOf<String?>(null) }
-        suspend fun stopVoice() {
-            try { withContext(Dispatchers.IO) { voicePlayer.stop() } }
+        suspend fun stopVoice(includePreview: Boolean = true) {
+            try { withContext(Dispatchers.IO) { if (includePreview) voicePlayer.stop() else voicePlayer.stopAutomatic() } }
             catch (e: CancellationException) { throw e }
             catch (e: Exception) { voiceError = "语音停止失败：${e.message}" }
         }
@@ -182,7 +182,7 @@ fun main(args: Array<String>) {
                     nowMs, alertSettings.voiceEnabled && alertSettings.voiceVolume > 0,
                     alertSettings.alertVoices.filterValues { !it.enabled }.keys, thermalObservation = thermal,
                     voiceAvailable = voicePlayer::canPlay)
-                if (state !is ConnectionState.Flying) stopVoice()
+                if (state !is ConnectionState.Flying) stopVoice(includePreview = false)
                 val sound = update.voice ?: FlightAlert.CONNECTION_READY.takeIf {
                     arrived && update.active.isEmpty() && voicePlayer.canPlay(it)
                 }

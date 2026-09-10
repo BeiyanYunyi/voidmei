@@ -9,6 +9,28 @@ import kotlin.test.*
 import voidmei.telemetry.FlightAlert
 
 class VoicePlayerTest {
+    @Test fun waitingForTelemetryStopsAutomaticAudioButKeepsManualPreview(): Unit = runBlocking {
+        val device = Device()
+        val player = VoicePlayer { device.clip }
+        try {
+            player.play(FlightAlert.CONNECTION_READY, preview = true)
+            repeat(10) { player.stopAutomatic() }
+            assertTrue(player.isPlaying())
+            assertEquals(0, device.closes)
+            player.setVolume(0)
+            assertFalse(player.isPlaying())
+            player.play(FlightAlert.CRITICAL_AOA)
+            player.stopAutomatic()
+            assertFalse(player.isPlaying())
+            player.play(FlightAlert.CONNECTION_READY)
+            player.stopAutomatic()
+            assertFalse(player.isPlaying())
+            player.play(FlightAlert.CONNECTION_READY, preview = true)
+            player.close()
+            assertFalse(player.isPlaying())
+        } finally { player.close() }
+    }
+
     @Test fun previewCannotInterruptWarningsAndStoppingPreviewPreservesWarning(): Unit = runBlocking {
         val device = Device()
         val player = VoicePlayer { device.clip }

@@ -79,6 +79,9 @@ class VoicePlayer(private val clipFactory: () -> Clip = AudioSystem::getClip) : 
 
     @Synchronized fun stopPreview() { if (previewing) stop() }
 
+    /** Telemetry becoming unavailable invalidates automatic warnings, not a user-requested preview. */
+    @Synchronized fun stopAutomatic() { if (!previewing) stop() }
+
     @Synchronized fun stop() {
         val previous = clip
         clip = null
