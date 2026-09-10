@@ -1668,6 +1668,13 @@ class DesktopGuiTest {
             compose.onNodeWithText("检查并应用语音包").performClick()
             compose.waitUntil(5000) { compose.onAllNodesWithText("语音包读取失败：", substring = true).fetchSemanticsNodes().isNotEmpty() }
             compose.runOnIdle { assertEquals("custom", current.voicePack) }
+            val damaged = Files.createDirectory(root.resolve("truncated"))
+            val bytes = javaClass.getResourceAsStream("/voice/start1.wav")!!.use { it.readBytes() }
+            Files.write(damaged.resolve("start1.wav"), bytes.copyOf(bytes.size / 2))
+            compose.onNodeWithText("语音包目录名").performTextReplacement("truncated")
+            compose.onNodeWithText("检查并应用语音包").performClick()
+            compose.waitUntil(5000) { compose.onAllNodesWithText("WAV 音频数据不完整", substring = true).fetchSemanticsNodes().isNotEmpty() }
+            compose.runOnIdle { assertEquals("custom", current.voicePack) }
         } finally { root.toFile().deleteRecursively() }
     }
 

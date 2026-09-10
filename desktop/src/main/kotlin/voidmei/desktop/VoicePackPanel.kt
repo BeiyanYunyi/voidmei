@@ -36,8 +36,9 @@ fun VoicePackPanel(settings: AppSettings, onSettings: (AppSettings) -> Unit) {
                     // Validate every currently supported warning before changing active settings.
                     val selection = AppSettings(voiceDirectory = selectedDirectory, voicePack = selectedPack)
                     withContext(Dispatchers.IO) {
+                        val context = currentCoroutineContext()
                         val resources = VoiceResources(Path.of(selection.voiceDirectory), selection.voicePack)
-                        FlightAlert.entries.forEach { resources.open(it).close() }
+                        FlightAlert.entries.forEach { resources.validate(it) { context.ensureActive() } }
                     }
                     applySettings(currentSettings.copy(voiceDirectory = selectedDirectory, voicePack = selectedPack))
                     status = "已应用语音包（含缺失文件的默认回退）"

@@ -12,6 +12,23 @@ import voidmei.telemetry.FlightAlert
 class VoiceResources(private val root: Path = Path.of("voice"), private val pack: String = "default") {
     init { require(voidmei.config.isVoicePackName(pack)) { "语音包名称必须为单个目录名" } }
 
+    fun validate(alert: FlightAlert, checkActive: () -> Unit = {}) {
+        checkActive()
+        open(alert).use { audio ->
+            val expected = audio.frameLength * audio.format.frameSize
+            var actual = 0L
+            val buffer = ByteArray(8192 * audio.format.frameSize.coerceAtMost(16))
+            while (true) {
+                checkActive()
+                val read = audio.read(buffer)
+                if (read < 0) break
+                require(read > 0) { "音频帧大小不支持：${alert.voice}.wav" }
+                actual += read
+            }
+            require(actual == expected) { "WAV 音频数据不完整：${alert.voice}.wav" }
+        }
+    }
+
     fun open(alert: FlightAlert): AudioInputStream {
         val filename = "${alert.voice}.wav"
         var bytes: ByteArray? = null
