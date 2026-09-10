@@ -1576,6 +1576,29 @@ class DesktopGuiTest {
         } finally { temp.toFile().deleteRecursively() }
     }
 
+    @Test fun stoppingVoicePreviewCancelsPendingLoadAndAllowsRetry() {
+        var attempts = 0
+        var cancelled = false
+        var completed = false
+        compose.setContent { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
+            AlertVoicePanel(AppSettings(voiceVolume = 75), onPreview = {
+                attempts++
+                if (attempts == 1) {
+                    try { kotlinx.coroutines.awaitCancellation() }
+                    finally { cancelled = true }
+                } else completed = true
+            }) {}
+        } } }
+        compose.onNodeWithText("逐条语音设置").performClick()
+        compose.onNodeWithText("试听燃油耗尽").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(1, attempts) }
+        compose.onNodeWithText("试听燃油耗尽").assertIsNotEnabled()
+        compose.onNodeWithText("停止试听").performScrollTo().performClick()
+        compose.waitUntil(5000) { cancelled }
+        compose.onNodeWithText("试听燃油耗尽").performScrollTo().assertIsEnabled().performClick()
+        compose.runOnIdle { assertTrue(completed); assertEquals(2, attempts) }
+    }
+
     @Test fun voicePreviewKeepsSettingsAndStopsWhenCollapsed() {
         var current by mutableStateOf(AppSettings(voiceVolume = 75))
         val played = mutableListOf<FlightAlert>()

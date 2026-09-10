@@ -20,10 +20,11 @@ fun AlertVoicePanel(settings: AppSettings, onPreview: (suspend (FlightAlert) -> 
     DisposableEffect(Unit) { onDispose { onStopPreview() } }
     val scope = rememberCoroutineScope()
     var previewBusy by remember { mutableStateOf(false) }
+    var previewJob by remember { mutableStateOf<Job?>(null) }
     var previewError by remember { mutableStateOf<String?>(null) }
     if (onPreview != null) {
         Text("试听使用已应用的语音包与音量，不改变播报开关。告警优先。")
-        TextButton(onClick = { onStopPreview() }) { Text("停止试听") }
+        TextButton(onClick = { previewJob?.cancel(); onStopPreview() }) { Text("停止试听") }
         previewError?.let { Text("试听失败：$it", color = MaterialTheme.colorScheme.error) }
     }
     Text("关闭播报后仍显示屏幕告警。包名留空使用全局语音包，default 使用根目录及内置语音。")
@@ -37,7 +38,7 @@ fun AlertVoicePanel(settings: AppSettings, onPreview: (suspend (FlightAlert) -> 
                 Text(alert.label)
                 if (onPreview != null) TextButton(enabled = !previewBusy && settings.voiceVolume > 0, onClick = {
                     previewBusy = true; previewError = null
-                    scope.launch {
+                    previewJob = scope.launch {
                         try { onPreview(alert) }
                         catch (e: CancellationException) { throw e }
                         catch (e: Exception) { previewError = e.message ?: "音频不可用" }
