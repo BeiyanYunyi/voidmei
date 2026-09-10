@@ -62,6 +62,8 @@ tasks.register<Test>("guiTest") {
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     include("**/*GuiTest.class")
+    // DISPLAY, compositor, fonts and native focus support are external runtime state.
+    outputs.upToDateWhen { false }
     systemProperty("java.awt.headless", "false")
 }
 tasks.register<Test>("nativeHudPointerTest") {

@@ -2633,6 +2633,12 @@ Wayland、缺失属性、非本机窗口、无效 PID 或 Wine 加载器无法�
 
 `nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-x11-focus-nix.log`），同时包含前一轮恢复默认设置功能。真实窗口管理器、游戏及硬件 GPU 验证仍待完成。
 
+### 配置与 X11 前台检测后的完整界面回归
+
+在 `b446070` 生产代码上运行不带过滤的 `:desktop:guiTest`：43 个测试类、159 项测试，零失败、零错误、零跳过，36 秒通过。包括新增字体、恢复默认设置和 X11 前台检测。日志 `/tmp/voidmei-full-gui-after-focus.log`，XML/HTML 副本 `/tmp/voidmei-full-gui-after-focus-results/`。这是隔离 X11/软件渲染环境，独立的 native HUD/热键/托盘任务和真实游戏不在本次范围内。
+
+GUI 任务原先允许 Gradle 复用 UP-TO-DATE 结果，但 DISPLAY、合成器、字体及本机会话能力不是稳定的构建输入。现与既有透明度任务一样设为每次执行。对同一 X11 GUI 测试命令连续运行两次，均实际执行并通过，第二次没有 UP-TO-DATE（`/tmp/voidmei-gui-fresh-first.log`、`/tmp/voidmei-gui-fresh-second.log`）。本轮没有修改生产代码或重建包。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
