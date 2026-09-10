@@ -1,0 +1,112 @@
+name: Kotlin Multiplatform
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Test shared JVM/JS logic and desktop transport
+        shell: bash
+        run: ./gradlew -Pvoidmei.systemNode=true :core:allTests :desktop:test
+      - name: Test flight capture and mock replay
+        shell: bash
+        run: |
+          python script/test_capture_flight_sequence.py
+          python script/test_mock_messages.py
+      - name: Package desktop application
+        shell: bash
+        run: ./gradlew :desktop:packageDistributionForCurrentOS
+      - name: Test Compose interactions and rendering
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xcompmgr stalonetray
+          python script/test_hud_compositing.py ./gradlew :desktop:guiTest
+      - name: Test native tray manager loss and recovery
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          export VOIDMEI_TEST_ISOLATED_X11=1
+          VOIDMEI_TRAY_MANAGER="$(command -v stalonetray)"
+          export VOIDMEI_TRAY_MANAGER
+          python script/test_hud_compositing.py ./gradlew :desktop:nativeTrayTest
+      - name: Install Linux package and test native hotkey and HUD input
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ./desktop/build/compose/binaries/main/deb/*.deb
+          xvfb-run -a env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 VOIDMEI_TEST_ISOLATED_X11=1 ./gradlew :desktop:nativeHotkeyTest :desktop:nativeHudPointerTest
+          xvfb-run -a env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 VOIDMEI_TEST_ISOLATED_X11=1 ./gradlew -Pvoidmei.testAppDirectory=/opt/voidmei :desktop:packagedHudPointerTest
+      - name: Smoke test Linux package runtime
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get install -y libgl1-mesa-dri fonts-noto-cjk
+          mkdir -p "$RUNNER_TEMP/voidmei-package-smoke"
+          xvfb-run -a env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 LIBGL_ALWAYS_SOFTWARE=1 TMPDIR="$RUNNER_TEMP/voidmei-package-smoke" python script/smoke_kmp_deb.py desktop/build/compose/binaries/main/deb/*.deb --timeout 90
+          xvfb-run -a env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 LIBGL_ALWAYS_SOFTWARE=1 TMPDIR="$RUNNER_TEMP/voidmei-package-smoke" python script/smoke_kmp_recording.py desktop/build/compose/binaries/main/deb/*.deb --timeout 90 --check-ui
+          xvfb-run -a env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 LIBGL_ALWAYS_SOFTWARE=1 TMPDIR="$RUNNER_TEMP/voidmei-package-smoke" python script/smoke_kmp_recording.py desktop/build/compose/binaries/main/deb/*.deb --timeout 90 --check-ui --no-hud --graceful-exit --wep --tray-recovery
+          xvfb-run -a env -u WAYLAND_DISPLAY XDG_SESSION_TYPE=x11 LIBGL_ALWAYS_SOFTWARE=1 TMPDIR="$RUNNER_TEMP/voidmei-package-smoke" python script/smoke_kmp_recording.py desktop/build/compose/binaries/main/deb/*.deb --timeout 90 --check-ui --no-hud --graceful-exit --display-scale 2 --jet
+      - name: Test packaged background startup with a tray manager
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          export VOIDMEI_TEST_ISOLATED_X11=1
+          export TMPDIR="$RUNNER_TEMP/voidmei-package-smoke"
+          python script/test_hud_compositing.py python script/test_tray_session.py python script/smoke_kmp_recording.py desktop/build/compose/binaries/main/deb/*.deb --timeout 90 --renderer SOFTWARE_FAST --compatible-hud --check-ui --graceful-exit --tray-background
+      - name: Test HUD alpha compositing
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          python script/test_hud_compositing.py ./gradlew -Pvoidmei.systemNode=true :desktop:nativeHudTransparencyTest
+          cp -r desktop/build/test-results/nativeHudTransparencyTest desktop/build/test-results/nativeHudTransparencySoftware
+      - name: Test OpenGL HUD alpha and continuous repaint
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          python script/test_hud_compositing.py env SKIKO_RENDER_API=OPENGL VOIDMEI_TEST_EXPECT_RENDERER=OPENGL LIBGL_ALWAYS_SOFTWARE=1 ./gradlew -Pvoidmei.systemNode=true :desktop:nativeHudTransparencyTest
+      - uses: actions/upload-artifact@v4
+        if: always() && runner.os == 'Linux'
+        with:
+          name: Linux-package-startup
+          path: |
+            ${{ runner.temp }}/voidmei-package-smoke/**/startup.log
+            ${{ runner.temp }}/voidmei-package-smoke/**/report.json
+            ${{ runner.temp }}/voidmei-package-smoke/**/recording-report.json
+            ${{ runner.temp }}/voidmei-package-smoke/**/records/*.csv
+            ${{ runner.temp }}/voidmei-package-smoke/**/settings-kmp.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VoidMei-Kotlin-${{ matrix.os }}
+          path: desktop/build/compose/binaries/main/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Kotlin-test-reports-${{ matrix.os }}
+          path: |
+            core/build/reports/tests/
+            desktop/build/reports/tests/
+            desktop/build/native-tray/
