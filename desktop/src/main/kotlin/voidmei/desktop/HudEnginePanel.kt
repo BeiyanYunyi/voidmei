@@ -7,7 +7,7 @@ import voidmei.telemetry.Engine
 import java.util.Locale
 
 @Composable
-internal fun HudEnginePanel(engines: List<Engine>, index: Int) {
+internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true) {
     Column {
         Text("发动机 #$index")
         val engine = engines.singleOrNull { it.index == index }
@@ -16,7 +16,7 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int) {
             fun Double?.shown(unit: String, digits: Int = 0): String =
                 (this?.takeIf { it.isFinite() }?.let { String.format(Locale.ROOT, "%.${digits}f", it) } ?: "—") + " $unit"
             val readings = listOf(
-                Triple("油门", engine.throttlePercent.shown("%"), "%"),
+                Triple("油门", engine.throttlePercent.shown("%", if (compact) 0 else 1), "%"),
                 Triple("转速", engine.rpm.shown("RPM"), "RPM"),
                 Triple("功率", engine.powerHp.shown("hp"), "hp"),
                 Triple("推力", engine.thrustKgf.shown("kgf"), "kgf"),
@@ -33,7 +33,7 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int) {
                 Triple("效率", engine.efficiencyPercent.shown("%"), "%"),
             )
             val rows = readings.map { it.first to it.second }
-            FlightReadings(rows, compact = true, unitRanges = readings.mapIndexedNotNull { index, reading ->
+            FlightReadings(rows, compact = compact, unitRanges = readings.mapIndexedNotNull { index, reading ->
                 val unit = reading.third
                 if (unit.isEmpty()) null else index to (rows[index].second.length - unit.length until rows[index].second.length)
             }.toMap())

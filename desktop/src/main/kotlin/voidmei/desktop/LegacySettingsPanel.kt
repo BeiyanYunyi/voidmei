@@ -70,6 +70,7 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
                 }
             }
             if (!imported.hasChanges) Text("此文件没有可应用的设置。")
+            imported.numberFont?.let { Text("全局数字字体：$it（需在当前系统安装）") }
             imported.textFont?.let { Text("全局文字字体：$it（需在当前系统安装）") }
             imported.httpPort?.let { Text("遥测端口：$it；保留已保存的主机地址，点击“连接”后切换当前连接。") }
             imported.hudAltitudeMode?.let { Text("HUD 高度来源：${it.label}（雷达单位未判定时使用海拔）") }

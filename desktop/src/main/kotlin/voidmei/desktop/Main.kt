@@ -232,189 +232,188 @@ fun main(args: Array<String>) {
             }
             val renderer = rememberRendererDiagnostics(window)
             var showRenderer by remember { mutableStateOf(false) }
-            MaterialTheme(typography = typography, colorScheme = darkColorScheme(primary = Color(0xFF84DEC6), background = Color(0xFF111820))) {
-                recordingExitFailure?.let { (saveSettings, reason) ->
-                    RecordingExitDialog(reason, onReturn = { recordingExitFailure = null }, onExit = {
-                        recordingExitFailure = null
-                        closeApp(saveSettings, acknowledgeRecordingFailure = true)
-                    })
-                }
-                Surface(Modifier.fillMaxSize()) {
-                    SectionPage { anchors ->
-                        SectionHeading(MainSection.SETTINGS, anchors)
-                        Text("VOIDMEI", style = MaterialTheme.typography.headlineLarge)
-                        Text("飞行遥测 · Kotlin Multiplatform", color = MaterialTheme.colorScheme.primary)
-                        TextButton(onClick = { showRenderer = !showRenderer }) { Text("渲染信息") }
-                        if (showRenderer) Text(renderer, style = MaterialTheme.typography.bodySmall)
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(endpoint, { endpoint = it }, Modifier.weight(1f), label = { Text("遥测服务器") }, singleLine = true)
-                            Button(onClick = {
-                                try {
-                                    validateEndpoint(endpoint)
-                                    endpointError = null
-                                    activeEndpoint = endpoint
-                                    settings = settings.copy(endpoint = endpoint)
-                                    generation++
-                                } catch (e: Exception) { endpointError = e.message }
-                            }) { Text("连接") }
-                            FilledTonalButton(onClick = { settings = settings.copy(hudEnabled = !overlay) }) { Text(if (overlay) "关闭 HUD" else "打开 HUD") }
-                        }
-                        endpointError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Switch(settings.hudHotkeyEnabled, { settings = settings.copy(hudHotkeyEnabled = it) })
-                            Text("Ctrl + Shift + H 切换 HUD" + if (hotkeyActive) " · 已启用" else "")
-                        }
-                        hotkeyError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Switch(settings.startInTray, { settings = settings.copy(startInTray = it) }, enabled = !closing)
-                            Text("下次启动进入托盘")
-                            if (trayAvailable) TextButton(onClick = { mainVisible = false }) { Text("隐藏到托盘") }
-                        }
-                        if (!trayAvailable) Text(trayError?.let { "托盘不可用：$it" } ?: "当前桌面不支持托盘，启动时保持主窗口可见。")
-                        settingsError?.let {
-                            Text(it, color = MaterialTheme.colorScheme.error)
-                            TextButton(enabled = !closing, onClick = { closeApp(saveSettings = false) }) { Text("不保存并退出") }
-                        }
-                        TextFontSettings(settings.textFont) { settings = settings.copy(textFont = it) }
-                        PollingIntervalSettings(settings.pollIntervalMs) { settings = settings.copy(pollIntervalMs = it) }
-                        Text("HUD 背景不透明度 ${(settings.hudOpacity * 100).toInt()}%")
-                        Slider(value = settings.hudOpacity, onValueChange = { settings = settings.copy(hudOpacity = it) }, valueRange = 0f..1f)
-                        TextButton(onClick = {
-                            mainState.position = resetWindowPosition()
-                            hudState.position = resetWindowPosition(64)
-                            settings = settings.copy(mainPosition = null, hudPosition = null)
-                        }) { Text("重置窗口位置") }
-                        LegacySettingsPanel { imported ->
-                            val updated = imported.applyTo(settings)
-                            if (imported.httpPort != null) validateEndpoint(updated.endpoint)
-                            settings = updated
-                            if (imported.httpPort != null) endpoint = updated.endpoint
-                        }
-                        SectionHeading(MainSection.HUD, anchors)
-                        HudSettingsPanel(settings) {
-                            settings = it
-                            if (!it.hudClickThrough) hudPointerError = null
-                        }
-                        hudPointerError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        if (overlay && settings.hudAutoHideOnFocusLoss) Text(when (gameFocus) {
-                            GameFocus.GAME -> "游戏在前台，HUD 显示。"
-                            GameFocus.OTHER -> "已切出游戏，HUD 暂时隐藏；遥测与录制继续。"
-                            GameFocus.UNKNOWN -> "无法确认前台窗口，HUD 保持显示。"
-                        }, style = MaterialTheme.typography.bodySmall)
-                        SectionHeading(MainSection.FLIGHT, anchors)
-                        Text(statusText(connection), color = MaterialTheme.colorScheme.primary)
-                        val flight = connection as? ConnectionState.Flying
-                        if (flight != null) {
-                            FlightPanel(flight, model = modelForAlerts, thermal = thermalObservation)
-                            AttitudePanel(flight.telemetry, model = modelForAlerts)
-                            Text("发动机", style = MaterialTheme.typography.titleLarge)
-                            Text("燃油压力仪表（原值） ${flight.telemetry.fuelPressureRaw.display()}")
-                            if (flight.telemetry.engines.size > 1 && flight.telemetry.fuelPressureRaw != null)
-                                Text("压力仪表未标明引擎编号，多引擎低压判定暂不可用。", style = MaterialTheme.typography.bodySmall)
-                            val compressorAdvice = CompressorAdvice.recommendations(flight.telemetry,
-                                modelForAlerts?.parametersFor(flight.telemetry.aircraft)?.engineCompressors.orEmpty())
-                            val compressorFuel = modelForAlerts?.parametersFor(flight.telemetry.aircraft)?.compressorFuel
-                            val compressorFuelLabel = compressorFuel?.let { fuelName(it.id) } ?: "基础燃油"
-                            compressorAdvice.forEach { advice ->
-                                Text("#${advice.engineIndex} 增压器 ${advice.actualStage} → ${advice.recommendedStage}（$compressorFuelLabel、15°C 模型估算）")
-                            }
-                            val negativeLoadEngines = EngineWarnings.lowThrustUnderNegativeLoad(flight.telemetry)
-                            val highRpmEngines = EngineWarnings.highRpm(flight.telemetry,
-                                modelForAlerts?.parametersFor(flight.telemetry.aircraft)?.engineRpmLimits.orEmpty())
-                            val lowRpmEngines = EngineWarnings.lowRpm(flight.telemetry,
-                                modelForAlerts?.parametersFor(flight.telemetry.aircraft)?.engineRpmReferences.orEmpty())
-                            flight.telemetry.engines.forEach { engine ->
-                                if (engine.index in lowRpmEngines)
-                                    Text("#${engine.index} 转速相对油门偏低（模型基准）", color = MaterialTheme.colorScheme.error)
-                                if (engine.index in highRpmEngines)
-                                    Text("#${engine.index} 达到模型最高允许转速", color = MaterialTheme.colorScheme.error)
-                                if (engine.index in negativeLoadEngines)
-                                    Text("#${engine.index} 负过载、大油门时推力低于 50 kgf", color = MaterialTheme.colorScheme.error)
-                                Text("#${engine.index}   油门 ${engine.throttlePercent.display()} %   RPM ${engine.rpm.display(0)}   功率 ${engine.powerHp.display(0)} hp   推力 ${engine.thrustKgf.display(0)} kgf")
-                                Text("水温 ${engine.waterTemperatureC.display()} °C   油温 ${engine.oilTemperatureC.display()} °C")
-                                Text("转速控制 ${engine.rpmControlPercent.display(0)} %   混合比 ${engine.mixturePercent.display(0)} %   桨叶角 ${engine.propellerPitchDeg.display()}°")
-                                Text("水散热器 ${engine.radiatorPercent.display(0)} %   油散热器 ${engine.oilRadiatorPercent.display(0)} %")
-                                Text("增压器档位 ${engine.compressorStage.display(0)}   磁电机 ${engine.magneto.display(0)}   进气压力 ${engine.manifoldPressureAtm.display(2)} atm   效率 ${engine.efficiencyPercent.display(0)} %")
-                            }
-                            EngineThermalBudgetPanel(thermalObservation?.budgetsFor(flight, modelForAlerts).orEmpty())
-                            val t = flight.telemetry
-                            Text("控制面", style = MaterialTheme.typography.titleLarge)
-                            Text("侧滑角 ${t.sideslipAngleDeg.display()}°   滚转角速度 ${t.rollRateDegPerSecond.display()} °/s")
-                            Text("副翼 ${t.aileronPercent.display()} %   升降舵 ${t.elevatorPercent.display()} %   方向舵 ${t.rudderPercent.display()} %")
-                            FlightAnalysisPanel(flight.metrics)
-                        } else {
-                            Text("启动战争雷霆试飞或进入战斗后，数据会自动显示。")
-                        }
-                        SectionHeading(MainSection.VOICE, anchors)
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text("语音告警")
-                            Switch(checked = settings.voiceEnabled, onCheckedChange = { settings = settings.copy(voiceEnabled = it) })
-                        }
-                        Text("语音音量 ${settings.voiceVolume} · 0 静音 / 100 原始 / 200 最大增益")
-                        Slider(value = settings.voiceVolume.toFloat(),
-                            onValueChange = { settings = settings.copy(voiceVolume = it.roundToInt()) }, valueRange = 0f..200f)
-                        VoicePackPanel(settings, onSettings = { settings = it })
-                        AlertVoicePanel(settings, onPreview = { alert ->
-                            voicePlayer.play(alert, settings.voiceVolume, VoiceResources(java.nio.file.Path.of(settings.voiceDirectory),
-                                settings.alertVoices[alert.voice]?.pack ?: settings.voicePack), preview = true)
-                        }, onStopPreview = {
-                            scope.launch {
-                                try { withContext(Dispatchers.IO) { voicePlayer.stopPreview() } }
-                                catch (e: CancellationException) { throw e }
-                                catch (e: Exception) { voiceError = "试听停止失败：${e.message}" }
-                            }
-                        }) { settings = it }
-                        FlightAlertPanel(alerts)
-                        voiceError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        SectionHeading(MainSection.MODEL, anchors)
-                        TextButton(enabled = !closing, onClick = { offlineModels = true }) { Text("打开离线模型查看") }
-                        FlightModelPanel(flight?.telemetry, settings.fmDataRoot, onModel = { name, model ->
-                            modelForAlerts = if (name != null && model != null) AircraftAlertModel(name, model) else null
-                        }, onDataRoot = {
-                            settings = settings.copy(fmDataRoot = it)
+            CompositionLocalProvider(LocalReadingNumberFont provides remember(settings.numberFont) { resolveHudNumberFont(settings.numberFont).family }) {
+                MaterialTheme(typography = typography, colorScheme = darkColorScheme(primary = Color(0xFF84DEC6), background = Color(0xFF111820))) {
+                    recordingExitFailure?.let { (saveSettings, reason) ->
+                        RecordingExitDialog(reason, onReturn = { recordingExitFailure = null }, onExit = {
+                            recordingExitFailure = null
+                            closeApp(saveSettings, acknowledgeRecordingFailure = true)
                         })
-                        SectionHeading(MainSection.RECORDS, anchors)
-                        Text("飞行记录", style = MaterialTheme.typography.titleLarge)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Switch(settings.recordingAutoStart, { settings = settings.copy(recordingAutoStart = it) }, enabled = !closing)
-                            Text("启动时自动开启记录（下次启动生效）")
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(recordingPath, { recordingPath = it }, Modifier.weight(1f),
-                                label = { Text("CSV 保存目录") }, enabled = recording !is RecordingState.Active && !recordingBusy && !closing, singleLine = true)
-                            Button(enabled = !closing && !recordingBusy && recordingPath.isNotBlank(), onClick = {
-                                recordingBusy = true
-                                scope.launch {
+                    }
+                    Surface(Modifier.fillMaxSize()) {
+                        SectionPage { anchors ->
+                            SectionHeading(MainSection.SETTINGS, anchors)
+                            Text("VOIDMEI", style = MaterialTheme.typography.headlineLarge)
+                            Text("飞行遥测 · Kotlin Multiplatform", color = MaterialTheme.colorScheme.primary)
+                            TextButton(onClick = { showRenderer = !showRenderer }) { Text("渲染信息") }
+                            if (showRenderer) Text(renderer, style = MaterialTheme.typography.bodySmall)
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                OutlinedTextField(endpoint, { endpoint = it }, Modifier.weight(1f), label = { Text("遥测服务器") }, singleLine = true)
+                                Button(onClick = {
                                     try {
-                                        recordingError = null
-                                        if (recording is RecordingState.Active) recorder.stop() else {
-                                            recorder.start(java.nio.file.Path.of(recordingPath))
-                                            if (recorder.state.value is RecordingState.Active) settings = settings.copy(recordingDirectory = recordingPath)
-                                        }
-                                    } catch (e: Exception) {
-                                        currentCoroutineContext().ensureActive()
-                                        recordingError = e.message ?: "无法更改录制状态"
-                                    } finally { recordingBusy = false }
+                                        validateEndpoint(endpoint)
+                                        endpointError = null
+                                        activeEndpoint = endpoint
+                                        settings = settings.copy(endpoint = endpoint)
+                                        generation++
+                                    } catch (e: Exception) { endpointError = e.message }
+                                }) { Text("连接") }
+                                FilledTonalButton(onClick = { settings = settings.copy(hudEnabled = !overlay) }) { Text(if (overlay) "关闭 HUD" else "打开 HUD") }
+                            }
+                            endpointError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Switch(settings.hudHotkeyEnabled, { settings = settings.copy(hudHotkeyEnabled = it) })
+                                Text("Ctrl + Shift + H 切换 HUD" + if (hotkeyActive) " · 已启用" else "")
+                            }
+                            hotkeyError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Switch(settings.startInTray, { settings = settings.copy(startInTray = it) }, enabled = !closing)
+                                Text("下次启动进入托盘")
+                                if (trayAvailable) TextButton(onClick = { mainVisible = false }) { Text("隐藏到托盘") }
+                            }
+                            if (!trayAvailable) Text(trayError?.let { "托盘不可用：$it" } ?: "当前桌面不支持托盘，启动时保持主窗口可见。")
+                            settingsError?.let {
+                                Text(it, color = MaterialTheme.colorScheme.error)
+                                TextButton(enabled = !closing, onClick = { closeApp(saveSettings = false) }) { Text("不保存并退出") }
+                            }
+                            TextFontSettings(settings.textFont) { settings = settings.copy(textFont = it) }
+                            NumberFontSettings(settings.numberFont) { settings = settings.copy(numberFont = it) }
+                            PollingIntervalSettings(settings.pollIntervalMs) { settings = settings.copy(pollIntervalMs = it) }
+                            Text("HUD 背景不透明度 ${(settings.hudOpacity * 100).toInt()}%")
+                            Slider(value = settings.hudOpacity, onValueChange = { settings = settings.copy(hudOpacity = it) }, valueRange = 0f..1f)
+                            TextButton(onClick = {
+                                mainState.position = resetWindowPosition()
+                                hudState.position = resetWindowPosition(64)
+                                settings = settings.copy(mainPosition = null, hudPosition = null)
+                            }) { Text("重置窗口位置") }
+                            LegacySettingsPanel { imported ->
+                                val updated = imported.applyTo(settings)
+                                if (imported.httpPort != null) validateEndpoint(updated.endpoint)
+                                settings = updated
+                                if (imported.httpPort != null) endpoint = updated.endpoint
+                            }
+                            SectionHeading(MainSection.HUD, anchors)
+                            HudSettingsPanel(settings) {
+                                settings = it
+                                if (!it.hudClickThrough) hudPointerError = null
+                            }
+                            hudPointerError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                            if (overlay && settings.hudAutoHideOnFocusLoss) Text(when (gameFocus) {
+                                GameFocus.GAME -> "游戏在前台，HUD 显示。"
+                                GameFocus.OTHER -> "已切出游戏，HUD 暂时隐藏；遥测与录制继续。"
+                                GameFocus.UNKNOWN -> "无法确认前台窗口，HUD 保持显示。"
+                            }, style = MaterialTheme.typography.bodySmall)
+                            SectionHeading(MainSection.FLIGHT, anchors)
+                            Text(statusText(connection), color = MaterialTheme.colorScheme.primary)
+                            val flight = connection as? ConnectionState.Flying
+                            if (flight != null) {
+                                FlightPanel(flight, model = modelForAlerts, thermal = thermalObservation)
+                                AttitudePanel(flight.telemetry, model = modelForAlerts)
+                                Text("发动机", style = MaterialTheme.typography.titleLarge)
+                                Text("燃油压力仪表（原值） ${flight.telemetry.fuelPressureRaw.display()}")
+                                if (flight.telemetry.engines.size > 1 && flight.telemetry.fuelPressureRaw != null)
+                                    Text("压力仪表未标明引擎编号，多引擎低压判定暂不可用。", style = MaterialTheme.typography.bodySmall)
+                                val compressorAdvice = CompressorAdvice.recommendations(flight.telemetry,
+                                    modelForAlerts?.parametersFor(flight.telemetry.aircraft)?.engineCompressors.orEmpty())
+                                val compressorFuel = modelForAlerts?.parametersFor(flight.telemetry.aircraft)?.compressorFuel
+                                val compressorFuelLabel = compressorFuel?.let { fuelName(it.id) } ?: "基础燃油"
+                                compressorAdvice.forEach { advice ->
+                                    Text("#${advice.engineIndex} 增压器 ${advice.actualStage} → ${advice.recommendedStage}（$compressorFuelLabel、15°C 模型估算）")
                                 }
-                            }) { Text(if (recording is RecordingState.Active) "停止记录" else "开始记录") }
+                                val negativeLoadEngines = EngineWarnings.lowThrustUnderNegativeLoad(flight.telemetry)
+                                val highRpmEngines = EngineWarnings.highRpm(flight.telemetry,
+                                    modelForAlerts?.parametersFor(flight.telemetry.aircraft)?.engineRpmLimits.orEmpty())
+                                val lowRpmEngines = EngineWarnings.lowRpm(flight.telemetry,
+                                    modelForAlerts?.parametersFor(flight.telemetry.aircraft)?.engineRpmReferences.orEmpty())
+                                flight.telemetry.engines.forEach { engine ->
+                                    if (engine.index in lowRpmEngines)
+                                        Text("#${engine.index} 转速相对油门偏低（模型基准）", color = MaterialTheme.colorScheme.error)
+                                    if (engine.index in highRpmEngines)
+                                        Text("#${engine.index} 达到模型最高允许转速", color = MaterialTheme.colorScheme.error)
+                                    if (engine.index in negativeLoadEngines)
+                                        Text("#${engine.index} 负过载、大油门时推力低于 50 kgf", color = MaterialTheme.colorScheme.error)
+                                    HudEnginePanel(listOf(engine), engine.index, compact = false)
+                                }
+                                EngineThermalBudgetPanel(thermalObservation?.budgetsFor(flight, modelForAlerts).orEmpty())
+                                val t = flight.telemetry
+                                Text("控制面", style = MaterialTheme.typography.titleLarge)
+                                Text("侧滑角 ${t.sideslipAngleDeg.display()}°   滚转角速度 ${t.rollRateDegPerSecond.display()} °/s")
+                                Text("副翼 ${t.aileronPercent.display()} %   升降舵 ${t.elevatorPercent.display()} %   方向舵 ${t.rudderPercent.display()} %")
+                                FlightAnalysisPanel(flight.metrics)
+                            } else {
+                                Text("启动战争雷霆试飞或进入战斗后，数据会自动显示。")
+                            }
+                            SectionHeading(MainSection.VOICE, anchors)
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text("语音告警")
+                                Switch(checked = settings.voiceEnabled, onCheckedChange = { settings = settings.copy(voiceEnabled = it) })
+                            }
+                            Text("语音音量 ${settings.voiceVolume} · 0 静音 / 100 原始 / 200 最大增益")
+                            Slider(value = settings.voiceVolume.toFloat(),
+                                onValueChange = { settings = settings.copy(voiceVolume = it.roundToInt()) }, valueRange = 0f..200f)
+                            VoicePackPanel(settings, onSettings = { settings = it })
+                            AlertVoicePanel(settings, onPreview = { alert ->
+                                voicePlayer.play(alert, settings.voiceVolume, VoiceResources(java.nio.file.Path.of(settings.voiceDirectory),
+                                    settings.alertVoices[alert.voice]?.pack ?: settings.voicePack), preview = true)
+                            }, onStopPreview = {
+                                scope.launch {
+                                    try { withContext(Dispatchers.IO) { voicePlayer.stopPreview() } }
+                                    catch (e: CancellationException) { throw e }
+                                    catch (e: Exception) { voiceError = "试听停止失败：${e.message}" }
+                                }
+                            }) { settings = it }
+                            FlightAlertPanel(alerts)
+                            voiceError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                            SectionHeading(MainSection.MODEL, anchors)
+                            TextButton(enabled = !closing, onClick = { offlineModels = true }) { Text("打开离线模型查看") }
+                            FlightModelPanel(flight?.telemetry, settings.fmDataRoot, onModel = { name, model ->
+                                modelForAlerts = if (name != null && model != null) AircraftAlertModel(name, model) else null
+                            }, onDataRoot = {
+                                settings = settings.copy(fmDataRoot = it)
+                            })
+                            SectionHeading(MainSection.RECORDS, anchors)
+                            Text("飞行记录", style = MaterialTheme.typography.titleLarge)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Switch(settings.recordingAutoStart, { settings = settings.copy(recordingAutoStart = it) }, enabled = !closing)
+                                Text("启动时自动开启记录（下次启动生效）")
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                OutlinedTextField(recordingPath, { recordingPath = it }, Modifier.weight(1f),
+                                    label = { Text("CSV 保存目录") }, enabled = recording !is RecordingState.Active && !recordingBusy && !closing, singleLine = true)
+                                Button(enabled = !closing && !recordingBusy && recordingPath.isNotBlank(), onClick = {
+                                    recordingBusy = true
+                                    scope.launch {
+                                        try {
+                                            recordingError = null
+                                            if (recording is RecordingState.Active) recorder.stop() else {
+                                                recorder.start(java.nio.file.Path.of(recordingPath))
+                                                if (recorder.state.value is RecordingState.Active) settings = settings.copy(recordingDirectory = recordingPath)
+                                            }
+                                        } catch (e: Exception) {
+                                            currentCoroutineContext().ensureActive()
+                                            recordingError = e.message ?: "无法更改录制状态"
+                                        } finally { recordingBusy = false }
+                                    }
+                                }) { Text(if (recording is RecordingState.Active) "停止记录" else "开始记录") }
+                            }
+                            RecordingDirectorySave(settings.recordingDirectory, recordingPath,
+                                enabled = recording !is RecordingState.Active && !recordingBusy && !closing) { path ->
+                                recordingPath = path
+                                settings = settings.copy(recordingDirectory = path)
+                            }
+                            androidx.compose.foundation.text.selection.SelectionContainer { Text(when (val current = recording) {
+                                RecordingState.Stopped -> "未记录"
+                                is RecordingState.Active -> current.file?.let { "已写入 ${current.samples} 帧：$it" } ?: "已开启记录，等待飞行数据"
+                                is RecordingState.Failed -> "记录失败：${current.description()}"
+                            }) }
+                            recordingError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                            RecordingAnalysisPanel(latestFile = lastRecording?.flight?.toString())
+                            EngineRecordingPanel(latestFile = lastRecording?.engines?.toString())
+                            SectionHeading(MainSection.MAP, anchors)
+                            MapPanel(activeEndpoint, connection is ConnectionState.Flying, sharedMap)
+                            HudMessagesPanel(activeEndpoint, flight)
+                            Text("迁移开发版：完整功能迁移、真实游戏及多平台验证仍在进行。", style = MaterialTheme.typography.bodySmall)
                         }
-                        RecordingDirectorySave(settings.recordingDirectory, recordingPath,
-                            enabled = recording !is RecordingState.Active && !recordingBusy && !closing) { path ->
-                            recordingPath = path
-                            settings = settings.copy(recordingDirectory = path)
-                        }
-                        androidx.compose.foundation.text.selection.SelectionContainer { Text(when (val current = recording) {
-                            RecordingState.Stopped -> "未记录"
-                            is RecordingState.Active -> current.file?.let { "已写入 ${current.samples} 帧：$it" } ?: "已开启记录，等待飞行数据"
-                            is RecordingState.Failed -> "记录失败：${current.description()}"
-                        }) }
-                        recordingError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                        RecordingAnalysisPanel(latestFile = lastRecording?.flight?.toString())
-                        EngineRecordingPanel(latestFile = lastRecording?.engines?.toString())
-                        SectionHeading(MainSection.MAP, anchors)
-                        MapPanel(activeEndpoint, connection is ConnectionState.Flying, sharedMap)
-                        HudMessagesPanel(activeEndpoint, flight)
-                        Text("迁移开发版：完整功能迁移、真实游戏及多平台验证仍在进行。", style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }

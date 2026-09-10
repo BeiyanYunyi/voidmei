@@ -11,9 +11,13 @@ class LegacyGlobalFontTest {
         for (imported in listOf(read(global), read(item("MonoNumFont", ""), global))) {
             assertEquals("Sarasa Mono SC", imported.hudNumberFont)
             assertEquals("Sarasa Mono SC", imported.applyTo(AppSettings(hudNumberFont = "previous")).hudNumberFont)
-            assertTrue(imported.unmigrated.any { it.target == "GlobalNumFont" && it.label.contains("HUD 表格以外") })
+            assertEquals("Sarasa Mono SC", imported.numberFont)
+            assertTrue(imported.unmigrated.isEmpty())
         }
-        assertEquals("dedicated", read(global, item("MonoNumFont", "dedicated")).hudNumberFont)
+        val dedicated = read(global, item("MonoNumFont", "dedicated"))
+        assertEquals("dedicated", dedicated.hudNumberFont)
+        assertEquals("Sarasa Mono SC", dedicated.numberFont)
+        assertEquals("dedicated", dedicated.applyTo(AppSettings()).hudNumberFont)
     }
 
     @Test fun missingAndInvalidFontsPreserveCurrentChoice() {

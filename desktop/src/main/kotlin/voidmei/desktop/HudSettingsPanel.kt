@@ -64,8 +64,8 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
                 onChange(settings.copy(hudNumberFont = name.takeUnless { it.isBlank() }))
         }, label = { Text("HUD 数字字体") }, singleLine = true,
         modifier = Modifier.testTag("hud-number-font"))
-    Text("填写已安装的字体名称；留空使用默认等宽字体。仅影响 HUD 表格读数。", style = MaterialTheme.typography.bodySmall)
-    val numberFont = remember(settings.hudNumberFont) { resolveHudNumberFont(settings.hudNumberFont) }
+    Text("填写已安装的字体名称；留空继承全局数字字体。仅影响 HUD 表格读数。", style = MaterialTheme.typography.bodySmall)
+    val numberFont = remember(settings.hudNumberFont, settings.numberFont) { resolveHudNumberFont(settings.hudNumberFont ?: settings.numberFont) }
     if (numberFont.unavailable) Text("未找到此字体，当前使用默认等宽字体；保留填写的名称。",
         style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("hud-number-font-unavailable"))
     HudReadingColorSettings(settings, onChange)

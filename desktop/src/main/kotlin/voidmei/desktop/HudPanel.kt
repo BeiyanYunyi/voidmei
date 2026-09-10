@@ -33,8 +33,8 @@ internal fun HudPanel(
     val systemDensity = LocalDensity.current
     CompositionLocalProvider(LocalDensity provides Density(systemDensity.density,
         systemDensity.fontScale * settings.hudFontScale),
-        LocalReadingNumberFont provides remember(settings.hudNumberFont) {
-            resolveHudNumberFont(settings.hudNumberFont).family
+        LocalReadingNumberFont provides remember(settings.hudNumberFont, settings.numberFont) {
+            resolveHudNumberFont(settings.hudNumberFont ?: settings.numberFont).family
         },
         LocalReadingColors provides ReadingColors(
             settings.hudLabelColor?.let { Color(voidmei.config.parseHexColor(it)!!) },
