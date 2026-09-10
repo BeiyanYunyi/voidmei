@@ -143,6 +143,7 @@ fun main(args: Array<String>) {
             mainVisible = !shouldStartInTray(settings.startInTray, trayAvailable, "--no-hud" in args, loaded.error != null)
             onDispose { tray?.close() }
         }
+        RecordingFailureEffect(recording, recordingError) { trayShow() }
         LaunchedEffect(settingsError, recordingExitFailure) {
             if (settingsError != null || recordingExitFailure != null) trayShow()
         }
