@@ -1,0 +1,27 @@
+{
+  "desc": "合成地图：宽图、坏图片、恢复、切换高图与 generation；非真实游戏地图",
+  "loop": true,
+  "steps": [
+    {
+      "snapshot": "map_wide",
+      "duration_ms": 8000
+    },
+    {
+      "snapshot": "map_tall",
+      "duration_ms": 5000,
+      "behavior": {
+        "raw_body": {
+          "map_img": "invalid image"
+        }
+      }
+    },
+    {
+      "snapshot": "map_tall",
+      "duration_ms": 8000
+    },
+    {
+      "snapshot": "map_wide",
+      "duration_ms": 8000
+    }
+  ]
+}

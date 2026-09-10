@@ -1,0 +1,11 @@
+{
+  "desc": "合成消息场景：同号事件/损伤、独立增长、断线恢复，最后编号重置（需手动重新读取）；非真实游戏捕获",
+  "loop": false,
+  "steps": [
+    {"snapshot": "messages_initial", "duration_ms": 5000},
+    {"snapshot": "messages_more", "duration_ms": 5000},
+    {"snapshot": "messages_more", "duration_ms": 3000, "behavior": {"disconnect": true}},
+    {"snapshot": "messages_more", "duration_ms": 5000},
+    {"snapshot": "messages_reset", "duration_ms": 3600000}
+  ]
+}

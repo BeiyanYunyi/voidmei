@@ -4,7 +4,7 @@
 VoidMei 战雷 8111 端口模拟器（纯标准库实现, Python 3.8+, CI 可跑）
 
 子命令:
-  capture  从真机 8111 抓取 /state /indicators /map_obj.json /map_info.json
+  capture  从真机 8111 抓取 /state /indicators /map_obj.json /map_info.json /hudmsg /map.img
            (--save-as <name> 直接存为快照)
   serve    启动模拟服务器 (默认端口 8111 = VoidMei 实际轮询端口, 备用 9222 由应用自行翻转)
   list     列出可用快照与场景
@@ -31,6 +31,7 @@ VoidMei 用 HttpHelper.sendGetFastBuf 裸 socket 读响应, StringHelper.getStri
 """
 
 import argparse
+import base64
 import datetime
 import http.server
 import json
@@ -61,11 +62,14 @@ DEFAULT_SNAPSHOTS_DIR = SCENARIOS_ROOT / "snapshots"
 DEFAULT_SCENARIOS_DIR = SCENARIOS_ROOT / "scenarios"
 DEFAULT_DATA_FILE = Path(__file__).parent / "mock_data.json"   # 旧版单文件数据 (capture 默认输出)
 
-# VoidMei 轮询的 4 个游戏端点
-ENDPOINTS = ["/state", "/indicators", "/map_obj.json", "/map_info.json"]
+# VoidMei 轮询的游戏端点
+ENDPOINTS = ["/state", "/indicators", "/map_obj.json", "/map_info.json", "/hudmsg", "/map.img"]
 
 # 端点短名 → 完整路径 (供 raw_body / /_mock/raw 的 type 参数使用)
 EP_ALIASES = {
+    "hudmsg": "/hudmsg",
+    "map.img": "/map.img",
+    "map_img": "/map.img",
     "state": "/state",
     "indicators": "/indicators",
     "map_obj": "/map_obj.json",
@@ -336,7 +340,7 @@ class MockState:
         return time.monotonic() - self.start_time
 
     # ---- 游戏端点响应决策 ----
-    def game_response(self, ep: str):
+    def game_response(self, ep: str, query=None):
         """
         返回 (kind, payload):
           ("drop",  None)   → 本 step disconnect, 直接断开连接不回包
@@ -373,8 +377,13 @@ class MockState:
         if content is None:
             return ("404", None)
 
+        if ep == "/hudmsg":
+            content = filter_hud_messages(content, query or {})
+
         if behavior.get("malformed"):
             body = "not json at all"  # 任务书指定的非 JSON 垃圾原文
+        elif ep == "/map.img":
+            return ("bytes", wrap_raw_response(decode_map_image(content)))
         elif isinstance(content, (dict, list)):
             # 冒号后恰好一个空格, 逗号后无空格 — StringHelper.getString 的硬性假设
             body = json.dumps(apply_behaviors(content, behavior), separators=(",", ": "),
@@ -382,6 +391,46 @@ class MockState:
         else:
             body = str(content)
         return ("bytes", wrap_raw_response(body.encode("utf-8")))
+
+
+MAX_MAP_IMAGE_BYTES = 8 * 1024 * 1024
+
+
+def decode_map_image(content):
+    """Binary map snapshots are inline base64, never paths resolved on the mock server."""
+    if not isinstance(content, dict) or not isinstance(content.get("base64"), str):
+        raise ValueError("map.img snapshot requires a base64 string")
+    encoded = content["base64"]
+    if len(encoded) > ((MAX_MAP_IMAGE_BYTES + 2) // 3) * 4:
+        raise ValueError("map.img exceeds 8 MiB")
+    payload = base64.b64decode(encoded, validate=True)
+    if not payload or len(payload) > MAX_MAP_IMAGE_BYTES:
+        raise ValueError("map.img must contain 1 byte to 8 MiB")
+    return payload
+
+
+def filter_hud_messages(content, query):
+    """Synthetic replay cursors; raw overrides bypass filtering for malformed-response probes."""
+    cursors = {}
+    for key in ("lastEvt", "lastDmg"):
+        values = query.get(key, ["0"])
+        if len(values) != 1 or not values[0].isascii() or not values[0].isdigit() or len(values[0]) > 10:
+            raise ValueError("%s must be one nonnegative integer" % key)
+        cursor = int(values[0])
+        if cursor > 2147483647:
+            raise ValueError("%s exceeds the supported cursor range" % key)
+        cursors[key] = cursor
+    if not isinstance(content, dict):
+        return content
+    result = dict(content)
+    for category, key in (("events", "lastEvt"), ("damage", "lastDmg")):
+        messages = content.get(category)
+        if isinstance(messages, list):
+            # Preserve malformed rows so the client can exercise its parser error handling.
+            result[category] = [item for item in messages if not isinstance(item, dict)
+                                or type(item.get("id")) is not int or item["id"] < 0
+                                or item["id"] > cursors[key]]
+    return result
 
 
 # ---------------- byte-perfect 响应包装 ----------------
@@ -449,7 +498,7 @@ class MockRequestHandler(http.server.BaseHTTPRequestHandler):
             if path.startswith("/_mock/"):
                 self.handle_control(path, urllib.parse.parse_qs(parsed.query))
             elif path in ENDPOINTS:
-                self.handle_game(path)
+                self.handle_game(path, urllib.parse.parse_qs(parsed.query, keep_blank_values=True))
             else:
                 self._send_raw_404()
         except (BrokenPipeError, ConnectionResetError):
@@ -458,8 +507,12 @@ class MockRequestHandler(http.server.BaseHTTPRequestHandler):
             sys.stderr.write("[mock] handler error %s: %s\n" % (self.path, e))
 
     # ---- 游戏端点 ----
-    def handle_game(self, ep: str):
-        kind, payload = self.mstate.game_response(ep)
+    def handle_game(self, ep: str, query=None):
+        try:
+            kind, payload = self.mstate.game_response(ep, query)
+        except ValueError as error:
+            self._send_json({"error": str(error)}, 400)
+            return
         if kind == "drop":
             # disconnect step: 不回任何字节直接关连接 (Java 侧 read()==-1 → 空串 → 翻转端口)
             self.close_connection = True
@@ -513,7 +566,7 @@ class MockRequestHandler(http.server.BaseHTTPRequestHandler):
             ep = normalize_ep(query.get("type", [""])[0])
             body = query.get("body", [""])[0]
             if ep is None:
-                self._send_json({"ok": False, "error": "type 须为 state/indicators/map_obj/map_info"},
+                self._send_json({"ok": False, "error": "type 须为 state/indicators/map_obj/map_info/hudmsg/map_img"},
                                 400)
                 return
             set_ = state.engine.set_raw_override(ep, body)
@@ -548,14 +601,20 @@ def run_capture(args):
     print("Capturing flight data from %s ..." % base)
     captured = {}
     for ep in ENDPOINTS:
-        url = base + ep
+        url = base + ep + ("?lastEvt=0&lastDmg=0" if ep == "/hudmsg" else "")
         try:
             with urllib.request.urlopen(url, timeout=2) as resp:
-                raw = resp.read().decode("utf-8", errors="replace")
-            try:
-                captured[ep] = json.loads(raw)  # 能解析则存结构化 JSON
-            except ValueError:
-                captured[ep] = raw              # 否则存原文 (与旧版行为一致)
+                if ep == "/map.img":
+                    payload = resp.read(MAX_MAP_IMAGE_BYTES + 1)
+                    if not payload or len(payload) > MAX_MAP_IMAGE_BYTES:
+                        raise ValueError("map.img must contain 1 byte to 8 MiB")
+                    captured[ep] = {"base64": base64.b64encode(payload).decode("ascii")}
+                else:
+                    raw = resp.read().decode("utf-8", errors="replace")
+                    try:
+                        captured[ep] = json.loads(raw)  # 能解析则存结构化 JSON
+                    except ValueError:
+                        captured[ep] = raw              # 否则存原文 (与旧版行为一致)
             print(" [+] Captured %s" % ep)
         except (urllib.error.URLError, OSError, ValueError) as e:
             print(" [!] Failed to capture %s: %s" % (ep, e))
