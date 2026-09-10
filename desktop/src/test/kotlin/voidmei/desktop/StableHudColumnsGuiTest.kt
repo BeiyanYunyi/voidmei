@@ -41,6 +41,31 @@ class StableHudColumnsGuiTest {
         assertTrue(sameRow())
     }
 
+    @Test fun explicitAltitudeModeChangeResetsWidthsButAutomaticSourceChangesDoNot() {
+        val base = TelemetryParser.parse("""{"valid":true,"IAS, km/h":380,"H, m":1000}""",
+            """{"valid":true,"type":"test","radio_altitude":499}""")!!
+        var telemetry by mutableStateOf(base)
+        var mode by mutableStateOf(HudAltitudeMode.SEA_LEVEL)
+        compose.setContent { MaterialTheme { Box(Modifier.size(300.dp, 500.dp)) {
+            HudPanel(ConnectionState.Flying(telemetry, FlightMetrics(cockpitAltitudeUnit = CockpitAltitudeUnit.METRES)),
+                AppSettings(hudFields = listOf("ias", "altitude"), hudAltitudeMode = mode,
+                    hudAttitude = false, hudMechanization = false), emptyList(), null) {}
+        } } }
+        fun sameRow() = compose.onNodeWithText("IAS").fetchSemanticsNode().boundsInRoot.top ==
+            compose.onNodeWithText("高度").fetchSemanticsNode().boundsInRoot.top
+        assertTrue(sameRow())
+        compose.runOnIdle { mode = HudAltitudeMode.LOW_RADAR }
+        assertFalse(sameRow())
+        repeat(3) {
+            compose.runOnIdle { telemetry = base.copy(radioAltitudeRaw = 501.0) }
+            assertFalse(sameRow(), "Automatic altitude switching must retain stable columns")
+            compose.runOnIdle { telemetry = base }
+            assertFalse(sameRow())
+        }
+        compose.runOnIdle { mode = HudAltitudeMode.SEA_LEVEL }
+        assertTrue(sameRow(), "Explicit altitude preference should start fresh width measurements")
+    }
+
     @Test fun changingSelectedEngineStartsFreshLayoutMeasurements() {
         var telemetry by mutableStateOf(TelemetryParser.parse(
             """{"valid":true,"power 1, hp":1e30,"power 2, hp":500}""",

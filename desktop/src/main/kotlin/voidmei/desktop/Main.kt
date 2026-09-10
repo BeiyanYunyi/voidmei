@@ -513,7 +513,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
             if (unit.isEmpty() || !value.endsWith(" $suffix")) null
             else index to (value.length - suffix.length until value.length - suffix.length + unit.length)
         }.toMap()
-        key(t.aircraft) {
+        key(t.aircraft, if (compact) altitudeMode else null) {
             FlightReadings(rows, compact, warnings, if (compact) fields.indices.filter { fields[it].id in hiddenLabels }.toSet() else emptySet(), unitRanges)
         }
         if (compact && HudField.HEADING in fields) CompassPanel(t.headingDeg, compassHeadingUp)

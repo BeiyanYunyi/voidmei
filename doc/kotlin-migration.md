@@ -2427,6 +2427,14 @@ JVM/JS、桌面单元与 HUD 回归通过（`/tmp/voidmei-hud-altitude-mode.log`
 
 Nix 构建及包内检查通过，新包 `/nix/store/4r6nb5yrff7sjprsgfhwrq863f4y3ws0-voidmei-kotlin-2.0.0`，试用入口 `/tmp/voidmei-kotlin-offline/bin/voidmei-kotlin` 已更新；日志 `/tmp/voidmei-altitude-mode-nix.log`。
 
+### 高度来源偏好切换后的列宽重置
+
+新增实际 HudPanel 回归复现：低空雷达说明使表格变为一列后，手动选择海拔仍保留旧宽度。失败日志 `/tmp/voidmei-altitude-columns-before.log`。飞行表格现在将显式高度模式纳入测量组件的标识，手动切换重新测量；同一模式下随遥测自动跨过 500 m 阈值仍保留宽度记录，避免反复重排列。
+
+4 项列布局与 3 项高度 GUI 测试通过，无失败或跳过（`/tmp/voidmei-altitude-columns-after.log`），覆盖手动恢复两列及自动来回切换保持一列。此修改不改变高度数值或来源选择规则。
+
+Nix 构建及包内检查通过，新包 `/nix/store/rpdh1fwk5d0hpyzdm9pi3fzzn2hjlybf-voidmei-kotlin-2.0.0`，试用入口 `/tmp/voidmei-kotlin-offline/bin/voidmei-kotlin` 已更新；日志 `/tmp/voidmei-altitude-columns-nix.log`。本轮未重复真机或物理 GPU 验证。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
