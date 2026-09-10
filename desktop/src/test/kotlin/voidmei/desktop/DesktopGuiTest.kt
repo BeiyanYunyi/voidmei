@@ -1596,6 +1596,11 @@ class DesktopGuiTest {
         compose.onNodeWithText("燃油耗尽语音包").performTextReplacement("")
         compose.onNodeWithText("应用燃油耗尽语音包").performClick()
         compose.runOnIdle { assertNull(current.alertVoices["fail_nofuel"]?.pack) }
+        compose.onNodeWithContentDescription("连接成功提示音播报").performScrollTo().assertIsOff().performClick().assertIsOn()
+        compose.runOnIdle {
+            assertEquals(voidmei.config.VoiceChoice(), current.alertVoices["start1"])
+            assertEquals(75, current.voiceVolume)
+        }
     }
 
     @Test fun voicePackValidationAppliesSettingsAndRetainsThemAfterFailure() {

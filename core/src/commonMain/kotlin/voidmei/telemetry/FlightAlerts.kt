@@ -36,6 +36,7 @@ enum class FlightAlert(val voice: String, val label: String, val cooldownMs: Lon
     ELEVATOR_EFFECTIVENESS("elevatorEff", "达到升降舵舵效衰减速度", 10000, AlertSeverity.ADVISORY),
     RUDDER_EFFECTIVENESS("rudderEff", "达到方向舵舵效衰减速度", 10000, AlertSeverity.ADVISORY),
     LOW_FUEL("warn_lowfuel", "燃油不足 10%", 60000, AlertSeverity.ADVISORY),
+    CONNECTION_READY("start1", "连接成功提示音", 10000, AlertSeverity.ADVISORY),
 }
 
 data class AlertUpdate(val active: List<FlightAlert>, val voice: FlightAlert?, val voiceAttemptId: Long? = null)

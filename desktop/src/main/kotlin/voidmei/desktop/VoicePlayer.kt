@@ -67,9 +67,10 @@ class VoicePlayer(private val clipFactory: () -> Clip = AudioSystem::getClip) : 
             }
         }
     }
-    /** Only a higher severity may interrupt an active clip; equal severity waits for completion. */
+    /** Warnings may interrupt the greeting; otherwise only a higher severity interrupts a clip. */
     @Synchronized fun canPlay(alert: FlightAlert): Boolean = !closed &&
-        (clip?.isRunning != true || playingAlert?.let { alert.severity < it.severity } == true)
+        (clip?.isRunning != true || playingAlert == FlightAlert.CONNECTION_READY && alert != FlightAlert.CONNECTION_READY ||
+            playingAlert?.let { alert.severity < it.severity } == true)
 
     @Synchronized fun isPlaying(): Boolean = clip?.isRunning == true
 

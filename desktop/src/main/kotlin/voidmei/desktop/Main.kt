@@ -168,19 +168,25 @@ fun main(args: Array<String>) {
 
         val currentAlertModel by rememberUpdatedState(modelForAlerts)
         LaunchedEffect(activeEndpoint, generation) {
+            val arrivalCue = FlightArrivalCue()
             val engineResponse = EngineResponseMonitor()
             val wepFuel = WepFuelMonitor()
             suspend fun process(state: ConnectionState): TelemetryDisplay {
                 val alertSettings = settings
                 val model = currentAlertModel
                 val nowMs = System.nanoTime() / 1_000_000
+                val arrived = arrivalCue.update(state, nowMs, alertSettings.voiceEnabled && alertSettings.voiceVolume > 0 &&
+                    alertSettings.alertVoices[FlightAlert.CONNECTION_READY.voice]?.enabled == true)
                 val thermal = thermalMonitor.update(state, model, nowMs)
                 val update = alertEvaluator.updateForAircraft(state, model,
                     nowMs, alertSettings.voiceEnabled && alertSettings.voiceVolume > 0,
                     alertSettings.alertVoices.filterValues { !it.enabled }.keys, thermalObservation = thermal,
                     voiceAvailable = voicePlayer::canPlay)
                 if (state !is ConnectionState.Flying) stopVoice()
-                update.voice?.let { alert ->
+                val sound = update.voice ?: FlightAlert.CONNECTION_READY.takeIf {
+                    arrived && update.active.isEmpty() && voicePlayer.canPlay(it)
+                }
+                sound?.let { alert ->
                     try {
                         voicePlayer.play(alert, alertSettings.voiceVolume, VoiceResources(java.nio.file.Path.of(alertSettings.voiceDirectory),
                             alertSettings.alertVoices[alert.voice]?.pack ?: alertSettings.voicePack))

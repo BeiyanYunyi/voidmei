@@ -16,8 +16,9 @@ fun AlertVoicePanel(settings: AppSettings, onSettings: (AppSettings) -> Unit) {
     TextButton(onClick = { expanded = !expanded }) { Text("逐条语音设置") }
     if (!expanded) return
     Text("关闭播报后仍显示屏幕告警。包名留空使用全局语音包，default 使用根目录及内置语音。")
+    Text("连接成功提示音默认关闭；开启后在进入有效飞行时播放，告警优先。短时间重连不重复播放。")
     FlightAlert.entries.forEach { alert ->
-        val choice = settings.alertVoices[alert.voice] ?: VoiceChoice()
+        val choice = settings.alertVoices[alert.voice] ?: VoiceChoice(enabled = alert != FlightAlert.CONNECTION_READY)
         var pack by remember(choice.pack) { mutableStateOf(choice.pack.orEmpty()) }
         var error by remember { mutableStateOf<String?>(null) }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

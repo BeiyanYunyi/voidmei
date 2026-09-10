@@ -9,6 +9,19 @@ import kotlin.test.*
 import voidmei.telemetry.FlightAlert
 
 class VoicePlayerTest {
+    @Test fun connectionCueCanBeInterruptedByAdvisoriesAndWarnings(): Unit = runBlocking {
+        val device = Device()
+        val player = VoicePlayer { device.clip }
+        try {
+            player.play(FlightAlert.CONNECTION_READY)
+            assertFalse(player.canPlay(FlightAlert.CONNECTION_READY))
+            assertTrue(player.canPlay(FlightAlert.HIGH_AOA))
+            assertTrue(player.canPlay(FlightAlert.CRITICAL_AOA))
+            player.play(FlightAlert.HIGH_AOA)
+            assertFalse(player.canPlay(FlightAlert.CONNECTION_READY))
+        } finally { player.close() }
+    }
+
     private class Device(val gainSupported: Boolean = true, val onOpen: () -> Unit = {},
         val onStop: () -> Unit = {}, val onClose: () -> Unit = {}) {
         var running = false
