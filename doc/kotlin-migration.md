@@ -2579,6 +2579,12 @@ Nix 包构建通过：`/nix/store/l4s81lbcm5ni8q74c7zxf9qawavhcij2-voidmei-kotli
 
 CI 的 WEP/托盘恢复录制场景加入 80 ms 参数，actionlint 通过；远程 CI 尚未运行。本结果不代替真机音频或动态飞行验收。
 
+### 旧 HUD 数字字体继承
+
+对照 `ConfigurationService.getNumFont()` 补齐导入回退顺序：专用 `MonoNumFont` 有值时优先；缺省/空白时尝试 `GlobalNumFont`。没有有效名称时保留当前字体并报告，避免覆盖新版已选字体。全局数字字体在 HUD 表格以外的作用仍列为未迁移，未据此改变主窗口字体。
+
+共享 JVM/JS 与桌面回归通过（`/tmp/voidmei-legacy-global-font.log`），覆盖专用优先、全局继承、空/超长名称及类型校验。本轮未重新构建 Nix 包。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

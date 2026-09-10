@@ -141,7 +141,7 @@ object LegacySettingsReader {
         val targets = mutableMapOf<String, Pair<String, String>>()
         val voiceKeys = voidmei.telemetry.FlightAlert.entries.map { "voice_${it.voice}" }.toSet()
         val colorKeys = setOf("fontLabel", "fontNum", "fontUnit", "fontWarn", "fontShade")
-        val supported = colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("httpPort", "alwaysShowRadarAltitude", "MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
+        val supported = colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("GlobalNumFont", "httpPort", "alwaysShowRadarAltitude", "MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
         fun walk(node: Node) {
             val children = node.children ?: return
             val kind = children.firstOrNull()?.takeUnless { it.quoted }?.atom
@@ -167,11 +167,19 @@ object LegacySettingsReader {
             if (kind != "item") children.forEach(::walk)
         }
         roots.forEach(::walk)
-        val numberFont = targets["MonoNumFont"]?.let { (type, value) ->
-            require(type == "combo") { "MonoNumFont 类型不支持" }
-            value.trim().takeIf { it.isNotEmpty() && it.length <= 200 && it.none { char -> char.isISOControl() } }
-                ?: run { unmigrated += UnmigratedLegacySetting("字体名称无效，保留当前字体", "MonoNumFont"); null }
+        val monoFont = targets["MonoNumFont"]
+        val globalFont = targets["GlobalNumFont"]
+        for ((key, entry) in listOf("MonoNumFont" to monoFont, "GlobalNumFont" to globalFont)) {
+            if (entry != null) require(entry.first == "combo") { "$key 类型不支持" }
         }
+        if (globalFont != null) unmigrated += UnmigratedLegacySetting("HUD 表格以外的全局数字字体", "GlobalNumFont")
+        val fontSource = if (monoFont == null || monoFont.second.isBlank()) "GlobalNumFont" else "MonoNumFont"
+        val numberFont = targets[fontSource]?.second?.let { value ->
+            value.trim().takeIf { it.isNotEmpty() && it.length <= 200 && it.none { char -> char.isISOControl() } }
+                ?: run { unmigrated += UnmigratedLegacySetting("字体名称无效，保留当前字体", fontSource); null }
+        }
+        if (monoFont != null && monoFont.second.isBlank() && globalFont == null)
+            unmigrated += UnmigratedLegacySetting("未指定等宽或全局数字字体，保留当前字体", "MonoNumFont")
         val readingColors = targets.filterKeys { it in colorKeys }.mapNotNull { (target, entry) ->
             require(entry.first == "color") { "$target 类型不支持" }
             val text = entry.second.trim()
