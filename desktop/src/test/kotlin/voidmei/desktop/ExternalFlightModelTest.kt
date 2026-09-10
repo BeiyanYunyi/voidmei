@@ -124,11 +124,21 @@ class ExternalFlightModelTest {
                 }
             }
             val expectedIssues = if (name == "f-14a-early") setOf(
-                "Invalid or ambiguous structural load: Strength.CritOverload",
                 "Unsupported directional thresholds: ElevatorsEffectiveSpeed (1801.0, 1800.0)",
             ) else emptySet()
             assertEquals(expectedIssues, (parameters.issues + jets.issues + pistons.issues).toSet(), name)
-            if (name == "f-14a-early") assertNull(parameters.structuralLoad)
+            if (name == "f-14a-early") {
+                assertNull(parameters.structuralLoad)
+                val loads = assertNotNull(parameters.sweptStructuralLoad)
+                assertEquals(listOf(0.0, 0.5, 1.0), loads.profiles.map { it.sweep })
+                assertEquals(listOf(1300000.0, 1400000.0, 1400000.0), loads.profiles.map { it.model.positiveForce })
+                for ((sweep, force) in listOf(0.0 to 1300000.0, 0.25 to 1350000.0, 0.5 to 1400000.0, 1.0 to 1400000.0)) {
+                    val limits = assertNotNull(parameters.loadLimits(1000.0, sweep))
+                    assertEquals(1.2 * (2 * force / (9.80 * 19365.0) - 1), limits.maximumG, 1e-10)
+                    assertEquals(1.2 * (2 * -600000.0 / (9.80 * 19365.0) + 1), limits.minimumG, 1e-10)
+                }
+                assertNull(parameters.loadLimits(1000.0, null))
+            }
             reports += buildJsonObject {
                 put("name", name); put("sha256", hash)
                 put("emptyMassKg", parameters.emptyMassKg)

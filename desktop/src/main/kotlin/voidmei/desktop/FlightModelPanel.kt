@@ -127,9 +127,10 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
             Text("基础质量 1 G 失速 IAS 估算 ${parameters.stallSpeed?.speedKmh(telemetry?.fuelKg, telemetry?.flapsPercent, telemetry?.wingSweepRatio).display()} km/h")
             parameters.stallSpeedIssue?.let { Text("失速模型不可用：$it", style = MaterialTheme.typography.bodySmall) }
             if (parameters.stallSpeed != null) Text("准稳态模型估算，未计外挂载荷、损伤和机动过载。", style = MaterialTheme.typography.bodySmall)
-            val loadLimits = parameters.structuralLoad?.limits(telemetry?.fuelKg)
+            val loadLimits = parameters.loadLimits(telemetry?.fuelKg, telemetry?.wingSweepRatio)
             Text("基础质量估算过载范围 ${loadLimits?.minimumG.display()} ～ ${loadLimits?.maximumG.display()} G")
-            if (parameters.structuralLoad != null) Text("按模型空重、油液、加力剂及当前燃油估算，未计外挂载荷。", style = MaterialTheme.typography.bodySmall)
+            if (parameters.structuralLoad != null || parameters.sweptStructuralLoad != null) Text("按模型空重、油液、加力剂及当前燃油估算，未计外挂载荷。", style = MaterialTheme.typography.bodySmall)
+            if ((parameters.sweptStructuralLoad?.profiles?.size ?: 0) > 1) Text("后掠位置之间采用线性估算；缺少后掠数据时不显示过载限制。", style = MaterialTheme.typography.bodySmall)
             Text("模型 VNE ${limits?.vneKmh.display()} km/h · 马赫限制 ${limits?.maxMach.display()}")
             Text("迎角范围 ${limits?.minAngleOfAttackDeg.display()}° 至 ${limits?.maxAngleOfAttackDeg.display()}° · 后掠 ${(telemetry?.wingSweepRatio?.times(100)).display()}%")
             if (parameters.issues.isNotEmpty()) Text("部分模型字段不可用：${parameters.issues.joinToString("；")}", color = MaterialTheme.colorScheme.error)

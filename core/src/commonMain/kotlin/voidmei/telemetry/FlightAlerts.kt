@@ -82,7 +82,7 @@ class FlightAlerts {
         val matching = model?.parametersFor(telemetry?.aircraft)
         return update(state, matching?.limits(telemetry?.wingSweepRatio, telemetry?.flapsPercent), nowMs,
             voiceEnabled, disabledVoices, matching?.gearLimitKmh,
-            matching?.flapLimits?.speedAt(telemetry?.flapsPercent), matching?.flapLimits, matching?.structuralLoad?.limits(telemetry?.fuelKg), matching?.controlSpeeds, matching?.stallSpeed?.speedKmh(telemetry?.fuelKg, telemetry?.flapsPercent, telemetry?.wingSweepRatio), voiceAvailable, matching?.engineRpmLimits.orEmpty(), matching?.engineRpmReferences.orEmpty(), thermalObservation?.warningEngines(state, model).orEmpty(),
+            matching?.flapLimits?.speedAt(telemetry?.flapsPercent), matching?.flapLimits, matching?.loadLimits(telemetry?.fuelKg, telemetry?.wingSweepRatio), matching?.controlSpeeds, matching?.stallSpeed?.speedKmh(telemetry?.fuelKg, telemetry?.flapsPercent, telemetry?.wingSweepRatio), voiceAvailable, matching?.engineRpmLimits.orEmpty(), matching?.engineRpmReferences.orEmpty(), thermalObservation?.warningEngines(state, model).orEmpty(),
             telemetry?.let { CompressorAdvice.recommendations(it, matching?.engineCompressors.orEmpty()) }.orEmpty())
     }
 

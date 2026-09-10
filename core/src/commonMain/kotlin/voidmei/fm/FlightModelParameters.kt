@@ -44,7 +44,11 @@ data class FlightModelParameters(
     val basicMassKg: Double? = null,
     val enginePeaks: List<EnginePeakReference> = emptyList(),
     val wepFuel: WepFuelModel? = null,
+    val sweptStructuralLoad: SweptStructuralLoadModel? = null,
 ) {
+    fun loadLimits(fuelKg: Double?, sweep: Double?): LoadLimits? =
+        if (sweptStructuralLoad != null) sweptStructuralLoad.limits(fuelKg, sweep) else structuralLoad?.limits(fuelKg)
+
     fun limits(sweep: Double?, flapsPercent: Double?): WingLimits? {
         if (wings.isEmpty()) return null
         if (!variableSweep) return wings.single().limits(flapsPercent)
@@ -133,11 +137,13 @@ object FlightModelExtractor {
         val nitro = number("Mass.MaxNitro", "MaxNitro")
         val basicMass = if (emptyMass != null && oil != null && oil >= 0 && nitro != null && nitro >= 0)
             (emptyMass + oil + nitro).takeIf { it.isFinite() && it > 0 } else null
+        val sweptLoad = SweptStructuralLoadExtractor.extract(document, sweepPaths, basicMass)
+        sweptLoad?.issue?.let(issues::add)
         var structuralLoad: StructuralLoadModel? = null
         val strengthPath = listOf("WingCritOverload", "Strength.CritOverload").firstOrNull { path ->
             fields.any { it.first.equals(path, true) || it.first.endsWith(".$path", true) }
         }
-        if (strengthPath != null) {
+        if (strengthPath != null && sweptLoad == null) {
             val exact = fields.filter { it.first.equals(strengthPath, true) }
             val matches = exact.ifEmpty { fields.filter { it.first.endsWith(".$strengthPath", true) } }
             val field = matches.singleOrNull()?.second
@@ -177,6 +183,6 @@ object FlightModelExtractor {
             instance.binding.telemetryIndex to model
         }.toMap()
         return FlightModelParameters(emptyMass,
-            number("Mass.MaxFuelMass0", "MaxFuelMass0", positive = true), wings, variable, issues.distinct(), gearLimit, flaps.limits, structuralLoad, controlSpeeds, stallSpeed.model, stallSpeed.issue, bindings.bindings, rpm.limits, rpm.references, thermal.engines, compressors, fuel, basicMass, wepFuel = WepFuelExtractor.extract(document))
+            number("Mass.MaxFuelMass0", "MaxFuelMass0", positive = true), wings, variable, issues.distinct(), gearLimit, flaps.limits, structuralLoad, controlSpeeds, stallSpeed.model, stallSpeed.issue, bindings.bindings, rpm.limits, rpm.references, thermal.engines, compressors, fuel, basicMass, wepFuel = WepFuelExtractor.extract(document), sweptStructuralLoad = sweptLoad?.model)
     }
 }

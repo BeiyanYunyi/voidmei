@@ -13,8 +13,8 @@ object ModelComparison {
             model.maximumFuelMassKg?.takeIf { it.isFinite() && it >= 0 }?.times(fuelFraction)
         val leftFuel = fuel(baseline)
         val rightFuel = fuel(current)
-        val leftLoad = baseline.structuralLoad?.limits(leftFuel)
-        val rightLoad = current.structuralLoad?.limits(rightFuel)
+        val leftLoad = baseline.loadLimits(leftFuel, sweep)
+        val rightLoad = current.loadLimits(rightFuel, sweep)
         val left = baseline.limits(sweep, flaps)
         val right = current.limits(sweep, flaps)
         fun row(label: String, unit: String, a: Double?, b: Double?) =
