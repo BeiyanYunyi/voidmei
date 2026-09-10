@@ -29,8 +29,9 @@ class FlightCalculator {
     private val fuelEstimator = FuelEstimator()
     private val observedPeak = ObservedEnginePeakTracker()
     private val cockpitUnits = CockpitUnitEstimator()
+    private val speedTrend = SpeedTrend()
 
-    fun reset() { previous = null; fuelEstimator.reset(); cockpitUnits.reset(); observedPeak.reset() }
+    fun reset() { previous = null; fuelEstimator.reset(); cockpitUnits.reset(); observedPeak.reset(); speedTrend.reset() }
 
     fun update(current: Telemetry, timeMs: Long): FlightMetrics {
         val prior = previous
@@ -41,12 +42,11 @@ class FlightCalculator {
             ?.let { (timeMs - it.second) / 1000.0 }
         val sameFlight = prior != null && prior.first.aircraft == current.aircraft && dt != null && dt > 0 && dt <= 2
         if (!sameFlight || prior?.first?.fuelCapacityKg != current.fuelCapacityKg) fuelEstimator.reset()
-        val previousSpeed = prior?.first?.tasKmh?.takeIf { it.isFinite() && it >= 0 }?.div(3.6)
-        val acceleration = if (sameFlight && speed != null && previousSpeed != null)
-            (speed - previousSpeed) / dt else null
-        // Difference of kinetic energy uses the interval's mean speed, not the final speed.
-        val sep = if (acceleration != null && speed != null && previousSpeed != null && current.verticalSpeedMps != null)
-            current.verticalSpeedMps + (speed + previousSpeed) * 0.5 * acceleration / G else null
+        if (!sameFlight || speed == null) speedTrend.reset()
+        val trend = speed?.let { speedTrend.update(it, timeMs) }
+        val acceleration = trend?.first
+        val sep = if (trend != null && current.verticalSpeedMps != null)
+            current.verticalSpeedMps + trend.second else null
         val turnAcceleration = (if (current.loadG != null && current.rollDeg != null && current.pitchDeg != null && current.angleOfAttackDeg != null) {
             val roll = current.rollDeg * PI / 180
             // Raw instrument pitch is nose-down positive, so this is the negative flight-path angle.
