@@ -472,7 +472,7 @@ class LegacySettingsTest {
     @Test fun rejectsAmbiguityBadValuesAndMalformedDocuments() {
         fun item(value: String) = """(item "x" :target "dataPollIntervalMs" :type slider :value $value)"""
         for (text in listOf(
-            "(panel p ${item("10")})", "(panel p ${item("NaN")})",
+            "(panel p ${item("9")})", "(panel p ${item("NaN")})",
             "(panel p ${item("100")} ${item("200")})", "(panel p ${item("100")}",
             "(panel p)", "[settings]", "(panel p (item \"unterminated))",
             """(panel p (item x :target "enableVoiceWarn" :type switch :value yes))""",

@@ -204,10 +204,15 @@ object LegacySettingsReader {
                 target to hex
             }
         }.toMap()
-        val interval = (targets["dataPollIntervalMs"] ?: targets["Interval"])?.let { (type, value) ->
+        val intervalTarget = if ("dataPollIntervalMs" in targets) "dataPollIntervalMs" else "Interval"
+        val interval = targets[intervalTarget]?.let { (type, value) ->
             require(type in setOf("slider", "input")) { "刷新间隔类型不支持" }
-            value.toLongOrNull()?.also { require(it in 20..5000) { "刷新间隔需在 20–5000 ms 内" } }
+            val parsed = value.toLongOrNull()?.also { require(it in 10..5000) { "旧刷新间隔需在 10–5000 ms 内" } }
                 ?: error("刷新间隔不是整数")
+            if (parsed < 20) {
+                unmigrated += UnmigratedLegacySetting("旧刷新间隔 $parsed ms 小于新版最小值 20 ms，保留当前间隔", intervalTarget)
+                null
+            } else parsed
         }
         fun flag(key: String) = targets[key]?.let { (type, value) ->
             require(type == "switch" || type == "switch-inv") { "$key 类型不支持" }
