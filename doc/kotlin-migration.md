@@ -2553,6 +2553,12 @@ SOFTWARE_FAST 后端 15 秒 82347 次采样无空白，透明度与 6 项窗口 
 
 桌面单元与隔离 GUI 回归通过（`/tmp/voidmei-voice-pack-validation.log`、`/tmp/voidmei-voice-pack-validation-gui.log`）：测试截断后的 `start1.wav` 可以打开头但不能通过完整校验，取消异常原样传播，界面报告不完整并保留此前选择的语音包。本轮未重建 Nix 包。
 
+### 语音迁移后的完整 Compose 回归
+
+完成当前工作树的整个 `:desktop:guiTest`（不是单项过滤）：38 个测试类、150 项测试，零失败、零错误、零跳过，34 秒通过。日志 `/tmp/voidmei-full-gui-after-audio-resumed.log`，JUnit XML 和 HTML 副本保存在 `/tmp/voidmei-full-gui-after-audio-results/`。覆盖本任务注册的全部 `*GuiTest`，包括语音、配置、记录分析、地图和 HUD 交互。
+
+此前启动的同一轮测试因会话中断没有完成日志，恢复时确认旧进程已不存在后重跑。本结果来自隔离 X11/软件渲染环境，不包括独立的 native HUD/热键/托盘任务或真机音频、游戏验证。本轮没有修改生产代码或重建 Nix 包。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
