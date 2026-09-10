@@ -2585,6 +2585,14 @@ CI 的 WEP/托盘恢复录制场景加入 80 ms 参数，actionlint 通过；远
 
 共享 JVM/JS 与桌面回归通过（`/tmp/voidmei-legacy-global-font.log`），覆盖专用优先、全局继承、空/超长名称及类型校验。本轮未重新构建 Nix 包。
 
+### 全局文字字体
+
+新增可空 `textFont` 设置与主窗口输入/应用入口，主窗口、HUD 和离线模型窗口共用所选字体的 Material Typography。所有标题、正文和标签主题样式保留原字号/字重等参数，只替换字体族；显式指定的 HUD 数字字体仍独立。缺失字体回退系统默认并提示，原名称保留；留空恢复默认。系统原生标题栏及显式绘制/指定字体的文字不受此设置控制。
+
+旧 `GlobalTextFont` combo 配置可导入；JVM/JS 配置回归覆盖缺省、持久化、非法名称和独立于 HUD 数字设置的合并。桌面与 GUI 回归验证应用后主题字体、缺失回退及清空恢复（`/tmp/voidmei-text-font.log`）。
+
+最终 `nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-text-font-final-nix.log`）。实际自定义字体的跨平台字形和布局仍待真机验证。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

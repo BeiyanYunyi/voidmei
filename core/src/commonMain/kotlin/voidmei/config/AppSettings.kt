@@ -55,9 +55,11 @@ data class AppSettings(
     val hudUnitColor: String? = null,
     val hudAttitudeAoaLimits: Boolean = true,
     val hudNumberFont: String? = null,
+    val textFont: String? = null,
     val hudAltitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL,
 ) {
     init {
+        require(textFont == null || (textFont.isNotBlank() && textFont.length <= 200 && textFont.none { it.isISOControl() }))
         require(hudNumberFont == null || (hudNumberFont.isNotBlank() && hudNumberFont.length <= 200 && hudNumberFont.none { it.isISOControl() }))
         require(listOf(hudLabelColor, hudValueColor, hudWarningColor, hudShadeColor, hudUnitColor).all { it == null || parseHexColor(it) != null })
         require(hudCrosshairSizeDp in 24..400)
@@ -136,6 +138,7 @@ object SettingsJson {
                 require(value.isString)
                 HudAltitudeMode.entries.firstOrNull { it.id == value.content } ?: error("Unknown HUD altitude mode")
             } ?: defaults.hudAltitudeMode,
+            textFont = root["textFont"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
             hudNumberFont = root["hudNumberFont"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
             hudLabelColor = root["hudLabelColor"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
             hudValueColor = root["hudValueColor"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
@@ -234,6 +237,7 @@ object SettingsJson {
         fields["hudFields"] = JsonArray(settings.hudFields.map(::JsonPrimitive))
         fields["hudCompassHeadingUp"] = JsonPrimitive(settings.hudCompassHeadingUp)
         fields["hudAltitudeMode"] = JsonPrimitive(settings.hudAltitudeMode.id)
+        fields["textFont"] = settings.textFont?.let(::JsonPrimitive) ?: JsonNull
         fields["hudNumberFont"] = settings.hudNumberFont?.let(::JsonPrimitive) ?: JsonNull
         fields["hudAttitudeAoaLimits"] = JsonPrimitive(settings.hudAttitudeAoaLimits)
         fields["hudAttitudeEarthFixed"] = JsonPrimitive(settings.hudAttitudeEarthFixed)

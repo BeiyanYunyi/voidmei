@@ -27,6 +27,7 @@ fun main(args: Array<String>) {
             onDispose { heartbeat?.close() }
         }
         var settings by remember { mutableStateOf(loaded.settings.withStartupHudOptions(args)) }
+        val typography = remember(settings.textFont) { textTypography(resolveTextFont(settings.textFont).family) }
         var settingsError by remember { mutableStateOf(loaded.error) }
         var hudPointerError by remember { mutableStateOf<String?>(null) }
         val scope = rememberCoroutineScope()
@@ -231,7 +232,7 @@ fun main(args: Array<String>) {
             }
             val renderer = rememberRendererDiagnostics(window)
             var showRenderer by remember { mutableStateOf(false) }
-            MaterialTheme(colorScheme = darkColorScheme(primary = Color(0xFF84DEC6), background = Color(0xFF111820))) {
+            MaterialTheme(typography = typography, colorScheme = darkColorScheme(primary = Color(0xFF84DEC6), background = Color(0xFF111820))) {
                 recordingExitFailure?.let { (saveSettings, reason) ->
                     RecordingExitDialog(reason, onReturn = { recordingExitFailure = null }, onExit = {
                         recordingExitFailure = null
@@ -274,6 +275,7 @@ fun main(args: Array<String>) {
                             Text(it, color = MaterialTheme.colorScheme.error)
                             TextButton(enabled = !closing, onClick = { closeApp(saveSettings = false) }) { Text("不保存并退出") }
                         }
+                        TextFontSettings(settings.textFont) { settings = settings.copy(textFont = it) }
                         PollingIntervalSettings(settings.pollIntervalMs) { settings = settings.copy(pollIntervalMs = it) }
                         Text("HUD 背景不透明度 ${(settings.hudOpacity * 100).toInt()}%")
                         Slider(value = settings.hudOpacity, onValueChange = { settings = settings.copy(hudOpacity = it) }, valueRange = 0f..1f)
@@ -421,7 +423,7 @@ fun main(args: Array<String>) {
         if (offlineModels) Window(onCloseRequest = { offlineModels = false }, title = "VoidMei · 离线模型",
             state = rememberWindowState(width = 960.dp, height = 800.dp)) {
             rememberRendererDiagnostics(window)
-            MaterialTheme(colorScheme = darkColorScheme(primary = Color(0xFF84DEC6))) {
+            MaterialTheme(typography = typography, colorScheme = darkColorScheme(primary = Color(0xFF84DEC6))) {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -442,7 +444,7 @@ fun main(args: Array<String>) {
             rememberRendererDiagnostics(window)
             if (!java.lang.Boolean.getBoolean("voidmei.diagnostics.hud.fixedSize"))
                 updateHudWindowSize(window, hudState, settings.hudWidthDp, hudContentHeight)
-            MaterialTheme(colorScheme = darkColorScheme(primary = Color(0xFF84DEC6))) {
+            MaterialTheme(typography = typography, colorScheme = darkColorScheme(primary = Color(0xFF84DEC6))) {
                 HudPanel(connection, settings, alerts, modelForAlerts, mapEndpoint = activeEndpoint, sharedMap = sharedMap, thermal = thermalObservation, onContentHeightChanged = { hudContentHeight = it }) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         HudDraggableArea(Modifier.weight(1f)) {

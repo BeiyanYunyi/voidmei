@@ -14,13 +14,14 @@ data class LegacySettings(val intervalMs: Long?, val hudEnabled: Boolean?, val v
     val recordingAutoStart: Boolean? = null,
     val hudGear: Boolean? = null, val hudFlaps: Boolean? = null, val hudAirbrake: Boolean? = null,
     val hudAoaBarWarningPercent: Double? = null, val hudAoaWarningPercent: Double? = null, val hudFlapBar: Boolean? = null,
-    val hudCompassHeadingUp: Boolean? = null, val startInTray: Boolean? = null, val hiddenLabelChoices: Map<String, Boolean> = emptyMap(), val hudCrosshair: Boolean? = null, val hudCrosshairSizeDp: Int? = null, val hudCrosshairImage: String? = null, val pendingCrosshairImage: LegacyCrosshairImage? = null, val hudCrosshairStretch: Boolean? = null, val hudReadingColors: Map<String, String> = emptyMap(), val hudAttitudeAoaLimits: Boolean? = null, val hudNumberFont: String? = null, val hudAltitudeMode: HudAltitudeMode? = null, val httpPort: Int? = null) {
+    val hudCompassHeadingUp: Boolean? = null, val startInTray: Boolean? = null, val hiddenLabelChoices: Map<String, Boolean> = emptyMap(), val hudCrosshair: Boolean? = null, val hudCrosshairSizeDp: Int? = null, val hudCrosshairImage: String? = null, val pendingCrosshairImage: LegacyCrosshairImage? = null, val hudCrosshairStretch: Boolean? = null, val hudReadingColors: Map<String, String> = emptyMap(), val hudAttitudeAoaLimits: Boolean? = null, val hudNumberFont: String? = null, val hudAltitudeMode: HudAltitudeMode? = null, val httpPort: Int? = null, val textFont: String? = null) {
     val movesCrosshairRight: Boolean get() = hudCrosshair == true || hudCrosshairSizeDp != null || hudCrosshairImage != null
-    val hasChanges: Boolean get() = httpPort != null || hudAltitudeMode != null || hudNumberFont != null || hudAttitudeAoaLimits != null || hudReadingColors.isNotEmpty() || intervalMs != null || hudEnabled != null || voiceEnabled != null ||
+    val hasChanges: Boolean get() = textFont != null || httpPort != null || hudAltitudeMode != null || hudNumberFont != null || hudAttitudeAoaLimits != null || hudReadingColors.isNotEmpty() || intervalMs != null || hudEnabled != null || voiceEnabled != null ||
         voiceVolume != null || alertVoices.isNotEmpty() || hudFieldChoices.isNotEmpty() ||
         hudAttitude != null || hudAutoHideOnFocusLoss != null || recordingAutoStart != null ||
         hudGear != null || hudFlaps != null || hudAirbrake != null || hudAoaBarWarningPercent != null || hudAoaWarningPercent != null || hudFlapBar != null || hudCompassHeadingUp != null || startInTray != null || hiddenLabelChoices.isNotEmpty() || hudCrosshair != null || hudCrosshairSizeDp != null || hudCrosshairImage != null || hudCrosshairStretch != null
     fun applyTo(current: AppSettings) = current.copy(
+        textFont = textFont ?: current.textFont,
         endpoint = httpPort?.let { replaceTelemetryPort(current.endpoint, it) } ?: current.endpoint,
         hudAltitudeMode = hudAltitudeMode ?: current.hudAltitudeMode,
         hudNumberFont = hudNumberFont ?: current.hudNumberFont,
@@ -141,7 +142,7 @@ object LegacySettingsReader {
         val targets = mutableMapOf<String, Pair<String, String>>()
         val voiceKeys = voidmei.telemetry.FlightAlert.entries.map { "voice_${it.voice}" }.toSet()
         val colorKeys = setOf("fontLabel", "fontNum", "fontUnit", "fontWarn", "fontShade")
-        val supported = colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("GlobalNumFont", "httpPort", "alwaysShowRadarAltitude", "MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
+        val supported = colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("GlobalTextFont", "GlobalNumFont", "httpPort", "alwaysShowRadarAltitude", "MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
         fun walk(node: Node) {
             val children = node.children ?: return
             val kind = children.firstOrNull()?.takeUnless { it.quoted }?.atom
@@ -167,6 +168,11 @@ object LegacySettingsReader {
             if (kind != "item") children.forEach(::walk)
         }
         roots.forEach(::walk)
+        val textFont = targets["GlobalTextFont"]?.let { (type, value) ->
+            require(type == "combo") { "GlobalTextFont 类型不支持" }
+            value.trim().takeIf { it.isNotEmpty() && it.length <= 200 && it.none { char -> char.isISOControl() } }
+                ?: run { unmigrated += UnmigratedLegacySetting("文字字体名称无效，保留当前字体", "GlobalTextFont"); null }
+        }
         val monoFont = targets["MonoNumFont"]
         val globalFont = targets["GlobalNumFont"]
         for ((key, entry) in listOf("MonoNumFont" to monoFont, "GlobalNumFont" to globalFont)) {
@@ -296,7 +302,7 @@ object LegacySettingsReader {
                 flag("disableHUDSEPLabel")?.let { put("sep", it) }
             }, showCrosshair, crosshairSize, pendingCrosshairImage = if (!vectorCrosshair)
                 LegacyCrosshairImage(crosshairName!!, flag("displayCrosshair"),
-                    targets["crosshairScale"]?.second?.toIntOrNull()?.times(2)?.takeIf { it in 24..400 }) else null, httpPort = httpPort, hudAltitudeMode = flag("alwaysShowRadarAltitude")?.let { if (it) HudAltitudeMode.ALWAYS_RADAR else HudAltitudeMode.LOW_RADAR }, hudNumberFont = numberFont, hudReadingColors = readingColors, hudAttitudeAoaLimits = flag("attitudeIndicatorDisplayAoALimits")).also {
+                    targets["crosshairScale"]?.second?.toIntOrNull()?.times(2)?.takeIf { it in 24..400 }) else null, textFont = textFont, httpPort = httpPort, hudAltitudeMode = flag("alwaysShowRadarAltitude")?.let { if (it) HudAltitudeMode.ALWAYS_RADAR else HudAltitudeMode.LOW_RADAR }, hudNumberFont = numberFont, hudReadingColors = readingColors, hudAttitudeAoaLimits = flag("attitudeIndicatorDisplayAoALimits")).also {
             require(it.hasChanges || it.unmigrated.isNotEmpty()) { "未找到可迁移的设置" }
         }
     }
