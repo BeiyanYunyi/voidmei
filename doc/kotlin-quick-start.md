@@ -1,6 +1,6 @@
 # Kotlin 版试用
 
-当前为 Kotlin Multiplatform / Compose Desktop 迁移开发版，尚未完整替代 Java 版。Linux 已有模拟遥测和包运行验证，真实游戏及 Windows/macOS 验收仍未完成。详细范围与验证记录见 [迁移说明](kotlin-migration.md)。
+当前为 Kotlin Multiplatform / Compose Desktop 迁移开发版，尚未完整替代 Java 版。Linux 已有模拟遥测和包运行验证，真实游戏及 Windows/macOS 验收仍未完成。详细范围与验证记录见 [迁移说明](kotlin-migration.md)。 用户已在 NixOS 实际游戏中人工确认水平仪姿态方向正确、兼容模式透明 HUD 正常；这项透明 HUD 结论不覆盖原生模式。
 
 ## 启动与恢复
 
