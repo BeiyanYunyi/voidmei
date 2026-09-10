@@ -2435,6 +2435,14 @@ Nix 构建及包内检查通过，新包 `/nix/store/4r6nb5yrff7sjprsgfhwrq863f4
 
 Nix 构建及包内检查通过，新包 `/nix/store/rpdh1fwk5d0hpyzdm9pi3fzzn2hjlybf-voidmei-kotlin-2.0.0`，试用入口 `/tmp/voidmei-kotlin-offline/bin/voidmei-kotlin` 已更新；日志 `/tmp/voidmei-altitude-columns-nix.log`。本轮未重复真机或物理 GPU 验证。
 
+### 渲染诊断区分请求、实际后端与显示路径
+
+诊断继续从已初始化窗口读取实际后端，并新增 Skiko 当前请求后端、SkiaLayer/SwingGraphics 显示路径和窗口 graphicsConfiguration 的缩放。请求与实际不同时显式标注；尚未初始化不判为回退。设备详情沿用显示路径实际提供的信息，兼容路径未提供时明确说明，不以 OpenGL 名称宣称物理 GPU 加速。主窗口“渲染信息”及变化日志共用此报告。
+
+桌面单元测试通过（`/tmp/voidmei-renderer-details.log`）；新增 3 项诊断回归覆盖后端差异、未初始化、缩放、设备报告保留及兼容路径的信息限制。
+
+Nix 构建及包内检查通过，新包 `/nix/store/9q5ayy32djchrc5wa2d63nyrihwdwcxn-voidmei-kotlin-2.0.0`，试用入口已更新。P-51C 回放验证实际日志包含主窗请求 OPENGL / 实际 SOFTWARE_FAST、SkiaLayer 路径，以及 HUD OPENGL / SwingGraphics 路径、1× 缩放与设备信息限制。UI 心跳、最终位置保存和正常退出码 0 通过。日志 `/tmp/voidmei-renderer-details-nix.log`、`/tmp/voidmei-renderer-details-smoke.log`，产物 `/tmp/voidmei-renderer-details-artifacts`；仍属隔离 Mesa 软件驱动测试。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
