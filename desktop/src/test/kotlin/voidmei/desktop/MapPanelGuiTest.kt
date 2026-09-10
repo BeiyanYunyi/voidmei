@@ -50,21 +50,27 @@ class MapPanelGuiTest {
         val broken = AtomicBoolean(true)
         val requests = AtomicInteger()
         val images = AtomicInteger()
-        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
-        for (endpoint in listOf("/map_info.json", "/map_obj.json", "/map.img")) {
-            server.createContext(endpoint) { exchange ->
-                requests.incrementAndGet()
-                val snapshot = current.get()
-                val bytes = if (endpoint == "/map.img") {
-                    images.incrementAndGet()
-                    if (broken.get()) "broken image".encodeToByteArray()
-                    else Base64.getDecoder().decode(snapshot.getValue(endpoint).jsonObject.getValue("base64").jsonPrimitive.content)
-                } else snapshot.getValue(endpoint).toString().encodeToByteArray()
-                exchange.sendResponseHeaders(200, bytes.size.toLong())
-                exchange.responseBody.use { it.write(bytes) }
+        fun startServer(): HttpServer {
+            val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+            for (endpoint in listOf("/map_info.json", "/map_obj.json", "/map.img")) {
+                server.createContext(endpoint) { exchange ->
+                    requests.incrementAndGet()
+                    val snapshot = current.get()
+                    val bytes = if (endpoint == "/map.img") {
+                        images.incrementAndGet()
+                        if (broken.get()) "broken image".encodeToByteArray()
+                        else Base64.getDecoder().decode(snapshot.getValue(endpoint).jsonObject.getValue("base64").jsonPrimitive.content)
+                    } else snapshot.getValue(endpoint).toString().encodeToByteArray()
+                    exchange.sendResponseHeaders(200, bytes.size.toLong())
+                    exchange.responseBody.use { it.write(bytes) }
+                }
             }
+            server.start()
+            return server
         }
-        server.start()
+        val server = startServer()
+        val other = startServer()
+        var endpoint by mutableStateOf("http://127.0.0.1:${server.address.port}")
         var flying by mutableStateOf(true)
         fun waitForImage() = compose.waitUntil(5000) {
             compose.onAllNodesWithContentDescription("地图底图与对象位置方向").fetchSemanticsNodes().isNotEmpty()
@@ -81,7 +87,7 @@ class MapPanelGuiTest {
         }
         try {
             compose.setContent { MaterialTheme { Column {
-                MapPanel("http://127.0.0.1:${server.address.port}", flying)
+                MapPanel(endpoint, flying)
             } } }
             compose.runOnIdle { assertEquals(0, requests.get()) }
             compose.onNodeWithText("查看地图对象").performClick()
@@ -101,6 +107,17 @@ class MapPanelGuiTest {
             waitForImage()
             assertPixel(0.3f, 0.1f, 0x326941)
 
+            // A new HTTP source must discard the previous bitmap even with an open panel.
+            broken.set(true)
+            current.set(fixture("map_wide"))
+            compose.runOnIdle { endpoint = "http://127.0.0.1:${other.address.port}" }
+            waitForRetry()
+            compose.onNodeWithContentDescription("地图底图与对象位置方向").assertDoesNotExist()
+            broken.set(false)
+            compose.onNodeWithText("重试底图").performClick()
+            waitForImage()
+            assertPixel(0.1f, 0.3f, 0x224664)
+
             compose.runOnIdle { flying = false }
             compose.onNodeWithText("等待有效飞行地图").assertIsDisplayed()
             compose.onNodeWithTag("map-objects-plot").assertDoesNotExist()
@@ -108,9 +125,9 @@ class MapPanelGuiTest {
             compose.runOnIdle { flying = true }
             waitForImage()
             assertTrue(images.get() > previousImages)
-            assertPixel(0.3f, 0.1f, 0x326941)
+            assertPixel(0.1f, 0.3f, 0x224664)
             compose.onNodeWithText("收起地图对象").performClick()
             compose.onNodeWithTag("map-objects-plot").assertDoesNotExist()
-        } finally { server.stop(0) }
+        } finally { server.stop(0); other.stop(0) }
     }
 }
