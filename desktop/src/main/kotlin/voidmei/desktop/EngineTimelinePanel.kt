@@ -33,7 +33,11 @@ internal fun EngineTimelinePanel(engineText: String, engineIndex: Int, fields: L
         busy = true; analysis = null; error = null
         scope.launch {
             try {
-                analysis = withContext(Dispatchers.IO) { EngineRecordTimeline.read(readFlightText(Path.of(input)), engineText, engineIndex) }
+                analysis = withContext(Dispatchers.IO) {
+                    val context = currentCoroutineContext()
+                    val checkActive = { context.ensureActive() }
+                    EngineRecordTimeline.read(readFlightText(Path.of(input), checkActive = checkActive), engineText, engineIndex, checkActive)
+                }
                 source = input
             } catch (e: CancellationException) { throw e }
             catch (e: Exception) { error = "关联失败：${e.message}" }
