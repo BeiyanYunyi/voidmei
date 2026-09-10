@@ -9,7 +9,7 @@ enum class RecordedField(val id: String, val label: String) {
     MACH("mach", "马赫数"), FUEL_CAPACITY("fuel_capacity_kg", "燃油容量 (kg)"),
     GEAR("gear_percent", "起落架 (%)"), FLAPS("flaps_percent", "襟翼 (%)"), BRAKE("airbrake_percent", "减速板 (%)"),
     AILERON("aileron_percent", "副翼 (%)"), ELEVATOR("elevator_percent", "升降舵 (%)"), RUDDER("rudder_percent", "方向舵 (%)"),
-    ROLL("roll_deg", "滚转角 (°)"), PITCH("pitch_deg", "俯仰角 (°)"), HEADING("heading_deg", "航向 (°)"),
+    ROLL("roll_deg", "滚转角 (°)"), PITCH("pitch_deg", "俯仰仪表原值 (°，抬头为负)"), HEADING("heading_deg", "航向 (°)"),
     SWEEP("wing_sweep_ratio", "后掠比例"), ENERGY("energy_height_m", "能量高度 (m)"),
     ACCELERATION("acceleration_mps2", "加速度 (m/s²)"), TURN_RADIUS("turn_radius_m", "转弯半径估计 (m)"),
     TURN_RATE("turn_rate_degps", "转弯率估计 (°/s)"), FUEL_RATE("fuel_kg_min", "燃油消耗 (kg/min)"),
