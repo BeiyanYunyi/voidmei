@@ -9,6 +9,25 @@ import kotlin.test.*
 import voidmei.telemetry.FlightAlert
 
 class VoicePlayerTest {
+    @Test fun previewCannotInterruptWarningsAndStoppingPreviewPreservesWarning(): Unit = runBlocking {
+        val device = Device()
+        val player = VoicePlayer { device.clip }
+        try {
+            player.play(FlightAlert.CRITICAL_AOA, preview = true)
+            assertTrue(player.canPlay(FlightAlert.LOW_FUEL))
+            player.play(FlightAlert.LOW_FUEL)
+            player.stopPreview()
+            assertTrue(player.isPlaying())
+            assertFailsWith<IllegalStateException> { player.play(FlightAlert.CONNECTION_READY, preview = true) }
+            assertTrue(player.isPlaying())
+            assertEquals(2, device.starts)
+            player.stop()
+            player.play(FlightAlert.CONNECTION_READY, preview = true)
+            player.stopPreview()
+            assertFalse(player.isPlaying())
+        } finally { player.close() }
+    }
+
     @Test fun connectionCueCanBeInterruptedByAdvisoriesAndWarnings(): Unit = runBlocking {
         val device = Device()
         val player = VoicePlayer { device.clip }

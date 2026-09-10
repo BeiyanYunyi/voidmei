@@ -359,7 +359,16 @@ fun main(args: Array<String>) {
                         Slider(value = settings.voiceVolume.toFloat(),
                             onValueChange = { settings = settings.copy(voiceVolume = it.roundToInt()) }, valueRange = 0f..200f)
                         VoicePackPanel(settings, onSettings = { settings = it })
-                        AlertVoicePanel(settings) { settings = it }
+                        AlertVoicePanel(settings, onPreview = { alert ->
+                            voicePlayer.play(alert, settings.voiceVolume, VoiceResources(java.nio.file.Path.of(settings.voiceDirectory),
+                                settings.alertVoices[alert.voice]?.pack ?: settings.voicePack), preview = true)
+                        }, onStopPreview = {
+                            scope.launch {
+                                try { withContext(Dispatchers.IO) { voicePlayer.stopPreview() } }
+                                catch (e: CancellationException) { throw e }
+                                catch (e: Exception) { voiceError = "试听停止失败：${e.message}" }
+                            }
+                        }) { settings = it }
                         FlightAlertPanel(alerts)
                         voiceError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                         SectionHeading(MainSection.MODEL, anchors)

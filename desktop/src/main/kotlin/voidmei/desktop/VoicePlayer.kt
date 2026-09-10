@@ -22,6 +22,7 @@ internal fun voiceGain(volume: Int, minimum: Float, maximum: Float): Float {
 class VoicePlayer(private val clipFactory: () -> Clip = AudioSystem::getClip) : AutoCloseable {
     private var clip: Clip? = null
     private var playingAlert: FlightAlert? = null
+    private var previewing = false
     private var closed = false
 
     private fun applyVolume(target: Clip, volume: Int) {
@@ -42,12 +43,13 @@ class VoicePlayer(private val clipFactory: () -> Clip = AudioSystem::getClip) : 
         }
     }
 
-    suspend fun play(alert: FlightAlert, volume: Int = 100, resources: VoiceResources = VoiceResources()) = withContext(Dispatchers.IO) {
+    suspend fun play(alert: FlightAlert, volume: Int = 100, resources: VoiceResources = VoiceResources(), preview: Boolean = false) = withContext(Dispatchers.IO) {
         require(volume in 0..200)
         val context = currentCoroutineContext()
         synchronized(this@VoicePlayer) {
             context.ensureActive()
             if (closed) return@synchronized
+            check(!preview || clip?.isRunning != true || previewing) { "告警正在播放，请稍后试听" }
             stop()
             if (volume == 0) return@synchronized
             resources.open(alert).use { audio ->
@@ -59,6 +61,7 @@ class VoicePlayer(private val clipFactory: () -> Clip = AudioSystem::getClip) : 
                     next.start()
                     clip = next
                     playingAlert = alert
+                    previewing = preview
                 }
                 catch (e: Exception) {
                     try { next.close() } catch (cleanup: Exception) { if (cleanup !== e) e.addSuppressed(cleanup) }
@@ -69,15 +72,18 @@ class VoicePlayer(private val clipFactory: () -> Clip = AudioSystem::getClip) : 
     }
     /** Warnings may interrupt the greeting; otherwise only a higher severity interrupts a clip. */
     @Synchronized fun canPlay(alert: FlightAlert): Boolean = !closed &&
-        (clip?.isRunning != true || playingAlert == FlightAlert.CONNECTION_READY && alert != FlightAlert.CONNECTION_READY ||
+        (clip?.isRunning != true || previewing || playingAlert == FlightAlert.CONNECTION_READY && alert != FlightAlert.CONNECTION_READY ||
             playingAlert?.let { alert.severity < it.severity } == true)
 
     @Synchronized fun isPlaying(): Boolean = clip?.isRunning == true
+
+    @Synchronized fun stopPreview() { if (previewing) stop() }
 
     @Synchronized fun stop() {
         val previous = clip
         clip = null
         playingAlert = null
+        previewing = false
         if (previous != null) {
             var failure: Exception? = null
             try { previous.stop() } catch (e: Exception) { failure = e }

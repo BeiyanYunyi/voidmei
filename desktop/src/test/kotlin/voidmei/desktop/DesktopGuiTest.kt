@@ -1576,6 +1576,27 @@ class DesktopGuiTest {
         } finally { temp.toFile().deleteRecursively() }
     }
 
+    @Test fun voicePreviewKeepsSettingsAndStopsWhenCollapsed() {
+        var current by mutableStateOf(AppSettings(voiceVolume = 75))
+        val played = mutableListOf<FlightAlert>()
+        var stopped = 0
+        compose.setContent { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
+            AlertVoicePanel(current, onPreview = { played += it }, onStopPreview = { stopped++ }) { current = it }
+        } } }
+        compose.onNodeWithText("逐条语音设置").performClick()
+        compose.onNodeWithText("试听燃油耗尽").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertEquals(listOf(FlightAlert.EMPTY_FUEL), played)
+            assertEquals(AppSettings(voiceVolume = 75), current)
+            current = current.copy(voiceVolume = 0)
+        }
+        compose.onNodeWithText("试听燃油耗尽").assertIsNotEnabled()
+        compose.onNodeWithText("停止试听").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(1, stopped) }
+        compose.onNodeWithText("逐条语音设置").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals(2, stopped) }
+    }
+
     @Test fun perAlertVoiceControlsKeepUnrelatedSettingsAndRejectBadPack() {
         var current by mutableStateOf(AppSettings(voiceVolume = 75))
         compose.setContent { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
