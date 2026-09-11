@@ -557,6 +557,8 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
             val engineField = when (field) {
                 HudField.ENGINE1_RPM -> HudEngineField.RPM
                 HudField.ENGINE1_THRUST -> HudEngineField.THRUST
+                HudField.ENGINE_TEMPERATURE -> HudEngineField.WATER_TEMPERATURE.takeIf { t.displayTemperature(false)?.engineIndex == 1 }
+                HudField.OIL_TEMPERATURE -> HudEngineField.OIL_TEMPERATURE.takeIf { t.displayTemperature(true)?.engineIndex == 1 }
                 else -> null
             }
             engineWarnings[engineField]?.takeIf { field.value(flight, model) != null }?.let { warnings[index] = it }

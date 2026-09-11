@@ -14,9 +14,9 @@ class TemperatureReadingTest {
         assertEquals(TemperatureReading(70.0, "油温仪表原值"), all.displayTemperature(true))
         val head = all.copy(waterTemperatureRaw = null, oilTemperatureRaw = null)
         assertEquals(TemperatureReading(200.0, "缸温仪表原值"), head.displayTemperature(false))
-        assertEquals(TemperatureReading(80.0, "°C · 1号"), head.displayTemperature(true))
+        assertEquals(TemperatureReading(80.0, "°C · 1号", engineIndex = 1), head.displayTemperature(true))
         val state = head.copy(headTemperatureRaw = null, engines = head.engines.reversed())
-        assertEquals(TemperatureReading(90.0, "°C · 1号"), state.displayTemperature(false))
+        assertEquals(TemperatureReading(90.0, "°C · 1号", engineIndex = 1), state.displayTemperature(false))
         assertNull(state.copy(engines = state.engines.filter { it.index == 2 }).displayTemperature(false))
         assertNull(state.copy(engines = state.engines + state.engines.single { it.index == 1 }).displayTemperature(true))
     }
