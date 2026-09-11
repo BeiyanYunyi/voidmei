@@ -2,7 +2,9 @@ package voidmei.config
 
 import kotlinx.serialization.json.*
 
-enum class HudRegionContent { FLIGHT, ENGINE, ATTITUDE, MECHANIZATION, ALERTS }
+enum class HudRegionContent(val label: String) {
+    FLIGHT("飞行读数"), ENGINE("发动机"), ATTITUDE("姿态"), MECHANIZATION("机械化"), ALERTS("告警")
+}
 
 /** Coordinates are relative to one transparent window; list order defines stacking. */
 data class HudRegion(
@@ -27,6 +29,28 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
         require(width in 240..8192 && height in 120..8192)
         require(regions.size in 1..32 && regions.map { it.id }.distinct().size == regions.size)
         require(regions.all { it.x + it.width <= width && it.y + it.height <= height })
+    }
+
+    fun addRegion(content: HudRegionContent): HudSceneLayout {
+        require(regions.size < 32)
+        val id = (1..33).map { "region-$it" }.first { candidate -> regions.none { it.id == candidate } }
+        val engine = (1..33).first { index -> regions.none { it.content == HudRegionContent.ENGINE && it.engineIndex == index } }
+        val regionWidth = minOf(width, if (content == HudRegionContent.ATTITUDE) 340 else 440)
+        val regionHeight = minOf(height, when (content) {
+            HudRegionContent.FLIGHT, HudRegionContent.ENGINE -> 470
+            HudRegionContent.ATTITUDE, HudRegionContent.MECHANIZATION -> 204
+            HudRegionContent.ALERTS -> 180
+        })
+        // Stagger new regions so overlapping instances do not look like one unchanged region.
+        val offset = 16 * (regions.size + 1)
+        return copy(regions = regions + HudRegion(id, content, minOf(offset, width - regionWidth),
+            minOf(offset, height - regionHeight), regionWidth, regionHeight, engineIndex = engine))
+    }
+
+    fun removeRegion(id: String): HudSceneLayout {
+        val remaining = regions.filterNot { it.id == id }
+        require(remaining.isNotEmpty()) { "Keep at least one HUD region" }
+        return copy(regions = remaining)
     }
 
     fun toJson() = buildJsonObject {

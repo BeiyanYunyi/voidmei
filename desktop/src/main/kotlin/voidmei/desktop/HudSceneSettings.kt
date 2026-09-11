@@ -21,16 +21,32 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
     var expanded by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起分区设置" else "调整分区位置与透明度") }
     if (!expanded) return
+    Text("添加区域（${scene.regions.size}/32）")
+    FlowRow {
+        HudRegionContent.entries.forEach { content ->
+            TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.addRegion(content))) },
+                enabled = scene.regions.size < 32, modifier = Modifier.testTag("hud-region-add-${content.name}")) {
+                Text("+ ${content.label}")
+            }
+        }
+    }
+    Text("同类区域可重复添加；飞行和发动机字段沿用 HUD 字段设置。至少保留一个区域。")
     scene.regions.forEach { region -> key(region.id) {
         fun update(value: HudRegion) = onChange(settings.copy(hudSceneLayout = scene.copy(
             regions = scene.regions.map { if (it.id == region.id) value else it })))
-        Text(when (region.content) {
-            HudRegionContent.FLIGHT -> "飞行读数"
-            HudRegionContent.ENGINE -> "发动机 #${region.engineIndex}"
-            HudRegionContent.ATTITUDE -> "姿态"
-            HudRegionContent.MECHANIZATION -> "机械化"
-            HudRegionContent.ALERTS -> "告警"
-        })
+        Text("${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id}")
+        TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.removeRegion(region.id))) },
+            enabled = scene.regions.size > 1, modifier = Modifier.testTag("hud-region-remove-${region.id}")) { Text("移除此区域") }
+        if (region.content == HudRegionContent.ENGINE) {
+            var engineText by remember(region.engineIndex) { mutableStateOf(region.engineIndex.toString()) }
+            val validEngine = engineText.toIntOrNull()?.takeIf { it > 0 }
+            OutlinedTextField(engineText, { value ->
+                engineText = value
+                value.toIntOrNull()?.takeIf { it > 0 }?.let { update(region.copy(engineIndex = it)) }
+            }, label = { Text("发动机编号") }, singleLine = true, isError = validEngine == null,
+                supportingText = { Text(if (validEngine == null) "请输入正整数；暂未应用此输入。" else "缺少此编号的数据时显示未知，不替换为其他发动机。") },
+                modifier = Modifier.testTag("hud-region-engine-${region.id}"))
+        }
         Text("位置 ${region.x}, ${region.y} dp")
         if (scene.width > region.width) Slider(region.x.toFloat(), { update(region.copy(x = it.roundToInt())) },
             valueRange = 0f..(scene.width - region.width).toFloat(), modifier = Modifier.testTag("hud-region-x-${region.id}"))

@@ -20,6 +20,53 @@ import kotlin.test.*
 class HudSceneGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun twoEngineRegionsRemainIndependentWhenOneEngineDisappears() {
+        val layout = HudSceneLayout(800, 300, listOf(
+            HudRegion("one", HudRegionContent.ENGINE, 0, 0, 350, 280, engineIndex = 1),
+            HudRegion("two", HudRegionContent.ENGINE, 450, 0, 350, 280, engineIndex = 2)))
+        val settings = AppSettings(hudSceneLayout = layout, hudEngineFields = listOf("rpm", "water_temperature"))
+        var flight by mutableStateOf(hudPreviewFlight())
+        compose.setContent { MaterialTheme { Box(Modifier.size(800.dp, 300.dp)) {
+            HudPanel(flight, settings, emptyList(), null) {}
+        } } }
+        compose.onNodeWithText("2400 RPM").assertIsDisplayed()
+        compose.onNodeWithText("2300 RPM").assertIsDisplayed()
+        compose.onNodeWithText("95.0 °C").assertIsDisplayed()
+        compose.onNodeWithText("90.0 °C").assertIsDisplayed()
+        compose.runOnIdle { flight = flight.copy(telemetry = flight.telemetry.copy(engines = flight.telemetry.engines.filter { it.index == 1 })) }
+        compose.onNodeWithText("2400 RPM").assertIsDisplayed()
+        compose.onNodeWithText("2300 RPM").assertDoesNotExist()
+        compose.onNodeWithText("此编号无可用发动机数据").assertIsDisplayed()
+    }
+
+    @Test fun menuAddsEngineRegionsValidatesIndexAndRemovesOnlySelectedRegion() {
+        val original = HudRegion("flight", HudRegionContent.FLIGHT, 0, 0, 240, 120, .3f)
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(800, 400, listOf(original))))
+        compose.setContent { MaterialTheme {
+            Column(Modifier.size(600.dp, 600.dp).verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                HudSceneSettings(settings) { settings = it }
+            }
+        } }
+        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.onNodeWithTag("hud-region-remove-flight").performScrollTo().assertIsNotEnabled()
+        compose.onNodeWithTag("hud-region-add-ENGINE").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-engine-region-1").performScrollTo().performTextReplacement("0")
+        compose.runOnIdle { assertEquals(1, settings.hudSceneLayout!!.regions.last().engineIndex) }
+        compose.onNodeWithText("请输入正整数；暂未应用此输入。").assertExists()
+        compose.onNodeWithTag("hud-region-engine-region-1").performTextReplacement("2")
+        compose.runOnIdle { assertEquals(2, settings.hudSceneLayout!!.regions.last().engineIndex) }
+        compose.onNodeWithTag("hud-region-add-ENGINE").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertEquals(listOf(2, 1), settings.hudSceneLayout!!.regions.drop(1).map { it.engineIndex })
+            settings = SettingsJson.decode(SettingsJson.encode(settings))
+        }
+        compose.onNodeWithTag("hud-region-remove-region-1").performScrollTo().performClick()
+        compose.runOnIdle {
+            assertEquals(listOf("flight", "region-2"), settings.hudSceneLayout!!.regions.map { it.id })
+            assertEquals(original, settings.hudSceneLayout!!.regions.first())
+        }
+    }
+
     @Test fun menuChangesPersistAndSwitchingBackRetainsRegions() {
         var settings by mutableStateOf(AppSettings())
         compose.setContent { MaterialTheme {
