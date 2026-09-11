@@ -562,6 +562,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
                 HudField.IAS -> FlightAlert.IAS_LIMIT
                 HudField.MACH -> FlightAlert.MACH_LIMIT
                 HudField.LOAD -> FlightAlert.LOAD_LIMIT
+                HudField.FUEL, HudField.FUEL_PERCENT -> fuelReadingWarning(readingAlerts)
                 else -> null
             }
             if (alert != null && alert in readingAlerts && field.value(flight, model) != null)
@@ -581,6 +582,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         if (compact && HudField.HEADING in fields) CompassPanel(t.headingDeg, compassHeadingUp)
         if (compact && HudField.AOA in fields) AoaMarginPanel(t, model, aoaBarWarningPercent)
         if (compact && HudField.ENGINE1_THROTTLE in fields) ThrottleBar(flight)
+        if (compact && HudField.FUEL_PERCENT in fields) FuelQuantityPanel(flight, readingAlerts)
         if (compact && HudField.FUEL_MASS_SHARE in fields) FuelMassShareBar(flight, model)
         if (compact && HudField.SPEED_LIMIT_RATIO in fields) SpeedLimitBar(flight, model)
         if (mechanization) MechanizationPanel(t, model, showGear, showFlaps, showAirbrake, automaticSweep = compact, alerts = if (compact) readingAlerts else emptyList(), showFlapBar = compact && showFlapBar)
