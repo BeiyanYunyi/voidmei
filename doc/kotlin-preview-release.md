@@ -11,7 +11,7 @@
 - `manifest.json`：版本、完整源码提交号、原安装包文件名、平台、构建 runner 架构、大小和哈希。
 - `release-notes.md`：预览说明及迁移文档位置。
 
-版本来自 `desktop/build.gradle.kts` 的 `packageVersion`。缺少平台、一个平台出现多个安装包、空文件、文件名版本不符或无法读取唯一版本时失败，不生成可发布的成功制品。每个构建 job 上传 kotlin-build.json，记录该 job 的提交号、版本、runner 架构及安装包哈希。汇总端要求元数据与所选提交及实际文件一致；输出安装包文件名包含架构。汇总端额外通过 dpkg-deb 读取 Linux 包内的 Package、Version、Architecture，核对 voidmei 包名、上游版本及架构，并将控制字段写入 manifest。允许上游版本后带 Debian 修订号。Windows/macOS 架构仍是构建 runner 声明，未独立解析其安装包内部信息。
+版本来自 `desktop/build.gradle.kts` 的 `packageVersion`。缺少平台、一个平台出现多个安装包、空文件、文件名版本不符或无法读取唯一版本时失败，不生成可发布的成功制品。每个构建 job 上传 kotlin-build.json，记录该 job 的提交号、版本、runner 架构及安装包哈希。汇总端要求元数据与所选提交及实际文件一致；输出安装包文件名包含架构。汇总端额外通过 dpkg-deb 读取 Linux 包内的 Package、Version、Architecture，核对 voidmei 包名、上游版本及架构，并将控制字段写入 manifest。允许上游版本后带 Debian 修订号。Windows 构建端通过 Windows Installer 只读查询 MSI 的 ProductName、ProductVersion 和 Template Summary，校验产品、版本及平台后写入元数据；汇总端再次核对这些字段。该读取脚本尚待真实 Windows runner 执行验证。macOS 架构仍仅来自构建 runner 声明，未解析 DMG 内部信息。
 
 下载 artifact 并解压后，可在其目录执行 `sha256sum -c SHA256SUMS`。安装包不包含 FM 数据；设置和目前已知限制见同一提交的 [试用步骤](kotlin-quick-start.md) 与 [迁移记录](kotlin-migration.md)。
 

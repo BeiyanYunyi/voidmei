@@ -2812,6 +2812,14 @@ FlightRecorder 在两份 CSV 追加并 flush 成功后更新观察器；每个�
 
 六项整理脚本测试通过，包括错误包名/版本/架构拒绝与 Debian 修订号，以及校验失败不创建输出目录。新函数直接检查上一轮真实 Deb 成功，返回 voidmei / 2.0.0 / amd64。本轮未改应用代码、未重建安装包或执行远程工作流；MSI/DMG 内部信息仍未独立校验。
 
+### Windows MSI 内部身份校验接线
+
+Windows 构建端记录元数据时调用 read_msi_identity.ps1，通过 WindowsInstaller.Installer 以只读模式打开 MSI，查询 ProductName、ProductVersion 及 SummaryInformation 的 Template 属性；释放查询和 COM 对象，不安装 MSI。Python 校验产品名 VoidMei、精确版本及 Intel/x64/Arm64 平台对应，结果写入 installer_control；候选汇总拒绝缺失或不一致的 MSI 内部身份。Intel64（Itanium）不作为 x64 接受，混合平台声明也拒绝。
+
+接口依据：[OpenDatabase 只读模式](https://learn.microsoft.com/en-us/windows/win32/msi/installer-opendatabase)、[SummaryInformation](https://learn.microsoft.com/en-us/windows/win32/msi/database-summaryinformation)、[平台 Template 规则](https://learn.microsoft.com/en-us/windows/win32/msi/using-64-bit-windows-installer-packages)。
+
+七项 Python 测试通过，覆盖 MSI 产品/版本/平台拒绝及汇总缺失身份时失败；actionlint 通过。测试对 Windows 读取部分使用模拟身份字段，当前 Linux 主机未执行 Windows Installer COM，因此不声称真实 MSI 校验已通过。Windows CI 构建的元数据步骤将执行实际读取；DMG 内部身份仍未接入。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

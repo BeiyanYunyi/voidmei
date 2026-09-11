@@ -36,7 +36,24 @@ def verify_deb(path, version, architecture):
     return fields
 
 
-def record(root, build_file, revision, platform, architecture):
+def validate_msi_identity(identity, version, architecture):
+    if not isinstance(identity, dict) or not isinstance(identity.get("Template"), str):
+        raise ValueError("Missing MSI identity or platform template")
+    platform = identity["Template"].split(";", 1)[0].strip().lower()
+    actual_arch = {"": "x86", "intel": "x86", "x64": "x64", "arm64": "arm64"}.get(platform)
+    if identity.get("ProductName") != "VoidMei" or identity.get("ProductVersion") != version or actual_arch != architecture:
+        raise ValueError(f"MSI identity does not match requested version/architecture: {identity}")
+    return identity
+
+
+def inspect_msi(path, version, architecture):
+    script = Path(__file__).with_name("read_msi_identity.ps1")
+    output = subprocess.check_output(["powershell.exe", "-NoProfile", "-NonInteractive", "-File", str(script.resolve()),
+                                      "-Package", str(path.resolve())], encoding="utf-8-sig", timeout=30)
+    return validate_msi_identity(json.loads(output), version, architecture)
+
+
+def record(root, build_file, revision, platform, architecture, read_msi=inspect_msi):
     if not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("Expected a full Git commit SHA")
     if platform not in EXTENSIONS or architecture not in ARCHITECTURES:
@@ -48,6 +65,8 @@ def record(root, build_file, revision, platform, architecture):
     metadata = {"revision": revision, "version": package_version(build_file), "platform": platform,
                 "architecture": ARCHITECTURES[architecture], "file": package.name,
                 "bytes": package.stat().st_size, "sha256": digest(package)}
+    if platform == "windows":
+        metadata["installer_control"] = read_msi(package, metadata["version"], metadata["architecture"])
     with (root / "kotlin-build.json").open("x", encoding="utf-8") as stream:
         json.dump(metadata, stream, indent=2)
         stream.write("\n")

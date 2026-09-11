@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from prepare_kotlin_preview import prepare, PLATFORMS
-from kotlin_package_metadata import record, verify_deb
+from kotlin_package_metadata import record, verify_deb, validate_msi_identity
 
 
 class PreviewTest(unittest.TestCase):
@@ -26,7 +26,8 @@ class PreviewTest(unittest.TestCase):
             path.parent.mkdir(parents=True)
             path.write_bytes((runner + " installer fixture").encode())
             self.files.append(path)
-            record(path.parent.parent, self.build, self.sha, platform, "ARM64" if platform == "macos" else "X64")
+            record(path.parent.parent, self.build, self.sha, platform, "ARM64" if platform == "macos" else "X64",
+                   read_msi=lambda *_: {"ProductName": "VoidMei", "ProductVersion": "2.0.0", "Template": "x64;1033"})
 
     def run_prepare(self):
         return prepare(self.artifacts, self.output, self.build, self.sha, inspect_deb=lambda *_: {"Package": "voidmei", "Version": "2.0.0", "Architecture": "amd64"})
@@ -95,6 +96,18 @@ class PreviewTest(unittest.TestCase):
             raise ValueError("wrong package control data")
         with self.assertRaises(ValueError):
             prepare(self.artifacts, self.output, self.build, self.sha, inspect_deb=rejected)
+        self.assertFalse(self.output.exists())
+
+    def test_msi_identity_checks_product_version_and_template_platform(self):
+        identity = {"ProductName": "VoidMei", "ProductVersion": "2.0.0", "Template": "x64;1033"}
+        self.assertEqual(identity, validate_msi_identity(identity, "2.0.0", "x64"))
+        for field, value in [("ProductName", "other"), ("ProductVersion", "2.0.1"), ("Template", "Intel;1033"), ("Template", "Intel64;1033"), ("Template", "x64,Intel;1033")]:
+            with self.assertRaises(ValueError): validate_msi_identity(dict(identity, **{field: value}), "2.0.0", "x64")
+        metadata = self.files[1].parent.parent / "kotlin-build.json"
+        data = json.loads(metadata.read_text())
+        del data["installer_control"]
+        metadata.write_text(json.dumps(data))
+        with self.assertRaises(ValueError): self.run_prepare()
         self.assertFalse(self.output.exists())
 
     def test_version_must_be_single_and_explicit(self):

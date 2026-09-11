@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import re
 import shutil
-from kotlin_package_metadata import package_version, digest, ARCHITECTURES, verify_deb
+from kotlin_package_metadata import package_version, digest, ARCHITECTURES, verify_deb, validate_msi_identity
 
 PLATFORMS = {"ubuntu-latest": ("linux", ".deb"), "windows-latest": ("windows", ".msi"), "macos-latest": ("macos", ".dmg")}
 
@@ -32,6 +32,8 @@ def prepare(artifacts: Path, output: Path, build_file: Path, revision: str, insp
                 metadata.get("file") != source.name or metadata.get("bytes") != source.stat().st_size or
                 metadata.get("sha256") != digest(source)):
             raise ValueError(f"Build metadata does not match the requested revision or installer: {runner}")
+        if platform == "windows":
+            validate_msi_identity(metadata.get("installer_control"), version, metadata["architecture"])
         if platform == "linux":
             metadata["installer_control"] = inspect_deb(source, version, metadata["architecture"])
         selected.append((source, platform, extension, metadata))
@@ -43,7 +45,7 @@ def prepare(artifacts: Path, output: Path, build_file: Path, revision: str, insp
         checksum = digest(destination)
         if checksum != metadata["sha256"] or destination.stat().st_size != metadata["bytes"]:
             raise ValueError("Installer changed while preparing preview")
-        packages.append({**({"installer_control": metadata["installer_control"]} if platform == "linux" else {}),
+        packages.append({**({"installer_control": metadata["installer_control"]} if "installer_control" in metadata else {}),
                          "file": destination.name, "platform": platform, "architecture": metadata["architecture"],
                          "source_file": source.name, "bytes": destination.stat().st_size, "sha256": checksum})
     tag = f"kotlin-{version}-preview-{revision[:12]}"
