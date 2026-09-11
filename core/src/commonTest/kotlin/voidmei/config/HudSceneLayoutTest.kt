@@ -3,6 +3,15 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun movingRegionsClampsToCanvasAndPreservesOtherProperties() {
+        val scene = HudSceneLayout.initial(AppSettings(hudEngineIndex = 2))
+        val first = scene.regions.first()
+        val moved = scene.moveRegion(first.id, Int.MAX_VALUE, Int.MIN_VALUE)
+        assertEquals(first.copy(x = scene.width - first.width, y = 0), moved.regions.first())
+        assertEquals(scene.regions.drop(1), moved.regions.drop(1))
+        assertEquals(moved, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = moved))).hudSceneLayout)
+    }
+
     @Test fun layerMovesPreserveRegionsAndPersistPaintingOrder() {
         val scene = HudSceneLayout.initial(AppSettings(hudEngineIndex = 2))
         val first = scene.regions.first()

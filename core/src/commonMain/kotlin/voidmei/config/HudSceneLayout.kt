@@ -65,6 +65,11 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
         return copy(regions = regions.toMutableList().apply { add(target, removeAt(index)) })
     }
 
+    fun moveRegion(id: String, x: Int, y: Int): HudSceneLayout = copy(regions = regions.map { region ->
+        if (region.id != id) region else region.copy(x = x.coerceIn(0, width - region.width),
+            y = y.coerceIn(0, height - region.height))
+    })
+
     /** Enlarging the canvas preserves geometry; shrinking keeps each region inside it. */
     fun resizeCanvas(newWidth: Int, newHeight: Int): HudSceneLayout {
         require(newWidth in 240..8192 && newHeight in 120..8192)

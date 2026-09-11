@@ -18,7 +18,7 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
     var previewRequest by remember { mutableStateOf(0) }
     var beforeReset by remember { mutableStateOf<AppSettings?>(null) }
     TextButton(onClick = { previewRequest++ }, modifier = Modifier.testTag("hud-layout-preview")) { Text("预览 HUD 布局") }
-    if (previewRequest != 0) HudLayoutPreviewWindow(settings, previewRequest) { previewRequest = 0 }
+    if (previewRequest != 0) HudLayoutPreviewWindow(settings, previewRequest, onChange) { previewRequest = 0 }
     HudSceneSettings(settings, onChange)
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Switch(settings.hudAutoHideOnFocusLoss, { onChange(settings.copy(hudAutoHideOnFocusLoss = it)) },

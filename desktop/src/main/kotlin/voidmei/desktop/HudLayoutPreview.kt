@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -51,7 +52,8 @@ private fun hudPreviewModel() = AircraftAlertModel("preview", FlightModelParamet
     engineThermals = (1..2).map { EngineThermalParameters(it, listOf(EngineThermalBand(1, 100.0, 85.0, 200.0, 100.0))) }))
 
 @Composable
-internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, missing: Boolean = false) {
+internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, missing: Boolean = false,
+    onRegionMove: ((String, Int, Int) -> Unit)? = null) {
     val flight = remember(warnings, missing) { hudPreviewFlight(warnings, missing) }
     val model = remember { hudPreviewModel() }
     val thermal = remember(flight, model) { EngineThermalMonitor().update(flight, model, 0) }
@@ -69,14 +71,19 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
             connectionLabel = "示例数据与模型 · 可在设置窗口继续调整") {
             Text("HUD 布局预览")
         }
+        settings.hudSceneLayout?.takeIf { it.enabled && onRegionMove != null }?.let { scene ->
+            HudSceneDragOverlay(scene, onRegionMove!!)
+        }
     }
 }
 
 @Composable
-internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: Int, onClose: () -> Unit) {
+internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: Int,
+    onSettingsChange: ((AppSettings) -> Unit)? = null, onClose: () -> Unit) {
     val typography = remember(settings.textFont) { textTypography(resolveTextFont(settings.textFont).family) }
     var warnings by remember { mutableStateOf(false) }
     var missing by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(false) }
     var nativeWindow by remember { mutableStateOf<java.awt.Frame?>(null) }
     val previewWidth = settings.hudSceneLayout?.takeIf { it.enabled }?.width?.coerceAtMost(1100) ?: settings.hudWidthDp
     val state = rememberWindowState(width = previewWidth.dp, height = 640.dp)
@@ -99,8 +106,16 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
                         FilterChip(!warnings && !missing, { warnings = false; missing = false }, label = { Text("正常读数") })
                         FilterChip(warnings && !missing, { warnings = true; missing = false }, label = { Text("告警示例") })
                         FilterChip(missing, { warnings = false; missing = true }, label = { Text("缺失数据") })
+                        if (settings.hudSceneLayout?.enabled == true && onSettingsChange != null)
+                            FilterChip(editing, { editing = !editing }, label = { Text("拖动区域") },
+                                modifier = Modifier.testTag("hud-preview-edit-regions"))
                     }
-                    Box(Modifier.weight(1f)) { HudLayoutPreview(settings, warnings, missing) }
+                    if (editing && settings.hudSceneLayout?.enabled == true)
+                        Text("拖动边框内区域以移动；重叠时选取顶层。位置自动保存。", Modifier.padding(horizontal = 12.dp))
+                    Box(Modifier.weight(1f)) { HudLayoutPreview(settings, warnings, missing,
+                        onRegionMove = if (editing && onSettingsChange != null) { id, x, y ->
+                            settings.hudSceneLayout?.let { onSettingsChange(settings.copy(hudSceneLayout = it.moveRegion(id, x, y))) }
+                        } else null) }
                 }
             }
         }
