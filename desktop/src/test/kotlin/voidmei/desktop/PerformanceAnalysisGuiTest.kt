@@ -11,9 +11,47 @@ import org.junit.Rule
 import org.junit.Test
 import java.nio.file.Files
 import kotlin.test.*
+import voidmei.recording.FlightRecordPlots
 
 class PerformanceAnalysisGuiTest {
     @get:Rule val compose = createComposeRule()
+    @Test fun rangeSelectionRecomputesProfilesAndClearsOldExports() {
+        val root = Files.createTempDirectory("voidmei-performance-range")
+        val target = root.resolve("selected.csv")
+        val source = "sample_id,utc_epoch_ms,elapsed_ms,aircraft,altitude_m,ias_kmh,roll_rate_degps,aileron_percent\n" +
+            "0,,500,test,100,200,100,80\n1,,5500,test,200,220,150,90\n2,,10500,test,300,240,200,100\n"
+        try {
+            val full = FlightRecordPlots.analyze(source)
+            compose.setContent { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
+                RecordingWindowPanel(source, full, chooseExport = { target.toString() })
+            } } }
+            fun analyze(expected: String) {
+                compose.onNodeWithText("统计爬升与机动采样").performScrollTo().performClick()
+                compose.waitUntil(10000) { compose.onAllNodesWithText(expected).fetchSemanticsNodes().isNotEmpty() }
+            }
+            val all = "高度档 3 · 滚转速度档 3 · 过载速度档 0"
+            analyze(all)
+            compose.onNodeWithText("区间起点 (s)").performScrollTo().performTextReplacement("5")
+            compose.onNodeWithText("区间终点 (s)").performTextReplacement("5")
+            compose.onNodeWithText("分析此区间").performClick()
+            compose.waitUntil(10000) { compose.onAllNodesWithText("当前曲线：5.0–5.0 s · 1 帧").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText(all).assertDoesNotExist()
+            compose.onNodeWithText("导出性能采样 CSV").assertDoesNotExist()
+            analyze("高度档 1 · 滚转速度档 1 · 过载速度档 0")
+            compose.onNodeWithText("所选采样：200.00 m · 0.00 s").assertExists()
+            compose.onNodeWithText("导出性能采样 CSV").performScrollTo().performClick()
+            compose.waitUntil(10000) { compose.onAllNodesWithText("已导出性能采样：$target").fetchSemanticsNodes().isNotEmpty() }
+            val rows = Files.readAllLines(target).filter { it.isNotBlank() }.map { it.split(',') }
+            assertEquals(3, rows.size) // Header, one altitude bin, one roll bin.
+            assertEquals(listOf("climb", "200", "", "0"), rows[1].take(4))
+            assertEquals(listOf("roll", "", "220"), rows[2].take(3))
+            compose.onNodeWithText("恢复完整记录").performScrollTo().performClick()
+            compose.onNodeWithText("高度档 1 · 滚转速度档 1 · 过载速度档 0").assertDoesNotExist()
+            compose.onNodeWithText("已导出性能采样：$target").assertDoesNotExist()
+            analyze(all)
+        } finally { root.toFile().deleteRecursively() }
+    }
+
     @Test fun analyzesSelectsAndExportsWithoutReplacingExistingFiles() {
         val root = Files.createTempDirectory("voidmei-performance-export")
         val target = root.resolve("result.csv")
