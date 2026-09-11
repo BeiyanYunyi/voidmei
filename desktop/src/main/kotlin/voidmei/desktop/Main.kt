@@ -564,6 +564,9 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
                 HudField.IAS -> FlightAlert.IAS_LIMIT
                 HudField.MACH -> FlightAlert.MACH_LIMIT
                 HudField.LOAD -> FlightAlert.LOAD_LIMIT
+                HudField.ALTITUDE -> if (altitude.radarEstimated) FlightAlert.TERRAIN_CLOSURE else FlightAlert.ALTITUDE_DESCENT
+                HudField.RADIO_ALTITUDE_ESTIMATE -> FlightAlert.TERRAIN_CLOSURE
+                HudField.CLIMB -> if (FlightAlert.HIGH_DESCENT in readingAlerts) FlightAlert.HIGH_DESCENT else FlightAlert.ALTITUDE_DESCENT
                 HudField.FUEL_PRESSURE_RAW -> FlightAlert.LOW_FUEL_PRESSURE
                 HudField.GEAR -> FlightAlert.GEAR_LIMIT.takeIf { t.gearPercent?.let { it > 0 && it <= 100 } == true }
                 HudField.FLAPS -> FlightAlert.FLAP_LIMIT.takeIf { t.flapsPercent?.let { it > 0 && it <= 100 } == true }
@@ -572,7 +575,8 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
                 HudField.FUEL, HudField.FUEL_PERCENT -> fuelReadingWarning(readingAlerts)
                 else -> null
             }
-            if (alert != null && alert in readingAlerts && field.value(flight, model) != null)
+            val shownValue = if (field == HudField.ALTITUDE) altitude.metres else field.value(flight, model)
+            if (alert != null && alert in readingAlerts && shownValue != null)
                 warnings[index] = alert.label
         }
         val unitRanges = fields.mapIndexedNotNull { index, field ->
