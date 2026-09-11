@@ -1,6 +1,7 @@
 package voidmei.desktop
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -85,6 +86,15 @@ internal fun HudPresetTransfer(settings: AppSettings, onChange: (AppSettings) ->
         val fits = settings.hudScenePresets.size + additions.size <= 16
         Text("文件：$source")
         if (presets.isEmpty()) Text("文件中没有预设。")
+        if (presets.isNotEmpty()) {
+            Text("已选择 ${selectedTargets.size} / ${presets.size} 套，预计添加 ${additions.size} 套")
+            FlowRow {
+                TextButton({ excluded = emptySet() }, enabled = excluded.isNotEmpty(),
+                    modifier = Modifier.testTag("hud-presets-import-select-all")) { Text("全选") }
+                TextButton({ excluded = presets.keys.toSet() }, enabled = selectedTargets.isNotEmpty(),
+                    modifier = Modifier.testTag("hud-presets-import-select-none")) { Text("全不选") }
+            }
+        }
         presets.forEach { (name, scene) ->
             val target = targets.getValue(name)
             val selected = name !in excluded

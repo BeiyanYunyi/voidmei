@@ -1,6 +1,8 @@
 package voidmei.desktop
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -15,6 +17,33 @@ import voidmei.config.*
 
 class HudPresetTransferGuiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun fullBackupCanSelectLastLayoutAndApplyThroughScrolling() {
+        val root = Files.createTempDirectory("voidmei-preset-full-")
+        try {
+            val scene = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
+            val input = root.resolve("input.json")
+            val presets = (1..16).associate { "布局$it" to scene.copy(enabled = it % 2 == 0) }
+            writeHudPresets(input, presets)
+            val original = AppSettings(hudSceneLayout = scene)
+            var settings by mutableStateOf(original)
+            compose.setContent { MaterialTheme { Box(Modifier.size(600.dp, 600.dp)) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    HudPresetTransfer(settings, { settings = it }, { input.toString() }, { null })
+                }
+            } } }
+            compose.onNodeWithTag("hud-presets-import").performClick()
+            compose.waitUntil(5000) { compose.onAllNodesWithTag("hud-presets-import-apply").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("hud-presets-import-select-all").assertIsNotEnabled()
+            compose.onNodeWithTag("hud-presets-import-select-none").performClick().assertIsNotEnabled()
+            compose.onNodeWithTag("hud-presets-import-select-all").performClick().assertIsNotEnabled()
+            compose.onNodeWithText("已选择 16 / 16 套，预计添加 16 套").assertIsDisplayed()
+            compose.onNodeWithTag("hud-presets-import-select-none").performClick()
+            compose.onNodeWithTag("hud-presets-import-select-布局16").performScrollTo().performClick().assertIsOn()
+            compose.onNodeWithTag("hud-presets-import-apply").performScrollTo().assertIsDisplayed().performClick()
+            compose.runOnIdle { assertEquals(original.copy(hudScenePresets = mapOf("布局16" to presets.getValue("布局16"))), settings) }
+        } finally { root.toFile().deleteRecursively() }
+    }
 
     @Test fun selectingSubsetFitsRemainingCapacityAndIgnoresExcludedInvalidName() {
         val root = Files.createTempDirectory("voidmei-preset-subset-")
