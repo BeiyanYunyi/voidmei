@@ -42,6 +42,8 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                         {"Mfuel 1, kg": 0, "Mfuel0 1, kg": 200},
                         {"Mfuel 1, kg": -65535, "Mfuel0 1, kg": None},
                     )[(requests[self.path] - 1) % 3])
+                    if hud_scene:
+                        data.update({"gear, %": 0, "flaps, %": 25, "airbrake, %": 100})
                     if wep:
                         data["throttle 1, %"] = 110
                         if wep_dropout and 20 <= requests[self.path] <= 22:
@@ -51,6 +53,8 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                                      "magneto 1": -1, "pitch 1, deg": -65535})
                 elif self.path == "/indicators":
                     data = {"valid": True, "type": "smoke-plane"}
+                    if hud_scene:
+                        data.update({"compass": 90, "aviahorizon_pitch": -15, "aviahorizon_roll": 10})
                     phase = (requests[self.path] - 1) % 3
                     data.update((
                         {"water_temperature": 100, "head_temperature": 200, "oil_temperature": -20, "altitude_10k": 4921.26},
@@ -84,11 +88,15 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                 return dict(id=name, content=content, x=x, y=y, width=width, height=height,
                             backgroundAlpha=alpha, contentAlpha=1, engineIndex=1, fields=fields, visible=True)
             settings["hudSceneLayout"] = dict(width=900, height=600, enabled=True, regions=[
-                region("flight", "FLIGHT", 0, 0, 280, 220, .25, ["ias", "altitude"]),
-                region("engine", "ENGINE", 0, 250, 280, 220, .75, ["rpm", "water_temperature"]),
-                region("messages", "MESSAGES", 300, 0, 280, 250),
+                region("flight", "FLIGHT", 0, 0, 280, 180, .25, ["ias", "altitude"]),
+                region("engine", "ENGINE", 0, 200, 280, 180, .75, ["rpm", "water_temperature"]),
+                region("mechanization", "MECHANIZATION", 0, 400, 280, 180, .5, ["gear", "airbrake"]),
+                region("messages", "MESSAGES", 300, 0, 280, 160, .5, ["event"]),
+                region("compass", "COMPASS", 300, 180, 160, 180),
+                region("crosshair", "CROSSHAIR", 470, 180, 110, 110, 0),
+                region("attitude", "ATTITUDE", 300, 380, 280, 220),
                 region("map", "MAP", 600, 0, 300, 500),
-                region("crosshair", "CROSSHAIR", 370, 300, 128, 128, 0)])
+                region("alerts", "ALERTS", 600, 500, 300, 100, .5, ["advisory"])])
             (root / "require-single-hud").touch()
         if tray_background:
             settings["startInTray"] = True
@@ -164,8 +172,13 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
             raise RuntimeError("Persisted compatibility setting did not activate the full HUD")
     if hud_scene:
         saved = json.loads((root / "config/settings-kmp.json").read_text())
-        if len(saved.get("hudSceneLayout", {}).get("regions", [])) != 5 or not saved["hudSceneLayout"].get("enabled"):
+        if len(saved.get("hudSceneLayout", {}).get("regions", [])) != 9 or not saved["hudSceneLayout"].get("enabled"):
             raise RuntimeError("Packaged scene configuration was not retained")
+        regions = {region["id"]: region for region in saved["hudSceneLayout"]["regions"]}
+        for name, fields in (("messages", ["event"]), ("alerts", ["advisory"]),
+                             ("mechanization", ["gear", "airbrake"])):
+            if regions.get(name, {}).get("fields") != fields:
+                raise RuntimeError("Packaged scene lost independent selection: " + name)
         if "[VoidMei exit test] single HUD stable" not in (root / "startup.log").read_text():
             raise RuntimeError("Packaged scene did not retain one stable HUD window")
     files = list((root / "userdata/voidmei/records").glob("*.csv"))
@@ -279,7 +292,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path)
-    parser.add_argument("--hud-scene", action="store_true", help="Exercise five regions in one HUD; requires --graceful-exit")
+    parser.add_argument("--hud-scene", action="store_true", help="Exercise nine regions in one HUD; requires --graceful-exit")
     parser.add_argument("--delayed-sample", action="store_true", help="Delay the twentieth HTTP sample by 1.5 seconds; require one continuous recording pair")
     parser.add_argument("--poll-interval-ms", type=int, default=100, help="Configured polling delay, 10–5000 ms")
     parser.add_argument("--timeout", type=float, default=60)
