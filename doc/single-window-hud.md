@@ -663,3 +663,9 @@ IAS 读数关联已有 STALL_SPEED 告警；若同时存在 IAS_LIMIT，保持�
 选择发动机增压器字段后，分区与纵向 HUD 都可显示对应发动机的“当前档位 → 建议档位”。复用主窗口已有的 `CompressorAdvice`，要求匹配机型、当前高度和 TAS、有效档位及足够油门；说明包含燃油方案与 15°C 模型估算。模型判断无需换档时不显示，缺失数据、机型不匹配或取消字段时清除。此项为文字信息，不受图形开关影响，也不执行自动换档。
 
 桌面单元及相关 GUI 回归通过（`/tmp/voidmei-hud-compressor-advice.log`），覆盖两台发动机建议隔离、分区与纵向显示、机型不匹配、缺失 TAS 和取消字段。本轮未修改共享计算公式或重建 Nix 包，未新增真实游戏验收。
+
+## 发动机仪表离线包像素验证
+
+扩展十区域整包冒烟场景：发动机区选择转速、水温和混合比，合成数据提供 60% 混合比；退出代理检查发动机区域内仪表颜色像素。未启用的“详细”预设另保存 `showEngineInstruments=false`，实际退出后的配置校验确认此开关保留。
+
+Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼容 HUD 实际进程场景通过（`/tmp/voidmei-engine-gauges-package-build.log`、`/tmp/voidmei-engine-gauges-package-run.log`）。产物 `/tmp/voidmei-package-smoke-t6ns1yay/`：86 对记录、34 次同一 900×600 HUD 窗口检查、496 个发动机仪表颜色像素，80 ms 刷新、延迟恢复和正常退出均通过。已检查截图中的混合比数值、满刻度说明和半量程条形图。此为隔离 X11 软件绘制验证，其他发动机仪表和换档建议的具体行为由各自 GUI 测试覆盖，未新增真实游戏或物理 GPU 验收。
