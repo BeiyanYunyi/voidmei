@@ -18,6 +18,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
         Text(if (scene == null) "使用单窗口分区布局（试验性）" else "返回纵向 HUD 布局")
     }
     if (scene == null) return
+    HudScenePresetSettings(settings, onChange)
     Text("分区布局自动穿透鼠标。在此调整区域；预览同步显示。画布 ${scene.width} × ${scene.height} dp，空间不足时整体缩小。")
     var expanded by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起分区设置" else "调整分区位置与透明度") }

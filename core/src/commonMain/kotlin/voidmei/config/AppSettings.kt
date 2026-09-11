@@ -65,6 +65,7 @@ data class AppSettings(
     val numberFont: String? = null,
     val hudAltitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL,
     val hudSceneLayout: HudSceneLayout? = null,
+    val hudScenePresets: Map<String, HudSceneLayout> = emptyMap(),
 ) {
     init {
         require(readingColors.keys.all { it in setOf("label", "value", "warning", "shade", "unit") } && readingColors.values.all { parseHexColor(it) != null })
@@ -85,6 +86,9 @@ data class AppSettings(
         require(hudOpacity.isFinite() && hudOpacity in 0f..1f)
         require(hudReadingColumns in 0..2)
         require(hudFontScale.isFinite() && hudFontScale in 0.75f..2f)
+        require(hudScenePresets.size <= 16 && hudScenePresets.keys.all {
+            it.isNotBlank() && it == it.trim() && it.length <= 80 && it.none { char -> char.isISOControl() }
+        })
         require(hudEngineIndex == null || hudEngineIndex > 0)
         require(hudWidthDp in 240..1000)
     }
@@ -174,6 +178,7 @@ object SettingsJson {
             hudEnabled = root["hudEnabled"]?.jsonPrimitive?.boolean ?: defaults.hudEnabled,
             hudOpacity = root["hudOpacity"]?.jsonPrimitive?.float ?: defaults.hudOpacity,
             hudSceneLayout = root["hudSceneLayout"]?.takeUnless { it == JsonNull }?.let(HudSceneLayout::fromJson),
+            hudScenePresets = root["hudScenePresets"]?.jsonObject?.mapValues { HudSceneLayout.fromJson(it.value) } ?: emptyMap(),
             hudFontScale = root["hudFontScale"]?.jsonPrimitive?.let {
                 require(!it.isString); it.float
             } ?: defaults.hudFontScale,
@@ -244,6 +249,7 @@ object SettingsJson {
         fields["hudEnabled"] = JsonPrimitive(settings.hudEnabled)
         fields["hudOpacity"] = JsonPrimitive(settings.hudOpacity)
         fields["hudSceneLayout"] = settings.hudSceneLayout?.toJson() ?: JsonNull
+        fields["hudScenePresets"] = JsonObject(settings.hudScenePresets.mapValues { it.value.toJson() })
         fields["hudFontScale"] = JsonPrimitive(settings.hudFontScale)
         fields["hudWidthDp"] = JsonPrimitive(settings.hudWidthDp)
         fields["hudEngineIndex"] = settings.hudEngineIndex?.let(::JsonPrimitive) ?: JsonNull
