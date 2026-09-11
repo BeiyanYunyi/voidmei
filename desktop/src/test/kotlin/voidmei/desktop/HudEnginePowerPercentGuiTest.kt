@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -25,16 +26,24 @@ class HudEnginePowerPercentGuiTest {
             """{"valid":true,"thrust 1, kgs":400,"power 2, hp":1500}""",
             """{"valid":true,"type":"test"}""")!!, FlightMetrics())
         val one = HudRegion("one", HudRegionContent.ENGINE, 0, 0, 400, 300, fields = listOf("fm_power_percent"))
-        val settings = AppSettings(hudSceneLayout = HudSceneLayout(800, 300,
-            listOf(one, one.copy(id = "two", x = 400, engineIndex = 2))))
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(800, 300,
+            listOf(one, one.copy(id = "two", x = 400, engineIndex = 2)))))
         compose.setContent { MaterialTheme { Box(Modifier.size(800.dp, 300.dp)) {
             HudPanel(flight, settings, emptyList(), model) {}
         } } }
         compose.onNodeWithText("40.0 % · FM 推力峰值").assertIsDisplayed()
         compose.onNodeWithText("75.0 % · FM 功率峰值").assertIsDisplayed()
+        compose.onNodeWithTag("hud-engine-fm_power_percent-1").assertRangeInfoEquals(ProgressBarRangeInfo(.4f, 0f..1f))
+        compose.onNodeWithTag("hud-engine-fm_power_percent-2").assertRangeInfoEquals(ProgressBarRangeInfo(.75f, 0f..1f))
+        compose.runOnIdle { settings = settings.copy(hudSceneLayout = settings.hudSceneLayout!!.copy(
+            regions = settings.hudSceneLayout!!.regions.map { if (it.id == "one") it.copy(showEngineInstruments = false) else it })) }
+        compose.onNodeWithTag("hud-engine-fm_power_percent-1").assertDoesNotExist()
+        compose.onNodeWithTag("hud-engine-fm_power_percent-2").assertExists()
+        compose.onNodeWithText("40.0 % · FM 推力峰值").assertIsDisplayed()
         compose.runOnIdle { model = model.copy(aircraft = "other") }
         compose.onNodeWithText("40.0 % · FM 推力峰值").assertDoesNotExist()
         compose.onNodeWithText("75.0 % · FM 功率峰值").assertDoesNotExist()
         compose.onAllNodesWithText("— %").assertCountEquals(2)
+        compose.onNodeWithTag("hud-engine-fm_power_percent-2").assertDoesNotExist()
     }
 }

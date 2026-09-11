@@ -12,17 +12,20 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import voidmei.telemetry.Engine
 import voidmei.telemetry.HudEngineField
+import voidmei.telemetry.PowerPercentReading
 
 /** Legacy control scales; RPM control is a percentage, not the propeller blade angle. */
 @Composable
-internal fun EngineControlBars(engine: Engine, fields: List<HudEngineField>) {
+internal fun EngineControlBars(engine: Engine, fields: List<HudEngineField>, powerPercent: PowerPercentReading? = null) {
     fields.distinct().forEach { field ->
         val maximum = when (field) {
             HudEngineField.RPM_CONTROL, HudEngineField.RADIATOR, HudEngineField.OIL_RADIATOR -> 100
+            HudEngineField.FM_POWER_PERCENT -> 100
             HudEngineField.MIXTURE -> 120
             else -> return@forEach
         }
-        val value = field.value(engine) ?: return@forEach
+        val value = (if (field == HudEngineField.FM_POWER_PERCENT) powerPercent?.percent else field.value(engine))
+            ?.takeIf { it.isFinite() && it >= 0 } ?: return@forEach
         val label = "${engine.index} 号${field.label}，满刻度 $maximum%"
         Text(label, style = MaterialTheme.typography.bodySmall,
             color = LocalReadingColors.current.label ?: LocalContentColor.current)

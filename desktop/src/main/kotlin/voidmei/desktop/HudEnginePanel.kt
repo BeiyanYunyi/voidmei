@@ -62,7 +62,7 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
             }.toMap())
             if (compact && showInstruments && HudEngineField.THROTTLE in fields)
                 ThrottleBar(HudEngineField.THROTTLE.value(engine), index, "hud-engine-throttle-$index")
-            if (compact && showInstruments) EngineControlBars(engine, fields)
+            if (compact && showInstruments) EngineControlBars(engine, fields, powerPercent)
         }
     }
 }
