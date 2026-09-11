@@ -56,14 +56,15 @@ private fun hudPreviewModel() = AircraftAlertModel("preview", FlightModelParamet
 @Composable
 internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, missing: Boolean = false,
     onRegionMove: ((String, Int, Int) -> Unit)? = null,
-    onRegionResize: ((String, Int, Int) -> Unit)? = null, dragTargetId: String? = null, denseMessages: Boolean = false) {
+    onRegionResize: ((String, Int, Int) -> Unit)? = null, dragTargetId: String? = null, denseMessages: Boolean = false, allAlerts: Boolean = false) {
     val flight = remember(warnings, missing) { hudPreviewFlight(warnings, missing) }
     val map = remember(missing) { kotlinx.coroutines.flow.MutableStateFlow<MapConnection>(
         if (missing) MapConnection.Waiting else MapConnection.Available(hudPreviewMap())) }
     val model = remember { hudPreviewModel() }
     val thermal = remember(flight, model) { EngineThermalMonitor().update(flight, model, 0) }
-    val alerts = remember(flight, model, thermal) {
-        FlightAlerts().updateForAircraft(flight, model, 0, false, thermalObservation = thermal).active
+    val alerts = remember(flight, model, thermal, allAlerts, missing) {
+        if (allAlerts && !missing) FlightAlert.entries.filter { it != FlightAlert.CONNECTION_READY }
+        else FlightAlerts().updateForAircraft(flight, model, 0, false, thermalObservation = thermal).active
     }
     Box(Modifier.fillMaxSize()) {
         Canvas(Modifier.matchParentSize()) {
@@ -94,8 +95,11 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
     var missing by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var denseMessages by remember { mutableStateOf(false) }
+    var allAlerts by remember { mutableStateOf(false) }
     var dragTarget by remember { mutableStateOf<String?>(null) }
     val regions = settings.hudSceneLayout?.regions.orEmpty()
+    val showAllAlerts = allAlerts && settings.hudSceneLayout?.enabled == true &&
+        regions.any { it.visible && it.content == HudRegionContent.ALERTS }
     LaunchedEffect(regions.map { it.id }) {
         if (regions.none { it.id == dragTarget }) dragTarget = null
     }
@@ -124,10 +128,14 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
                         if (settings.hudSceneLayout?.let { it.enabled && it.regions.any { region -> region.visible && region.content == HudRegionContent.MESSAGES } } == true)
                             FilterChip(denseMessages, { denseMessages = !denseMessages }, enabled = !missing,
                                 label = { Text("密集消息") }, modifier = Modifier.testTag("hud-preview-dense-messages"))
+                        if (settings.hudSceneLayout?.let { it.enabled && it.regions.any { region -> region.visible && region.content == HudRegionContent.ALERTS } } == true)
+                            FilterChip(allAlerts, { allAlerts = !allAlerts }, enabled = !missing,
+                                label = { Text("全部告警样例") }, modifier = Modifier.testTag("hud-preview-all-alerts"))
                         if (settings.hudSceneLayout?.enabled == true && onSettingsChange != null)
                             FilterChip(editing, { editing = !editing }, label = { Text("拖动区域") },
                                 modifier = Modifier.testTag("hud-preview-edit-regions"))
                     }
+                    if (showAllAlerts && !missing) Text("全部告警样例仅用于布局检查，不代表这些告警会同时触发。", Modifier.padding(horizontal = 12.dp))
                     if (editing && settings.hudSceneLayout?.enabled == true) {
                         HudDragTargetSettings(regions, dragTarget) { dragTarget = it }
                         Text("拖动区域以移动，拖动右下角方块调整大小；指定目标可编辑被遮挡区域。修改自动保存。", Modifier.padding(horizontal = 12.dp))
@@ -138,7 +146,7 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
                         } else null,
                         onRegionResize = if (editing && onSettingsChange != null) { id, width, height ->
                             settings.hudSceneLayout?.let { onSettingsChange(settings.copy(hudSceneLayout = it.resizeRegion(id, width, height))) }
-                        } else null, dragTargetId = dragTarget, denseMessages = denseMessages) }
+                        } else null, dragTargetId = dragTarget, denseMessages = denseMessages, allAlerts = showAllAlerts) }
                 }
             }
         }
