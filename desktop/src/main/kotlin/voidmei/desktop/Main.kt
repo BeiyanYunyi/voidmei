@@ -579,7 +579,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
     }
 }
 
-private fun Double?.display(digits: Int = 1): String = this?.let { String.format(Locale.ROOT, "%.${digits}f", it) } ?: "—"
+private fun Double?.display(digits: Int = 1): String = readingNumber(this, digits)
 internal fun statusText(state: ConnectionState): String = when (state) {
     ConnectionState.Connecting -> "正在连接…"
     ConnectionState.WaitingForFlight -> "已连接 · 等待飞行"

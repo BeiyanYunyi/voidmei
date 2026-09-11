@@ -2930,6 +2930,12 @@ Linux Kotlin CI 在同次构建的 Deb 上执行该脚本，沿用既有制品�
 
 默认 Nix 包构建通过（`/tmp/voidmei-hud-text-contrast-nix.log`），产物 `/nix/store/9ib4dqinjjr1c01g0k3pkwmx7ay5g76f-voidmei-kotlin-2.0.0`，同时包含近期 HUD 滚动重置和位置指示改动。
 
+### HUD 近零读数不再显示负零
+
+飞行读数与发动机表格使用统一的展示格式函数：先按原有精度格式化，仅当结果为负零时移除负号。真实负读数继续带负号，缺失和非有限值显示 —；不更改遥测、计算、阈值判断或 CSV。主窗口中使用同一显示函数的读数同步受益。
+
+桌面单元验证 0/1/2 位小数的近零边界、正负零及非法数值，GUI 验证实际爬升/SEP 读数的近零、负值和缺失恢复，发动机字段回归继续通过（`/tmp/voidmei-hud-negative-zero.log`、`/tmp/voidmei-hud-negative-zero-after.log`）。初始 GUI 断言误按 SEP 整数格式编写，已依当前一位小数规则修正。本轮未重建 Nix 包，不作为实机 SEP 跳变已消失的证据。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
