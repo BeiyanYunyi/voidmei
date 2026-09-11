@@ -15,6 +15,29 @@ import voidmei.telemetry.*
 class HudEngineThrustPowerGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun missingInputReasonsFollowSelectionAndRecoverAtZeroSpeed() {
+        val telemetry = TelemetryParser.parse("""{"valid":true,"TAS, km/h":360,"thrust 1, kgs":100,"power 1, hp":200}""",
+            """{"valid":true,"type":"test"}""")!!
+        var engine by mutableStateOf(telemetry.engines.single().copy(powerHp = 0.0))
+        var speed by mutableStateOf<Double?>(360.0)
+        var fields by mutableStateOf(listOf(HudEngineField.THRUST_POWER, HudEngineField.PROPULSIVE_EFFICIENCY))
+        compose.setContent { MaterialTheme { HudEnginePanel(listOf(engine), 1, fields = fields, tasKmh = speed) } }
+        compose.onNodeWithText("98.1 kW").assertIsDisplayed()
+        compose.onNodeWithText("推进效率估计：缺少本发动机正轴功率").assertIsDisplayed()
+        compose.runOnIdle { speed = null; engine = engine.copy(thrustKgf = null) }
+        compose.onNodeWithText("推进功率：缺少有效 TAS、本发动机有效推力").assertIsDisplayed()
+        compose.onNodeWithText("推进效率估计：缺少有效 TAS、本发动机有效推力、本发动机正轴功率").assertIsDisplayed()
+        compose.runOnIdle { fields = listOf(HudEngineField.RPM) }
+        compose.onAllNodes(hasText("缺少", substring = true)).assertCountEquals(0)
+        compose.runOnIdle {
+            fields = listOf(HudEngineField.THRUST_POWER, HudEngineField.PROPULSIVE_EFFICIENCY)
+            speed = 0.0; engine = telemetry.engines.single()
+        }
+        compose.onAllNodes(hasText("缺少", substring = true)).assertCountEquals(0)
+        compose.onNodeWithText("0.0 kW").assertIsDisplayed()
+        compose.onNodeWithText("0.0 %").assertIsDisplayed()
+    }
+
     @Test fun reconnectAndAircraftChangeCannotReuseOldPropulsionReadings() {
         val original = TelemetryParser.parse("""{"valid":true,"TAS, km/h":360,"thrust 1, kgs":100,"power 1, hp":200}""",
             """{"valid":true,"type":"first"}""")!!
@@ -77,6 +100,8 @@ class HudEngineThrustPowerGuiTest {
         compose.onNodeWithText("33.4 %").assertIsDisplayed()
         compose.onNodeWithText("— kW").assertIsDisplayed()
         compose.onNodeWithText("196.1 kW").assertIsDisplayed()
+        compose.onAllNodesWithText("推进功率：缺少本发动机有效推力").assertCountEquals(1)
+        compose.onAllNodesWithText("推进效率估计：缺少本发动机有效推力").assertCountEquals(1)
         compose.runOnIdle { flight = flight.copy(telemetry = telemetry.copy(tasKmh = null)) }
         compose.onAllNodesWithText("— kW").assertCountEquals(2)
         compose.onAllNodesWithText("— %").assertCountEquals(2)

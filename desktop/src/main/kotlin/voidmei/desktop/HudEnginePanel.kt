@@ -2,6 +2,7 @@ package voidmei.desktop
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import voidmei.telemetry.*
 
@@ -60,9 +61,28 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
                 val unit = reading.third
                 if (unit.isEmpty()) null else index to (rows[index].second.length - unit.length until rows[index].second.length)
             }.toMap())
+            fields.distinct().forEach { field ->
+                propulsionUnavailableReason(field, engine, tasKmh)?.let { reason ->
+                    Text("${field.label}：$reason", style = MaterialTheme.typography.bodySmall,
+                        color = LocalReadingColors.current.label ?: androidx.compose.ui.graphics.Color(0xFF9EB1C0))
+                }
+            }
             if (compact && showInstruments && HudEngineField.THROTTLE in fields)
                 ThrottleBar(HudEngineField.THROTTLE.value(engine), index, "hud-engine-throttle-$index")
             if (compact && showInstruments) EngineControlBars(engine, fields, powerPercent)
         }
     }
+}
+
+/** Only explain selected derived readings; a valid zero is still a measurement. */
+internal fun propulsionUnavailableReason(field: HudEngineField, engine: Engine, tasKmh: Double?): String? {
+    if (field != HudEngineField.THRUST_POWER && field != HudEngineField.PROPULSIVE_EFFICIENCY) return null
+    if (field.value(engine, tasKmh) != null) return null
+    val missing = buildList {
+        if (tasKmh == null || !tasKmh.isFinite() || tasKmh < 0) add("有效 TAS")
+        if (engine.thrustKgf?.let { it.isFinite() && it >= 0 } != true) add("本发动机有效推力")
+        if (field == HudEngineField.PROPULSIVE_EFFICIENCY && engine.powerHp?.let { it.isFinite() && it > 0 } != true)
+            add("本发动机正轴功率")
+    }
+    return if (missing.isEmpty()) "计算结果超出有效范围" else "缺少" + missing.joinToString("、")
 }
