@@ -33,15 +33,15 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields) {
                     rememberScrollState()
                 }
-                if (region.visible && (region.content != HudRegionContent.ALERTS || alerts.isNotEmpty())) {
+                if (region.visible && (flight == null || region.content != HudRegionContent.ALERTS || alerts.isNotEmpty())) {
                     Box(Modifier.offset(region.x.dp, region.y.dp).size(region.width.dp, region.height.dp)
                         .clipToBounds().testTag("hud-region-${region.id}")
                         .background(Color(0xFF111820).copy(alpha = region.backgroundAlpha))) {
                         Box(Modifier.fillMaxSize().graphicsLayer { alpha = region.contentAlpha }.padding(12.dp)) {
                         Column(Modifier.fillMaxSize().padding(end = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            if (region.content == HudRegionContent.ALERTS) FlightAlertPanel(alerts, compact = true,
+                            if (flight == null) Text(connectionLabel ?: statusText(connection))
+                            else if (region.content == HudRegionContent.ALERTS) FlightAlertPanel(alerts, compact = true,
                                 maximumHeight = (region.height - 24).dp)
-                            else if (flight == null) Text(connectionLabel ?: statusText(connection))
                             else when (region.content) {
                                 HudRegionContent.FLIGHT -> {
                                     Text(connectionLabel ?: statusText(connection))
