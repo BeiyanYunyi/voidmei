@@ -16,6 +16,29 @@ import kotlin.test.*
 class HudAlertRegionGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun previewIdentifiesAlertOverflowAndClearsItAfterResizingOrFiltering() {
+        var region by mutableStateOf(HudRegion("alerts", HudRegionContent.ALERTS, 0, 0, 500, 100))
+        var preview by mutableStateOf(true)
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp, 600.dp)) {
+            val settings = AppSettings(hudSceneLayout = HudSceneLayout(500, 600, listOf(region)))
+            if (preview) HudLayoutPreview(settings, allAlerts = true)
+            else HudPanel(hudPreviewFlight(), settings, FlightAlert.entries, null) {}
+        } } }
+        val badge = compose.onNodeWithTag("flight-alert-overflow")
+        badge.assertIsDisplayed()
+        compose.runOnIdle { region = region.copy(height = 600, fields = listOf("advisory")) }
+        badge.assertDoesNotExist()
+        compose.onNodeWithTag("flight-alert-HIGH_AOA").assertIsDisplayed()
+        compose.runOnIdle { region = region.copy(height = 100, fields = null) }
+        badge.assertIsDisplayed()
+        compose.runOnIdle { preview = false }
+        badge.assertDoesNotExist()
+        compose.onNodeWithTag("flight-alert-scrollbar").assertIsDisplayed()
+        compose.runOnIdle { preview = true; region = region.copy(fields = emptyList()) }
+        badge.assertDoesNotExist()
+        compose.onNodeWithTag("hud-region-alerts").assertDoesNotExist()
+    }
+
     @Test fun longTitleAndLargeFontLeaveAlertsInsideRegionWithOneScrollArea() {
         val title = "发动机与飞行告警".repeat(6)
         val scene = HudSceneLayout(300, 220, listOf(HudRegion("alerts", HudRegionContent.ALERTS,

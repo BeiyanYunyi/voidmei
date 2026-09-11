@@ -153,7 +153,7 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
                     }
                     if (showAllAlerts && !missing) Text("全部告警样例仅用于布局检查，不代表这些告警会同时触发。", Modifier.padding(horizontal = 12.dp))
                     if (settings.hudSceneLayout?.enabled == true) Text(
-                        "出现“内容超出区域”时，请增大区域、减少字段或缩小字号；运行中的 HUD 鼠标穿透，无法直接滚动。",
+                        "出现内容或告警超出区域提示时，请增大区域、减少字段或缩小字号；运行中的 HUD 鼠标穿透，无法直接滚动。",
                         Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall)
                     if (editing && settings.hudSceneLayout?.enabled == true) {
                         HudDragTargetSettings(regions, dragTarget) { dragTarget = it }

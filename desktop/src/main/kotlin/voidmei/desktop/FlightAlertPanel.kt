@@ -1,6 +1,7 @@
 package voidmei.desktop
 
 import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.rememberScrollbarAdapter
@@ -41,5 +42,9 @@ internal fun FlightAlertPanel(alerts: List<FlightAlert>, compact: Boolean = fals
         }
         if (compact && scroll.maxValue > 0) VerticalScrollbar(rememberScrollbarAdapter(scroll),
             Modifier.align(Alignment.CenterEnd).fillMaxHeight().testTag("flight-alert-scrollbar"))
+        if (compact && LocalHudLayoutInspection.current && scroll.maxValue in 1 until Int.MAX_VALUE)
+            Text("告警超出区域", Modifier.align(Alignment.BottomEnd).testTag("flight-alert-overflow")
+                .background(Color(0xFF713E00)).padding(horizontal = 4.dp, vertical = 2.dp),
+                color = Color.White, style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
     }
 }
