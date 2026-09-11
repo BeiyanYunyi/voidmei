@@ -89,6 +89,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                             else when (region.content) {
                                 HudRegionContent.FLIGHT -> {
                                     Text(connectionLabel ?: statusText(connection))
+                                    if (HudField.selected(fields).isEmpty()) Text("未选择飞行读数")
                                     FlightPanel(flight, compact = true, fields = HudField.selected(region.fields ?: settings.hudFields),
                                         mechanization = false, model = model, thermal = thermal, readingAlerts = alerts,
                                         aoaBarWarningPercent = settings.hudAoaBarWarningPercent, aoaWarningPercent = settings.hudAoaWarningPercent,
@@ -102,6 +103,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal))
                                 HudRegionContent.ATTITUDE -> Unit
                                 HudRegionContent.MECHANIZATION -> {
+                                    if (HudMechanizationField.entries.none { it.id in fields }) Text("未选择机械化内容")
                                     MechanizationPanel(flight.telemetry, model,
                                         HudMechanizationField.GEAR.id in fields, HudMechanizationField.FLAPS.id in fields,
                                         HudMechanizationField.AIRBRAKE.id in fields, automaticSweep = true,
