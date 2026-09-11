@@ -34,7 +34,7 @@ internal fun engineReadingWarnings(flight: ConnectionState.Flying, index: Int, m
 @Composable
 internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.selected(HudEngineField.defaults),
     warnings: Map<HudEngineField, String> = emptyMap(), showInstruments: Boolean = true,
-    heatBudget: ThermalBudgetRange? = null, powerPercent: PowerPercentReading? = null, tasKmh: Double? = null) {
+    heatBudget: ThermalBudgetRange? = null, powerPercent: PowerPercentReading? = null, tasKmh: Double? = null, hiddenLabels: List<String> = emptyList()) {
     Column {
         Text("发动机 #$index")
         val engine = engines.singleOrNull { it.index == index }
@@ -57,7 +57,8 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
                 warnings[field]?.takeIf { if (field == HudEngineField.HEAT_BUDGET) heatBudget?.roundForDisplay() != null
                     else field.value(engine) != null }?.let { row to it }
             }.toMap()
-            FlightReadings(rows, compact = compact, warningRows = warningRows, unitRanges = readings.mapIndexedNotNull { index, reading ->
+            FlightReadings(rows, compact = compact, warningRows = warningRows,
+                hiddenLabels = if (compact) fields.indices.filter { fields[it].id in hiddenLabels }.toSet() else emptySet(), unitRanges = readings.mapIndexedNotNull { index, reading ->
                 val unit = reading.third
                 if (unit.isEmpty()) null else index to (rows[index].second.length - unit.length until rows[index].second.length)
             }.toMap())

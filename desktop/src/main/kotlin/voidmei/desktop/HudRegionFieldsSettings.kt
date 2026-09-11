@@ -106,6 +106,26 @@ internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, o
     if (region.content != HudRegionContent.FLIGHT && region.content != HudRegionContent.ENGINE) return
     val inherited = if (region.content == HudRegionContent.FLIGHT) settings.hudFields else settings.hudEngineFields
     Row {
+        Switch(region.hiddenLabels != null, { onChange(region.copy(hiddenLabels = if (it)
+            (if (region.content == HudRegionContent.FLIGHT) settings.hudHiddenLabels.toList() else emptyList()) else null)) },
+            Modifier.testTag("hud-region-labels-${region.id}"))
+        Text("此区域独立选择标签")
+    }
+    region.hiddenLabels?.let { hidden ->
+        val labels = if (region.content == HudRegionContent.FLIGHT) HudField.entries.map { it.id to it.label }
+            else HudEngineField.entries.map { it.id to it.label }
+        Text("选中表示显示标签；关闭后保留数值和单位。")
+        FlowRow {
+            (region.fields ?: inherited).distinct().forEach { id ->
+                labels.firstOrNull { it.first == id }?.let { (_, label) ->
+                    FilterChip(id !in hidden, { onChange(region.copy(hiddenLabels =
+                        if (id in hidden) hidden - id else hidden + id)) }, label = { Text(label) },
+                        modifier = Modifier.testTag("hud-region-label-${region.id}-$id"))
+                }
+            }
+        }
+    }
+    Row {
         Switch(region.fields != null, { onChange(region.copy(fields = if (it) inherited.toList() else null)) },
             Modifier.testTag("hud-region-fields-${region.id}"))
         Text("此区域独立选择字段")

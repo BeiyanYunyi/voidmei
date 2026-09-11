@@ -45,7 +45,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                     HudRegionContent.ALERTS -> AlertSeverity.entries.map { it.name.lowercase() }
                     else -> settings.hudFields
                 }
-                val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields, region.messageLimit, region.messageMaxLines,
+                val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields, region.messageLimit, region.messageMaxLines, region.hiddenLabels, settings.hudHiddenLabels,
                     region.readingColumns ?: settings.hudReadingColumns, region.fontScale ?: settings.hudFontScale,
                     region.width, region.height, region.showFlightInstruments, region.showFlightStatus, region.showEngineInstruments, region.showControlStick) {
                     rememberScrollState()
@@ -98,7 +98,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     FlightPanel(flight, compact = true, fields = HudField.selected(region.fields ?: settings.hudFields),
                                         mechanization = false, model = model, thermal = thermal, readingAlerts = alerts,
                                         aoaBarWarningPercent = settings.hudAoaBarWarningPercent, aoaWarningPercent = settings.hudAoaWarningPercent,
-                                        compassHeadingUp = settings.hudCompassHeadingUp, hiddenLabels = settings.hudHiddenLabels,
+                                        compassHeadingUp = settings.hudCompassHeadingUp, hiddenLabels = region.hiddenLabels ?: settings.hudHiddenLabels,
                                         altitudeMode = settings.hudAltitudeMode, pollingIntervalMs = settings.pollIntervalMs,
                                         showInstruments = region.showFlightInstruments)
                                     if (HudField.HEADING.id in (region.fields ?: settings.hudFields) && mapEndpoint != null) HudMapGrid(mapEndpoint, sharedMap)
@@ -109,7 +109,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal),
                                     showInstruments = region.showEngineInstruments,
                                     heatBudget = thermal?.hudBudget(flight, model, region.engineIndex),
-                                    powerPercent = flight.enginePowerPercentReading(region.engineIndex, model), tasKmh = flight.telemetry.tasKmh)
+                                    powerPercent = flight.enginePowerPercentReading(region.engineIndex, model), tasKmh = flight.telemetry.tasKmh, hiddenLabels = region.hiddenLabels.orEmpty())
                                     if (HudEngineField.HEAT_BUDGET.id in fields)
                                         ThermalBudgetStatusPanel(flight, model, thermal, region.engineIndex)
                                     if (region.showEngineInstruments) CompressorStageBar(flight, region.engineIndex, model, fields)

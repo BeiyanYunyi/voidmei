@@ -17,6 +17,35 @@ import kotlin.test.*
 class HudRegionFieldsGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun labelsCanDifferBetweenRegionsAndRestoreInheritance() {
+        var region by mutableStateOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 300, 180,
+            fields = listOf("ias"), showFlightStatus = false, showFlightInstruments = false))
+        var global by mutableStateOf(AppSettings(hudHiddenLabels = listOf("ias")))
+        compose.setContent { MaterialTheme { Row {
+            Column(Modifier.width(400.dp)) { HudRegionFieldsSettings(region, global) { region = it } }
+            Box(Modifier.size(600.dp, 180.dp)) {
+                HudPanel(hudPreviewFlight(), global.copy(hudSceneLayout = HudSceneLayout(600, 180,
+                    listOf(region, region.copy(id = "two", x = 300, hiddenLabels = null)))), emptyList(), null) {}
+            }
+        } } }
+        fun label(id: String) = compose.onNode(hasText("IAS") and hasAnyAncestor(hasTestTag("hud-region-$id")))
+        label("one").assertDoesNotExist(); label("two").assertDoesNotExist()
+        compose.onNodeWithTag("hud-region-labels-one").performClick()
+        compose.onNodeWithTag("hud-region-label-one-ias").performClick()
+        label("one").assertIsDisplayed(); label("two").assertDoesNotExist()
+        compose.runOnIdle { global = global.copy(hudHiddenLabels = emptyList()) }
+        label("two").assertIsDisplayed()
+        compose.onNodeWithTag("hud-region-label-one-ias").performClick()
+        label("one").assertDoesNotExist(); label("two").assertIsDisplayed()
+        compose.onNodeWithTag("hud-region-labels-one").performClick()
+        label("one").assertIsDisplayed()
+        compose.runOnIdle { region = region.copy(content = HudRegionContent.ENGINE,
+            fields = listOf("rpm"), hiddenLabels = listOf("rpm")) }
+        compose.onNode(hasText("转速") and hasAnyAncestor(hasTestTag("hud-region-one"))).assertDoesNotExist()
+        compose.onNode(hasText("2400 RPM") and hasAnyAncestor(hasTestTag("hud-region-one"))).assertIsDisplayed()
+        compose.onNode(hasText("转速") and hasAnyAncestor(hasTestTag("hud-region-two"))).assertIsDisplayed()
+    }
+
     @Test fun regionalFieldsOverrideGlobalChangesAndEmptyDoesNotInherit() {
         val layout = HudSceneLayout(1000, 300, listOf(
             HudRegion("speed", HudRegionContent.FLIGHT, 0, 0, 300, 280, fields = listOf("ias")),

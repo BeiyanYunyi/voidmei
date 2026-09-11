@@ -3,6 +3,21 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun regionalLabelOverridesPreserveNullEmptyAndUnknownIds() {
+        for (hidden in listOf(null, emptyList(), listOf("ias", "future"))) {
+            val scene = HudSceneLayout(240, 400, listOf(HudRegion("flight", HudRegionContent.FLIGHT,
+                0, 0, 240, 400, hiddenLabels = hidden)))
+            val settings = AppSettings(hudSceneLayout = scene, hudScenePresets = mapOf("test" to scene))
+            assertEquals(settings, SettingsJson.decode(SettingsJson.encode(settings)))
+            assertEquals(settings.hudScenePresets, HudPresetFile.decode(HudPresetFile.encode(settings.hudScenePresets)))
+        }
+        val json = HudSceneLayout(240, 400, listOf(HudRegion("flight", HudRegionContent.FLIGHT, 0, 0, 240, 400))).toJson().toString()
+        assertNull(HudSceneLayout.fromJson(kotlinx.serialization.json.Json.parseToJsonElement(
+            json.replace(",\"hiddenLabels\":null", ""))).regions.single().hiddenLabels)
+        for (bad in listOf("true", "[1]", "[\"\"]", "{}")) assertFails {
+            HudSceneLayout.fromJson(kotlinx.serialization.json.Json.parseToJsonElement(json.replace("\"hiddenLabels\":null", "\"hiddenLabels\":$bad")))
+        }
+    }
     @Test fun messageLineLimitPersistsAndOldLayoutsKeepFullText() {
         val scene = HudSceneLayout(240, 400, listOf(HudRegion("messages", HudRegionContent.MESSAGES,
             0, 0, 240, 400, messageMaxLines = 3)))
