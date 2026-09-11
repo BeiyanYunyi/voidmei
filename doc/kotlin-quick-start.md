@@ -7,10 +7,10 @@
 NixOS 在源码目录启动独立包：
 
 ```bash
-nix run path:.#kotlin-offline -- --no-hud
+nix run path:. -- --no-hud
 ```
 
-首次构建会下载依赖。该包启动不需要 Gradle；默认 `nix run path:.` 仍是旧 Java 版。
+首次构建会下载依赖。默认入口现为独立 Kotlin 包，启动不需要 Gradle；原 `#kotlin-offline` 命令继续有效。旧 Java 版可显式使用 `nix run path:.#legacy-java`。默认 `nix develop path:.` 提供 Kotlin/JDK 21 环境，旧 Java 8 开发环境使用 `#legacy-java`。
 
 从源码运行需要 JDK 21；NixOS 可先进入 `nix develop path:.#kotlin`：
 

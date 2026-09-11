@@ -2826,6 +2826,14 @@ macOS 构建元数据步骤新增只读挂载 DMG，要求镜像根目录有唯�
 
 八项候选整理测试与三项 macOS 身份测试通过，覆盖身份缺失、名称/版本/架构不匹配时拒绝输出、通用启动程序包含目标架构、只读挂载参数、校验成功或失败后的卸载，以及卸载失败保留内容。两个 Kotlin 工作流通过 actionlint。挂载、plist 读取路径和卸载测试使用本地目录及模拟原生命令；当前 Linux 主机未执行真实 hdiutil/lipo，不声称 DMG 原生验证或应用运行已通过。该检查仅核对启动程序架构，不认证全部内嵌二进制。本轮未修改应用代码或重复构建 Linux 包。
 
+### Nix 默认入口切换到 Kotlin
+
+默认 packages.default 和 apps.default 改为既有 kotlin-offline 独立包，devShells.default 改为 Kotlin/JDK 21 开发环境。原 #kotlin-offline、#kotlin 开发启动命令继续有效；新增 #legacy-java 构建、运行和开发入口，保留原 packages.voidmei 属性供兼容。README 与试用文档同步默认命令及旧版回退方式。此次切换面向已有 Nix x86_64-linux 支持范围，不新增其它 Nix 平台声明，也不自动迁移或覆盖用户旧设置。
+
+`nix build path:.` 成功，默认包为 `/nix/store/ig1ysycd6i58hkm7kyj33snl9mkb2v6h-voidmei-kotlin-2.0.0`，与显式 #kotlin-offline 完全一致。完整 flake outputs 求值并断言默认包、应用程序及开发 shell 分别与 Kotlin 入口相等；旧版应用与开发 shell 可求值。`nix develop path:. --command java -version` 返回 OpenJDK 21.0.12.1。证据分别在 `/tmp/voidmei-default-kotlin-build.log`、`/tmp/voidmei-default-nix-outputs.json`、`/tmp/voidmei-default-java.log`。
+
+使用默认开发环境运行默认构建产物的隔离 X11 冒烟通过：80 ms 轮询、兼容 HUD OPENGL、主窗口 SOFTWARE_FAST、托盘后台启动，101 组配对采样，油门缺失恢复及正常退出（退出码 0）通过。日志 `/tmp/voidmei-default-kotlin-smoke.log`，制品副本 `/tmp/voidmei-default-kotlin-artifacts/`。此证据为模拟遥测与软件驱动，不扩大此前用户实机验证范围。本轮没有应用代码变化；数字标签发行仍沿用旧流程，Windows/macOS 和剩余功能迁移验收仍未完成。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

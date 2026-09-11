@@ -1,5 +1,5 @@
 {
-  description = "VoidMei Java 8 desktop application";
+  description = "VoidMei Kotlin Multiplatform desktop application";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
 
@@ -31,7 +31,8 @@
             libxkbcommon libxinerama libxcursor
           ];
         in {
-          default = self.packages.${system}.voidmei;
+          default = self.packages.${system}.kotlin-offline;
+          legacy-java = self.packages.${system}.voidmei;
           kotlin-offline = pkgs.callPackage ./nix/kotlin-package.nix {};
           kotlin-launcher = pkgs.writeShellApplication {
             name = "voidmei-kotlin";
@@ -120,10 +121,11 @@
           program = "${self.packages.${system}.kotlin-launcher}/bin/voidmei-kotlin";
           meta.description = "Build and launch Kotlin development application from a checkout";
         };
-        default = {
+        default = self.apps.${system}.kotlin-offline;
+        legacy-java = {
           type = "app";
-          program = "${self.packages.${system}.voidmei}/bin/voidmei";
-          meta.description = "Launch VoidMei";
+          program = "${self.packages.${system}.legacy-java}/bin/voidmei";
+          meta.description = "Launch the legacy Java 8 application";
         };
       });
       devShells = forAllSystems (system:
@@ -137,7 +139,8 @@
               libGL fontconfig freetype
             ]);
           };
-          default = pkgs.mkShell {
+          default = self.devShells.${system}.kotlin;
+          legacy-java = pkgs.mkShell {
             inputsFrom = [ self.packages.${system}.voidmei ];
             LD_LIBRARY_PATH = self.packages.${system}.voidmei.libraryPath;
           };
