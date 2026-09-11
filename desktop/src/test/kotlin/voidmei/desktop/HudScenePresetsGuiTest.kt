@@ -15,6 +15,32 @@ import voidmei.config.*
 class HudScenePresetsGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun undoLoadRestoresVerticalStateAndKeepsLaterPreferencesAndPresets() {
+        val first = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
+        val second = first.resizeCanvas(600, 400)
+        var settings by mutableStateOf(AppSettings(hudScenePresets = mapOf("一" to first, "二" to second)))
+        compose.setContent { MaterialTheme { Column(Modifier.size(600.dp, 700.dp)) {
+            HudScenePresetSettings(settings) { settings = it }
+        } } }
+        compose.onNodeWithTag("hud-presets-toggle").performClick()
+        compose.onNodeWithTag("hud-preset-load-一").performClick()
+        compose.runOnIdle { settings = settings.copy(hudFontScale = 2f) }
+        compose.onNodeWithTag("hud-preset-delete-二").performClick()
+        compose.onNodeWithTag("hud-presets-toggle").performClick()
+        compose.onNodeWithTag("hud-preset-undo-load").performClick()
+        compose.runOnIdle {
+            assertNull(settings.hudSceneLayout)
+            assertEquals(2f, settings.hudFontScale)
+            assertEquals(mapOf("一" to first), settings.hudScenePresets)
+            settings = settings.copy(hudSceneLayout = second.copy(enabled = false))
+        }
+        compose.onNodeWithTag("hud-preset-undo-load").assertDoesNotExist()
+        compose.onNodeWithTag("hud-presets-toggle").performClick()
+        compose.onNodeWithTag("hud-preset-load-一").performClick()
+        compose.onNodeWithTag("hud-preset-undo-load").performClick()
+        compose.runOnIdle { assertEquals(second.copy(enabled = false), settings.hudSceneLayout) }
+    }
+
     @Test fun savedPresetCanBeLoadedDirectlyFromVerticalMode() {
         val preset = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
         var settings by mutableStateOf(AppSettings(hudScenePresets = mapOf("战斗" to preset), hudEnabled = false,
