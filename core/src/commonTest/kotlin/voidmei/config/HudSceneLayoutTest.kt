@@ -3,6 +3,16 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun messageLimitPersistsAndDefaultsForOldLayouts() {
+        val region = HudRegion("messages", HudRegionContent.MESSAGES, 0, 0, 240, 120, messageLimit = 20)
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region)))
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(SettingsJson.encode(settings)).toString()
+        assertEquals(settings, SettingsJson.decode(json))
+        assertEquals(5, SettingsJson.decode(json.replace(",\"messageLimit\":20", "")).hudSceneLayout!!.regions.single().messageLimit)
+        for (bad in listOf("0", "21", "null", "\"5\""))
+            assertFails { SettingsJson.decode(json.replace("\"messageLimit\":20", "\"messageLimit\":$bad")) }
+    }
+
     @Test fun optionalFlightInstrumentsPersistAndOldLayoutsKeepThem() {
         val region = HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 240, 120, showFlightInstruments = false)
         val settings = AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region)))

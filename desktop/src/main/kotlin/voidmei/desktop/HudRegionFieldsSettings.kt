@@ -58,7 +58,13 @@ internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, o
     }
     if (region.content == HudRegionContent.MESSAGES) {
         val selected = region.fields ?: HudMessageKind.entries.map { it.name.lowercase() }
-        Text("消息类别（筛选后显示最近 5 条）")
+        Text("消息类别（筛选后显示最近 ${region.messageLimit} 条）")
+        FlowRow {
+            listOf(1, 3, 5, 10, 20).forEach { limit ->
+                FilterChip(region.messageLimit == limit, { onChange(region.copy(messageLimit = limit)) },
+                    label = { Text("$limit 条") }, modifier = Modifier.testTag("hud-region-message-limit-${region.id}-$limit"))
+            }
+        }
         FlowRow {
             HudMessageKind.entries.forEach { kind ->
                 val id = kind.name.lowercase()

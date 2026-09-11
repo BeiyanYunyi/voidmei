@@ -38,6 +38,14 @@ class HudMessageFilterGuiTest {
             compose.onNode(hasText("损伤 #$id · damage$id") and hasAnyAncestor(hasTestTag("hud-region-one"))).assertIsDisplayed()
             compose.onNode(hasText("事件 #$id · event$id") and hasAnyAncestor(hasTestTag("hud-region-two"))).assertIsDisplayed()
         }
+        compose.onNodeWithTag("hud-region-message-limit-one-1").performClick()
+        compose.onNodeWithText("损伤 #6 · damage6").assertIsDisplayed()
+        compose.onNodeWithText("损伤 #5 · damage5").assertDoesNotExist()
+        compose.onNodeWithText("事件 #5 · event5").assertIsDisplayed()
+        compose.onNodeWithTag("hud-region-message-limit-one-10").performClick()
+        compose.onNodeWithText("损伤 #1 · damage1").assertIsDisplayed()
+        compose.onNodeWithText("事件 #1 · event1").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(10, scene.regions.first().messageLimit) }
         compose.runOnIdle { messages = messages.copy(error = "offline") }
         compose.onAllNodesWithText("消息更新失败（保留已有记录）").assertCountEquals(2)
         compose.onNodeWithText("损伤 #6 · damage6").assertIsDisplayed()

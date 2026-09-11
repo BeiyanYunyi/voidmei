@@ -45,7 +45,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                     HudRegionContent.ALERTS -> AlertSeverity.entries.map { it.name.lowercase() }
                     else -> settings.hudFields
                 }
-                val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields) {
+                val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields, region.messageLimit) {
                     rememberScrollState()
                 }
                 val regionAlerts = if (region.content == HudRegionContent.ALERTS)
@@ -114,7 +114,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                 }
                                 HudRegionContent.ALERTS -> Unit
                                 HudRegionContent.MESSAGES -> HudRecentMessages(messages,
-                                    HudMessageKind.entries.filter { it.name.lowercase() in fields }.toSet())
+                                    HudMessageKind.entries.filter { it.name.lowercase() in fields }.toSet(), region.messageLimit)
                                 HudRegionContent.MAP -> Unit
                                 HudRegionContent.CROSSHAIR -> Unit
                                 HudRegionContent.COMPASS -> Unit
