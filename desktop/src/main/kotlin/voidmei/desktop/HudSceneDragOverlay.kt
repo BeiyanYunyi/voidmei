@@ -32,7 +32,7 @@ internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, I
             if (layout.displayId == null) 1f else Float.MAX_VALUE).coerceAtLeast(.01f)
         val pixelsPerUnit = density * scale
         Box(Modifier.fillMaxSize().testTag("hud-scene-drag-overlay")
-            .pointerInput(layout.width, layout.height, pixelsPerUnit) {
+            .pointerInput(layout.width, layout.height, pixelsPerUnit, targetId, layout.regions.map { it.id }) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
                     val point = down.position

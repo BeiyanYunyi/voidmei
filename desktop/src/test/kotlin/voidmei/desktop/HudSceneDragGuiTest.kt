@@ -16,6 +16,30 @@ import kotlin.test.*
 class HudSceneDragGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun changingTargetDuringPressCancelsGestureUntilNextPress() {
+        val bottom = HudRegion("bottom", HudRegionContent.FLIGHT, 100, 100, 300, 200)
+        val top = bottom.copy(id = "top")
+        var scene by mutableStateOf(HudSceneLayout(1000, 600, listOf(bottom, top)))
+        var target by mutableStateOf<String?>("bottom")
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp, 300.dp)) {
+            HudSceneDragOverlay(scene, { id, x, y -> scene = scene.moveRegion(id, x, y) }, targetId = target)
+        } } }
+        val overlay = compose.onNodeWithTag("hud-scene-drag-overlay")
+        overlay.performTouchInput { down(Offset(100f, 100f)); moveTo(Offset(110f, 110f)) }
+        compose.runOnIdle {
+            assertEquals(bottom.copy(x = 120, y = 120), scene.regions.first())
+            target = "top"
+        }
+        overlay.performTouchInput { moveTo(Offset(150f, 150f)); up() }
+        compose.runOnIdle { assertEquals(listOf(bottom.copy(x = 120, y = 120), top), scene.regions) }
+        overlay.performTouchInput { swipe(Offset(100f, 100f), Offset(125f, 125f), 500) }
+        compose.runOnIdle { assertEquals(top.copy(x = 150, y = 150), scene.regions.last()) }
+        overlay.performTouchInput { down(Offset(100f, 100f)) }
+        compose.runOnIdle { scene = scene.removeRegion("top") }
+        overlay.performTouchInput { moveTo(Offset(160f, 160f)); up() }
+        compose.runOnIdle { assertEquals(listOf(bottom.copy(x = 120, y = 120)), scene.regions) }
+    }
+
     @Test fun explicitTargetMovesCoveredRegionWithoutReorderingAndAutoRestoresTopHit() {
         val bottom = HudRegion("bottom", HudRegionContent.FLIGHT, 100, 100, 300, 200)
         val top = bottom.copy(id = "top")
