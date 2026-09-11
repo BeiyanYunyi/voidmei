@@ -14,8 +14,8 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
     BOOST_PSI("boost_psi", "增压（相对1atm）", "psi", 1);
 
     fun value(engine: Engine): Double? = when (this) {
-        THROTTLE -> engine.throttlePercent
-        RPM -> engine.rpm
+        THROTTLE -> engine.throttlePercent?.takeIf { it >= 0 }
+        RPM -> engine.rpm?.takeIf { it >= 0 }
         POWER -> engine.powerHp
         THRUST -> engine.thrustKgf
         WATER_TEMPERATURE -> engine.waterTemperatureC
