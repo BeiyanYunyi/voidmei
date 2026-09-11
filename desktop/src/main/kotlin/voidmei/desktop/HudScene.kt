@@ -108,6 +108,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     fields = HudEngineField.selected(region.fields ?: settings.hudEngineFields),
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal),
                                     showInstruments = region.showEngineInstruments)
+                                    if (region.showEngineInstruments) CompressorStageBar(flight, region.engineIndex, model, fields)
                                     HudCompressorAdvice(flight, region.engineIndex, model, fields)
                                 }
                                 HudRegionContent.ATTITUDE -> Unit

@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,12 @@ class HudCompressorAdviceGuiTest {
         } } }
         compose.onNodeWithTag("hud-compressor-advice-1").assertIsDisplayed()
         compose.onNodeWithTag("hud-compressor-advice-2").assertDoesNotExist()
+        compose.onNodeWithTag("hud-compressor-stage-1").assertRangeInfoEquals(ProgressBarRangeInfo(1f, 1f..2f))
+        compose.onNodeWithTag("hud-compressor-stage-2").assertRangeInfoEquals(ProgressBarRangeInfo(2f, 1f..2f))
+        compose.runOnIdle { settings = settings.copy(hudSceneLayout = settings.hudSceneLayout!!.copy(
+            regions = settings.hudSceneLayout!!.regions.map { if (it.id == "one") it.copy(showEngineInstruments = false) else it })) }
+        compose.onNodeWithTag("hud-compressor-stage-1").assertDoesNotExist()
+        compose.onNodeWithTag("hud-compressor-stage-2").assertExists()
         compose.onNodeWithText("#1 增压器 1 → 2（基础燃油、15°C 模型估算）").assertIsDisplayed()
         compose.onNodeWithText("1 ").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
         compose.runOnIdle { alerts = listOf(FlightAlert.COMPRESSOR_STAGE) }
@@ -47,6 +54,7 @@ class HudCompressorAdviceGuiTest {
         compose.onNodeWithText("1 ").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
         compose.runOnIdle { alerts = listOf(FlightAlert.COMPRESSOR_STAGE) }
         compose.runOnIdle { model = model.copy(aircraft = "other") }
+        compose.onNodeWithTag("hud-compressor-stage-2").assertDoesNotExist()
         compose.onNodeWithTag("hud-compressor-advice-1").assertDoesNotExist()
         compose.onNodeWithText("1 ").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
         compose.runOnIdle { model = model.copy(aircraft = "test"); settings = settings.copy(hudSceneLayout = null) }
@@ -54,9 +62,17 @@ class HudCompressorAdviceGuiTest {
         compose.onNodeWithText("1 ").assert(SemanticsMatcher.expectValue(
             SemanticsProperties.StateDescription, FlightAlert.COMPRESSOR_STAGE.label))
         compose.runOnIdle { connection = ConnectionState.Flying(telemetry.copy(tasKmh = null), FlightMetrics()) }
+        compose.onNodeWithTag("hud-compressor-stage-1").assertRangeInfoEquals(ProgressBarRangeInfo(1f, 1f..2f))
         compose.onNodeWithTag("hud-compressor-advice-1").assertDoesNotExist()
         compose.onNodeWithText("1 ").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
+        for (stage in listOf(null, 0.0, 1.5, 3.0)) {
+            compose.runOnIdle { connection = flight.copy(telemetry = telemetry.copy(engines = telemetry.engines.map {
+                if (it.index == 1) it.copy(compressorStage = stage) else it
+            })) }
+            compose.onNodeWithTag("hud-compressor-stage-1").assertDoesNotExist()
+        }
         compose.runOnIdle { connection = flight; settings = settings.copy(hudEngineFields = listOf("rpm")) }
+        compose.onNodeWithTag("hud-compressor-stage-1").assertDoesNotExist()
         compose.onNodeWithTag("hud-compressor-advice-1").assertDoesNotExist()
     }
 }
