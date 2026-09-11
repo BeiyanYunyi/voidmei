@@ -590,6 +590,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         key(t.aircraft, if (compact) altitudeMode else null) {
             FlightReadings(rows, compact, warnings, if (compact) fields.indices.filter { fields[it].id in hiddenLabels }.toSet() else emptySet(), unitRanges)
         }
+        if (compact && HudField.HEAT_TOLERANCE in fields) ThermalBudgetStatusPanel(flight, model, thermal)
         if (compact && HudField.SEP in fields) SepStatusPanel(flight, pollingIntervalMs)
         if (compact) FuelEstimateStatusPanel(flight, fields)
         if (compact) WepFuelStatusPanel(flight, fields, model)

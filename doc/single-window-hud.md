@@ -603,3 +603,9 @@ IAS 读数关联已有 STALL_SPEED 告警；若同时存在 IAS_LIMIT，保持�
 在 06dd33d 状态完成完整隔离 X11 GUI 回归：117 类、269 项，零失败／错误／跳过（`/tmp/voidmei-hud-alerts-full-gui.log`）。离线包构建通过，包含共享 JVM 和桌面单元构建检查（`/tmp/voidmei-hud-alerts-package-build.log`）。
 
 最新包在 SOFTWARE_FAST 兼容 HUD、十区域、80 ms 刷新及一次 1.5 秒遥测延迟的实际进程场景中通过绘制像素、单窗口稳定、配置保存和正常退出检查，产生 88 对记录行（`/tmp/voidmei-hud-alerts-package-run.log`；产物 `/tmp/voidmei-package-smoke-s9uo_8mx/`）。告警高亮的具体触发与来源由专门 GUI 测试覆盖，整包场景不扩大宣称为全部告警实战验收。本轮未修改运行逻辑，未新增物理 GPU 或真实游戏验证。
+
+## HUD 热预算区间说明
+
+选中 1 号热预算字段时，显示“区间包含未知初始损耗、按采样温度估算、不是实际剩余寿命”的说明。缺少匹配的 1 号温度模型与当前没有可用计时预算分别提示；取消字段后说明移除。说明遵循 HUD 标签颜色及区域字体设置，预算和告警计算不变。
+
+桌面单元及温度／预算 GUI 回归通过（`/tmp/voidmei-thermal-budget-status.log`、`/tmp/voidmei-thermal-budget-status-final.log`），覆盖有效区间、模型变更导致旧观察失效、切机不匹配、缺失温度及取消字段，并保留原有数值颜色与告警标记验证。本轮未重建 Nix 包，未新增真实游戏验收。
