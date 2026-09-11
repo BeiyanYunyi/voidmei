@@ -16,6 +16,26 @@ import kotlin.test.*
 class HudSceneDragGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun cornerDragResizesAtPreviewScaleAndClampsBothSizeLimits() {
+        val region = HudRegion("one", HudRegionContent.FLIGHT, 100, 100, 300, 200, 0f, fields = listOf("ias"))
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(1000, 600, listOf(region))))
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp, 300.dp)) {
+            HudLayoutPreview(settings, onRegionMove = { id, x, y ->
+                settings = settings.copy(hudSceneLayout = settings.hudSceneLayout!!.moveRegion(id, x, y))
+            }, onRegionResize = { id, w, h ->
+                settings = settings.copy(hudSceneLayout = settings.hudSceneLayout!!.resizeRegion(id, w, h))
+            })
+        } } }
+        val overlay = compose.onNodeWithTag("hud-scene-drag-overlay")
+        compose.onNodeWithTag("hud-resize-region-one").assertIsDisplayed()
+        overlay.performTouchInput { swipe(Offset(195f, 145f), Offset(295f, 195f), 500) }
+        compose.runOnIdle { assertEquals(region.copy(width = 500, height = 300), settings.hudSceneLayout!!.regions.single()) }
+        overlay.performTouchInput { swipe(Offset(295f, 195f), Offset(10f, 10f), 500) }
+        compose.runOnIdle { assertEquals(region.copy(width = 80, height = 40), settings.hudSceneLayout!!.regions.single()) }
+        overlay.performTouchInput { swipe(Offset(88f, 68f), Offset(499f, 299f), 500) }
+        compose.runOnIdle { assertEquals(region.copy(width = 900, height = 500), settings.hudSceneLayout!!.regions.single()) }
+    }
+
     @Test fun settingsPreviewCanEnableDraggingAndSaveTheNewPosition() {
         val region = HudRegion("test", HudRegionContent.FLIGHT, 100, 100, 300, 200, fields = listOf("ias"))
         var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(1000, 600, listOf(region))))
@@ -33,6 +53,15 @@ class HudSceneDragGuiTest {
             assertEquals(150, settings.hudSceneLayout!!.regions.single().y)
             assertFalse(settings.hudEnabled)
             assertFalse(settings.hudClickThrough)
+        }
+        val handle = compose.onNodeWithTag("hud-resize-region-test").fetchSemanticsNode().boundsInRoot
+        val start = handle.center - overlay.fetchSemanticsNode().boundsInRoot.topLeft
+        overlay.performTouchInput { swipe(start, start + Offset(40f * scale, 20f * scale), 500) }
+        compose.waitUntil(5000) { settings.hudSceneLayout!!.regions.single().width == 340 }
+        compose.runOnIdle {
+            assertEquals(220, settings.hudSceneLayout!!.regions.single().height)
+            assertEquals(200, settings.hudSceneLayout!!.regions.single().x)
+            assertEquals(150, settings.hudSceneLayout!!.regions.single().y)
         }
         compose.onNodeWithTag("hud-preview-edit-regions").performClick()
         compose.waitUntil(5000) { compose.onAllNodesWithTag("hud-scene-drag-overlay").fetchSemanticsNodes().isEmpty() }

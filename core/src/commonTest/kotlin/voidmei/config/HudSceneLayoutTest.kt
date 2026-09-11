@@ -3,6 +3,15 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun resizeRegionKeepsOriginAndLimitsSizeToRemainingCanvas() {
+        val region = HudRegion("one", HudRegionContent.ENGINE, 100, 50, 200, 150, .25f, .75f, 2, listOf("rpm"))
+        val scene = HudSceneLayout(500, 400, listOf(region))
+        assertEquals(region.copy(width = 400, height = 350), scene.resizeRegion("one", Int.MAX_VALUE, Int.MAX_VALUE).regions.single())
+        assertEquals(region.copy(width = 80, height = 40), scene.resizeRegion("one", Int.MIN_VALUE, Int.MIN_VALUE).regions.single())
+        val resized = scene.resizeRegion("one", 300, 250)
+        assertEquals(resized, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = resized))).hudSceneLayout)
+    }
+
     @Test fun movingRegionsClampsToCanvasAndPreservesOtherProperties() {
         val scene = HudSceneLayout.initial(AppSettings(hudEngineIndex = 2))
         val first = scene.regions.first()

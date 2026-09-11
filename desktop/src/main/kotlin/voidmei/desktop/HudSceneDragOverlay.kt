@@ -1,12 +1,14 @@
 package voidmei.desktop
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -17,9 +19,11 @@ import kotlin.math.roundToInt
 
 /** Preview-only input layer. Transparent/empty regions remain selectable by their outlines. */
 @Composable
-internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, Int) -> Unit) {
+internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, Int) -> Unit,
+    onResize: ((String, Int, Int) -> Unit)? = null) {
     val current by rememberUpdatedState(layout)
     val move by rememberUpdatedState(onMove)
+    val resize by rememberUpdatedState(onResize)
     val density = LocalDensity.current.density
     var selected by remember { mutableStateOf<String?>(null) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -34,8 +38,11 @@ internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, I
                     val py = point.y / pixelsPerUnit
                     val hit = current.regions.lastOrNull { px >= it.x && px < it.x + it.width && py >= it.y && py < it.y + it.height }
                     selected = hit?.id
-                    var x = hit?.x?.toFloat() ?: 0f
-                    var y = hit?.y?.toFloat() ?: 0f
+                    val resizing = hit != null && resize != null &&
+                        px >= hit.x + hit.width - minOf(hit.width.toFloat(), 12f / scale) &&
+                        py >= hit.y + hit.height - minOf(hit.height.toFloat(), 12f / scale)
+                    var x = (if (resizing) hit?.width else hit?.x)?.toFloat() ?: 0f
+                    var y = (if (resizing) hit?.height else hit?.y)?.toFloat() ?: 0f
                     var previous = point
                     down.consume()
                     do {
@@ -44,10 +51,17 @@ internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, I
                         previous = change.position
                         change.consume()
                         current.regions.firstOrNull { it.id == hit?.id }?.let { region ->
-                            x = (x + amount.x / pixelsPerUnit).coerceIn(0f, (current.width - region.width).toFloat())
-                            y = (y + amount.y / pixelsPerUnit).coerceIn(0f, (current.height - region.height).toFloat())
-                            if (x.roundToInt() != region.x || y.roundToInt() != region.y)
-                                move(region.id, x.roundToInt(), y.roundToInt())
+                            if (resizing) {
+                                x = (x + amount.x / pixelsPerUnit).coerceIn(80f, (current.width - region.x).toFloat())
+                                y = (y + amount.y / pixelsPerUnit).coerceIn(40f, (current.height - region.y).toFloat())
+                                if (x.roundToInt() != region.width || y.roundToInt() != region.height)
+                                    resize?.invoke(region.id, x.roundToInt(), y.roundToInt())
+                            } else {
+                                x = (x + amount.x / pixelsPerUnit).coerceIn(0f, (current.width - region.width).toFloat())
+                                y = (y + amount.y / pixelsPerUnit).coerceIn(0f, (current.height - region.height).toFloat())
+                                if (x.roundToInt() != region.x || y.roundToInt() != region.y)
+                                    move(region.id, x.roundToInt(), y.roundToInt())
+                            }
                         }
                     } while (change.pressed)
                 }
@@ -58,6 +72,9 @@ internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, I
                     .border(1.dp, if (selected == region.id) Color.Yellow else Color.Cyan)
                     .testTag("hud-drag-region-${region.id}")) {
                     Text(region.content.label, color = Color.Cyan)
+                    if (onResize != null) Box(Modifier.align(Alignment.BottomEnd)
+                        .size(minOf(12f, region.width * scale).dp, minOf(12f, region.height * scale).dp)
+                        .background(Color.Cyan).testTag("hud-resize-region-${region.id}"))
                 }
             } }
         }
