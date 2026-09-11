@@ -2848,6 +2848,14 @@ macOS 构建元数据步骤新增只读挂载 DMG，要求镜像根目录有唯�
 
 桌面单元与两项相关 GUI 回归通过（`/tmp/voidmei-import-cancel.log`）：受控阻塞读取取消后更换路径并立即重试，新预览完成后释放旧读取，点击应用得到新设置；原配色导入预览与应用继续通过。同时修正导入说明中仍称所有字体未迁移的过时文字。本轮未重建 Nix 包。
 
+### 高频轮询与旧设置取消后的完整 GUI 回归
+
+在 `9c68ada` 生产代码上不加测试过滤运行 `:desktop:guiTest`，52 个测试类、172 项测试，零失败、零错误、零跳过，37 秒通过。覆盖新增旧设置取消/重试、10 ms 刷新输入及既有 HUD、录制、性能分析、模型和设置交互。
+
+日志 `/tmp/voidmei-full-gui-after-import-cancel.log`；XML/HTML 报告副本 `/tmp/voidmei-full-gui-after-import-cancel-results/`。环境为隔离 Xvfb/xcompmgr、SOFTWARE_FAST；此任务不包含独立原生托盘、热键、HUD 指针任务，不代表 Windows/macOS 或真实游戏验收。
+
+默认 `nix build path:.` 构建通过（`/tmp/voidmei-import-cancel-nix.log`），产物 `/nix/store/72hkc13kdb2dlzarrga2miclfc29c6a8-voidmei-kotlin-2.0.0`，包含旧设置读取取消功能。此次未重复执行包运行冒烟；上一轮 10 ms 包冒烟证据仍对应当时产物，不混作本包运行证据。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
