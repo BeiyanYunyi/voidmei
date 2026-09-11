@@ -709,3 +709,9 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 布局预览增加专用的合成双档模型，1 号发动机显示一档、2 号显示二档，以便检查刻度、位置和文字空间。模型仅在预览中创建，不影响实际机型模型；正常样例仍使用低于建议计算门槛的油门，不强行制造换档建议。缺失模式清除档位和图形。
 
 桌面单元及四类相关 GUI 回归通过（`/tmp/voidmei-compressor-preview.log`），覆盖首末档显示、缺失与恢复、正常模式没有换档建议，以及既有预览窗口、全部告警样例和控制仪表。本轮未重建 Nix 包，未新增真实游戏验收。
+
+## 新发动机仪表的兼容 OpenGL 整包验证
+
+在 c44cf2b 状态重建 Kotlin 离线包成功（`/tmp/voidmei-engine-opengl-build.log`）。隔离 Xvfb/xcompmgr 中使用 Mesa 软件驱动请求 OpenGL，实际兼容 HUD 后端为 OPENGL；主窗口仍报无法创建 Linux GL 上下文并回退 SOFTWARE_FAST，不能将此结果表述为主窗口 OpenGL 验收通过。
+
+十区域、80 ms 刷新及一次遥测延迟场景通过（`/tmp/voidmei-engine-opengl-run.log`）。产物 `/tmp/voidmei-package-smoke-ehs_bhlp/`：83 对记录，34 次保持同一 900×600 HUD 窗口，混合比仪表 496 个颜色像素，配置保存和正常退出通过；截图已检查。此场景实际绘制混合比、姿态、罗盘等已有区域，增压器模型图形的行为由专门 GUI 测试覆盖。未新增物理 NVIDIA GPU 或真实游戏验收。
