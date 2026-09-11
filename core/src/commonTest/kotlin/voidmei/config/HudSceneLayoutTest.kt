@@ -3,6 +3,15 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun flightStatusVisibilityPersistsAndOldLayoutsKeepTheTitle() {
+        val region = HudRegion("flight", HudRegionContent.FLIGHT, 0, 0, 240, 120, showFlightStatus = false)
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region)))
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(SettingsJson.encode(settings)).toString()
+        assertEquals(settings, SettingsJson.decode(json))
+        assertTrue(SettingsJson.decode(json.replace(",\"showFlightStatus\":false", "")).hudSceneLayout!!.regions.single().showFlightStatus)
+        assertFails { SettingsJson.decode(json.replace("\"showFlightStatus\":false", "\"showFlightStatus\":\"false\"")) }
+    }
+
     @Test fun messageLimitPersistsAndDefaultsForOldLayouts() {
         val region = HudRegion("messages", HudRegionContent.MESSAGES, 0, 0, 240, 120, messageLimit = 20)
         val settings = AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region)))

@@ -91,7 +91,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                             if (flight == null) Text(connectionLabel ?: statusText(connection))
                             else when (region.content) {
                                 HudRegionContent.FLIGHT -> {
-                                    Text(connectionLabel ?: statusText(connection))
+                                    if (region.showFlightStatus) Text(connectionLabel ?: statusText(connection))
                                     if (HudField.selected(fields).isEmpty()) Text("未选择飞行读数")
                                     FlightPanel(flight, compact = true, fields = HudField.selected(region.fields ?: settings.hudFields),
                                         mechanization = false, model = model, thermal = thermal, readingAlerts = alerts,
