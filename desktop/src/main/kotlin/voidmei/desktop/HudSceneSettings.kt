@@ -11,6 +11,7 @@ import kotlin.math.roundToInt
 @Composable
 internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> Unit) {
     var removed by remember { mutableStateOf<Pair<HudRegion, Int>?>(null) }
+    var editorRevision by remember { mutableStateOf(0) }
     val scene = settings.hudSceneLayout?.takeIf { it.enabled }
     val canUseScene = scene != null || com.sun.jna.Platform.isLinux() || com.sun.jna.Platform.isWindows()
     TextButton(onClick = { onChange(settings.copy(hudSceneLayout = if (scene == null)
@@ -19,7 +20,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
         Text(if (scene == null) "使用单窗口分区布局（试验性）" else "返回纵向 HUD 布局")
     }
     if (scene != null || settings.hudScenePresets.isNotEmpty())
-        HudScenePresetSettings(settings, canUseScene, onLoad = { removed = null }, onChange = onChange)
+        HudScenePresetSettings(settings, canUseScene, onLoad = { removed = null; editorRevision++ }, onChange = onChange)
     if (scene == null) return
     Text("分区布局自动穿透鼠标。在此调整区域；预览同步显示。画布 ${scene.width} × ${scene.height} dp，空间不足时整体缩小。")
     var expanded by remember { mutableStateOf(false) }
@@ -36,7 +37,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
     }
     if (!expanded) return
     HudDisplaySettings(scene) { onChange(settings.copy(hudSceneLayout = it)) }
-    HudCanvasSizeSettings(scene) { onChange(settings.copy(hudSceneLayout = it)) }
+    key(editorRevision) { HudCanvasSizeSettings(scene) { onChange(settings.copy(hudSceneLayout = it)) } }
     Text("添加区域（${scene.regions.size}/32）")
     FlowRow {
         HudRegionContent.entries.forEach { content ->
@@ -48,7 +49,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
     }
     Text("同类区域可重复添加；读数字段默认沿用 HUD 设置，也可独立选择。至少保留一个区域。")
     Text("区域列表从底层到顶层排列；重叠时，顶层区域会覆盖下层。")
-    scene.regions.forEachIndexed { layer, region -> key(region.id) {
+    scene.regions.forEachIndexed { layer, region -> key(editorRevision, region.id) {
         fun update(value: HudRegion) = onChange(settings.copy(hudSceneLayout = scene.copy(
             regions = scene.regions.map { if (it.id == region.id) value else it })))
         Text("${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id}")
