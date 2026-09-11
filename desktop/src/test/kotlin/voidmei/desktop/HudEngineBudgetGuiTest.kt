@@ -17,6 +17,27 @@ import voidmei.telemetry.*
 class HudEngineBudgetGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun previewSuppliesDataAndThermalModelsForSelectedHigherEngineIndices() {
+        var missing by mutableStateOf(false)
+        var index by mutableStateOf(4)
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp, 400.dp)) {
+            HudLayoutPreview(AppSettings(hudSceneLayout = HudSceneLayout(500, 400,
+                listOf(HudRegion("engine", HudRegionContent.ENGINE, 0, 0, 500, 400, engineIndex = index,
+                    fields = listOf("rpm", "heat_budget"))))), warnings = true, missing = missing)
+        } } }
+        compose.onNodeWithText("发动机 #4").assertIsDisplayed()
+        compose.onNodeWithText("3200 RPM").assertIsDisplayed()
+        compose.onNodeWithText("0.0–200.0 s").assertIsDisplayed()
+        compose.runOnIdle { index = 10 }
+        compose.onNodeWithText("发动机 #10").assertIsDisplayed()
+        compose.onNodeWithText("0.0–200.0 s").assertIsDisplayed()
+        compose.runOnIdle { missing = true }
+        compose.onNodeWithText("3200 RPM").assertDoesNotExist()
+        compose.onNodeWithText("— RPM").assertIsDisplayed()
+        compose.onNodeWithText("— s").assertIsDisplayed()
+        compose.onNodeWithText("此编号无可用发动机数据").assertDoesNotExist()
+    }
+
     @Test fun regionsShowTheirOwnBudgetAndOnlyMatchingWarnings() {
         var model by mutableStateOf(AircraftAlertModel("test", FlightModelExtractor.extract(BlkParser.parse("""
             Engine0 { Main { Type:t=Inline } Temperature { Load1 { WaterTemperature:r=100; WorkTime:r=10; RecoverTime:r=5 } } }

@@ -5,6 +5,15 @@ import kotlin.test.*
 import voidmei.telemetry.HudField
 
 class HudPreviewFuelTest {
+    @Test fun selectedEngineSamplesContributeToTotalsAndMissingModeKeepsThemUnknown() {
+        val flight = hudPreviewFlight(engineIndices = listOf(4, 4, 10))
+        assertEquals(listOf(1, 2, 4, 10), flight.telemetry.engines.map { it.index })
+        assertEquals(3550.0, flight.metrics.totalPowerHp)
+        assertEquals(2750.0, flight.metrics.totalThrustKgf)
+        val missing = hudPreviewFlight(missing = true, engineIndices = listOf(4, 10))
+        assertEquals(listOf(1, 2, 4, 10), missing.telemetry.engines.map { it.index })
+        assertTrue(missing.telemetry.engines.all { it.powerHp == null && it.waterTemperatureC == null })
+    }
     @Test fun missingPreviewDoesNotInventFuelOrEngineValues() {
         val flight = hudPreviewFlight(missing = true)
         for (field in HudField.entries) assertNull(field.value(flight), field.id)

@@ -21,9 +21,11 @@ import voidmei.fm.*
 internal val LocalHudLayoutInspection = staticCompositionLocalOf { false }
 
 /** Local illustrative samples; never enter the live telemetry or recording pipeline. */
-internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = false): ConnectionState.Flying {
+internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = false, engineIndices: List<Int> = listOf(1, 2)): ConnectionState.Flying {
+    val indices = (listOf(1, 2) + engineIndices).distinct().sorted()
+    require(indices.all { it > 0 } && indices.size <= 35)
     if (missing) return ConnectionState.Flying(TelemetryParser.parse("""{"valid":true}""",
-        """{"valid":true,"type":"preview"}""")!!.copy(engines = (1..2).map {
+        """{"valid":true,"type":"preview"}""")!!.copy(engines = indices.map {
             Engine(it, null, null, null, null, null, null)
         }), FlightMetrics())
     val telemetry = TelemetryParser.parse("""{
@@ -40,10 +42,13 @@ internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = fals
         "RPM throttle 2, %":70,"mixture 2, %":90,"radiator 2, %":50,"oil radiator 2, %":40,
         "compressor stage 2":2
     }""", """{"valid":true,"type":"preview","aviahorizon_pitch":-5,"aviahorizon_roll":15,"compass":45,"wing_sweep_indicator":0.35}""")!!
-    val next = if (warnings) telemetry.copy(iasKmh = 510.0, tasKmh = 550.0, mach = .95,
-        angleOfAttackDeg = 16.0, fuelKg = 30.0, engines = telemetry.engines.map {
+    val expanded = telemetry.copy(engines = indices.map { index ->
+        (telemetry.engines.singleOrNull { it.index == index } ?: telemetry.engines.first()).copy(index = index)
+    })
+    val next = if (warnings) expanded.copy(iasKmh = 510.0, tasKmh = 550.0, mach = .95,
+        angleOfAttackDeg = 16.0, fuelKg = 30.0, engines = expanded.engines.map {
             it.copy(rpm = 3200.0, waterTemperatureC = 110.0, oilTemperatureC = 95.0)
-        }) else telemetry.copy(tasKmh = 363.6)
+        }) else expanded.copy(tasKmh = 363.6)
     val calculator = FlightCalculator()
     var metrics = FlightMetrics()
     // Supply the same ten-second warm-up as live fuel estimates, without waiting or running a poller.
@@ -54,25 +59,26 @@ internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = fals
 }
 
 /** Deliberately synthetic limits for checking presentation, never loaded into the live model session. */
-private fun hudPreviewModel() = AircraftAlertModel("preview", FlightModelParameters(null, null,
+private fun hudPreviewModel(engineIndices: List<Int>) = AircraftAlertModel("preview", FlightModelParameters(null, null,
     listOf(WingConfiguration(0.0, 500.0, .9, -10.0, 15.0, -8.0, 18.0)), false, emptyList(),
-    engineBindings = (1..2).map { EngineBinding(it, "Engine${it - 1}", "Engine${it - 1}", "Inline") },
-    enginePeaks = listOf(EnginePeakReference(1, EnginePeakKind.SHAFT_POWER_HP, 1200.0),
-        EnginePeakReference(2, EnginePeakKind.SHAFT_POWER_HP, 1700.0)),
-    engineRpmLimits = (1..2).map { EngineRpmLimit(it, 3000.0) },
-    engineCompressors = (1..2).associateWith { PistonModels(PistonMilitaryModel(listOf(
+    engineBindings = engineIndices.map { EngineBinding(it, "Engine${it - 1}", "Engine${it - 1}", "Inline") },
+    enginePeaks = engineIndices.map { EnginePeakReference(it, EnginePeakKind.SHAFT_POWER_HP, if (it == 2) 1700.0 else 1200.0) },
+    engineRpmLimits = engineIndices.map { EngineRpmLimit(it, 3000.0) },
+    engineCompressors = engineIndices.associateWith { PistonModels(PistonMilitaryModel(listOf(
         CompressorStage(1000.0, 1000.0, 800.0), CompressorStage(3000.0, 1100.0, 850.0)), 3000.0),
         null, "预览未提供 WEP 功率模型") },
-    engineThermals = (1..2).map { EngineThermalParameters(it, listOf(EngineThermalBand(1, 100.0, 85.0, 200.0, 100.0))) }))
+    engineThermals = engineIndices.map { EngineThermalParameters(it, listOf(EngineThermalBand(1, 100.0, 85.0, 200.0, 100.0))) }))
 
 @Composable
 internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, missing: Boolean = false,
     onRegionMove: ((String, Int, Int) -> Unit)? = null,
     onRegionResize: ((String, Int, Int) -> Unit)? = null, dragTargetId: String? = null, denseMessages: Boolean = false, allAlerts: Boolean = false) {
-    val flight = remember(warnings, missing) { hudPreviewFlight(warnings, missing) }
+    val indices = (listOfNotNull(1, 2, settings.hudEngineIndex) + settings.hudSceneLayout?.takeIf { it.enabled }
+        ?.regions.orEmpty().filter { it.visible && it.content == HudRegionContent.ENGINE }.map { it.engineIndex }).distinct().sorted()
+    val flight = remember(warnings, missing, indices) { hudPreviewFlight(warnings, missing, indices) }
     val map = remember(missing) { kotlinx.coroutines.flow.MutableStateFlow<MapConnection>(
         if (missing) MapConnection.Waiting else MapConnection.Available(hudPreviewMap())) }
-    val model = remember { hudPreviewModel() }
+    val model = remember(indices) { hudPreviewModel(indices) }
     val thermal = remember(flight, model) { EngineThermalMonitor().update(flight, model, 0) }
     val alerts = remember(flight, model, thermal, allAlerts, missing) {
         if (allAlerts && !missing) FlightAlert.entries.filter { it != FlightAlert.CONNECTION_READY }
