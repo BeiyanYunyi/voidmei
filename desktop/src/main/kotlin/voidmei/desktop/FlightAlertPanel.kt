@@ -26,7 +26,8 @@ internal fun FlightAlertPanel(alerts: List<FlightAlert>, compact: Boolean = fals
     val ordered = alerts.distinct().sortedBy { it.severity }
     val scroll = key(ordered) { rememberScrollState() }
     Box(Modifier.fillMaxWidth().testTag("flight-alerts")
-        .then(if (compact) Modifier.heightIn(max = maximumHeight.coerceIn(0.dp, HUD_ALERT_HEIGHT_DP.dp)) else Modifier)) {
+        // The containing layout owns the height budget: the vertical HUD caps it, a dedicated region need not.
+        .then(if (compact) Modifier.heightIn(max = maximumHeight.coerceAtLeast(0.dp)) else Modifier)) {
         Column(Modifier.fillMaxWidth()
             .then(if (compact) Modifier.verticalScroll(scroll).padding(end = 14.dp) else Modifier),
             verticalArrangement = Arrangement.spacedBy(4.dp)) {
