@@ -2798,6 +2798,14 @@ FlightRecorder 在两份 CSV 追加并 flush 成功后更新观察器；每个�
 
 `python3 script/test_prepare_kotlin_preview.py` 五项测试通过，新增拒绝混入其它提交/版本/平台、未知架构、错误哈希及被修改的安装包；原三平台收集、缺包与覆盖保护继续通过。actionlint 检查通过。架构来自构建 runner，并非对安装包内部二进制的独立认证；尚未执行远程发布候选流程。
 
+### 发布候选元数据的真实 Linux 安装包核验
+
+从 `b8ac74f230ce07f6e0c48b31353e2815946955fd` 源码执行 `:desktop:packageDeb` 通过（`/tmp/voidmei-preview-real-deb.log`）。真实包为 voidmei_2.0.0_amd64.deb，60,522,160 字节，SHA-256 `0bd8f3803c38fd51e502951ebb523c1634437ea8d1fc8193aa1c7d8d64dffb30`。在独立临时目录调用构建元数据脚本，核对复制前后哈希；dpkg-deb 内部控制字段确认为 Package=voidmei、Version=2.0.0、Architecture=amd64，与记录的版本及 x64 runner 架构一致。元数据与控制字段副本在 `/tmp/voidmei-preview-real-deb-metadata/`。
+
+同一哈希的 Deb 运行冒烟通过（`/tmp/voidmei-preview-real-deb-smoke.log`，制品副本 `/tmp/voidmei-preview-real-deb-artifacts/`）：80 ms 轮询，兼容 HUD OPENGL、主窗口 SOFTWARE_FAST、真实 stalonetray 后台启动，105 组配对 CSV，100 条 WEP 估算、3 条油门缺失，缺失恢复与正常退出均通过。五次 AWT 心跳延迟均为 0 ms，退出码为 0。
+
+这是本机隔离 X11/软件驱动下的真实 Linux 包验证，不是 MSI/DMG 内部元数据或运行验收，也未执行远程候选工作流。未修改生产代码。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
