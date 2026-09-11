@@ -9,7 +9,9 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
     RADIATOR("radiator", "水散热器", "%"), OIL_RADIATOR("oil_radiator", "油散热器", "%"),
     COMPRESSOR("compressor", "增压器档位", ""), MAGNETO("magneto", "磁电机", ""),
     MANIFOLD("manifold", "进气压力", "atm", 2), PITCH("pitch", "桨叶角", "°", 1),
-    EFFICIENCY("efficiency", "效率", "%");
+    EFFICIENCY("efficiency", "效率", "%"),
+    MANIFOLD_INHG("manifold_inhg", "进气压力（inHg）", "inHg", 1),
+    BOOST_PSI("boost_psi", "增压（相对1atm）", "psi", 1);
 
     fun value(engine: Engine): Double? = when (this) {
         THROTTLE -> engine.throttlePercent
@@ -24,13 +26,15 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
         OIL_RADIATOR -> engine.oilRadiatorPercent
         COMPRESSOR -> engine.compressorStage
         MAGNETO -> engine.magneto
-        MANIFOLD -> engine.manifoldPressureAtm
+        MANIFOLD -> ManifoldPressureUnit.ATM.fromAtm(engine.manifoldPressureAtm)
+        MANIFOLD_INHG -> ManifoldPressureUnit.INHG.fromAtm(engine.manifoldPressureAtm)
+        BOOST_PSI -> ManifoldPressureUnit.BOOST_PSI.fromAtm(engine.manifoldPressureAtm)
         PITCH -> engine.propellerPitchDeg
         EFFICIENCY -> engine.efficiencyPercent
     }?.takeIf { it.isFinite() }
 
     companion object {
-        val defaults = entries.map { it.id }
+        val defaults = entries.filterNot { it == MANIFOLD_INHG || it == BOOST_PSI }.map { it.id }
         fun selected(ids: List<String>) = ids.distinct().mapNotNull { id -> entries.find { it.id == id } }
     }
 }

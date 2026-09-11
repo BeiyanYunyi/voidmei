@@ -25,7 +25,7 @@ internal fun engineReadingWarnings(flight: ConnectionState.Flying, index: Int, m
 }
 
 @Composable
-internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.entries,
+internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.selected(HudEngineField.defaults),
     warnings: Map<HudEngineField, String> = emptyMap()) {
     Column {
         Text("发动机 #$index")
