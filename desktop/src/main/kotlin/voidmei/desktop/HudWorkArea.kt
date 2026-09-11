@@ -20,6 +20,11 @@ import androidx.compose.ui.window.WindowState
 @Composable
 internal fun updateHudWindowSize(window: Window, state: WindowState, preferredWidth: Int, contentHeight: Dp,
     scene: voidmei.config.HudSceneLayout? = null) {
+    val displayId = scene?.displayId
+    if (displayId != null) {
+        PlaceHudOnDisplay(window, state, displayId)
+        return
+    }
     val available = rememberHudAvailablePixels(window)
     val density = LocalDensity.current.density
     LaunchedEffect(window, state, contentHeight, available, density, preferredWidth, scene) {

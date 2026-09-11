@@ -63,7 +63,7 @@ class HudSceneDragGuiTest {
             assertEquals(200, settings.hudSceneLayout!!.regions.single().x)
             assertEquals(150, settings.hudSceneLayout!!.regions.single().y)
         }
-        compose.onNodeWithTag("hud-preview-edit-regions").performClick()
+        compose.onNodeWithTag("hud-preview-edit-regions").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.OnClick) { it() }
         compose.waitUntil(5000) { compose.onAllNodesWithTag("hud-scene-drag-overlay").fetchSemanticsNodes().isEmpty() }
     }
 

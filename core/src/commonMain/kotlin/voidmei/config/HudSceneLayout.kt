@@ -27,9 +27,11 @@ data class HudRegion(
     }
 }
 
-data class HudSceneLayout(val width: Int, val height: Int, val regions: List<HudRegion>, val enabled: Boolean = true) {
+data class HudSceneLayout(val width: Int, val height: Int, val regions: List<HudRegion>, val enabled: Boolean = true,
+    val displayId: String? = null) {
     init {
         require(width in 240..8192 && height in 120..8192)
+        require(displayId == null || displayId.isNotBlank())
         require(regions.size in 1..32 && regions.map { it.id }.distinct().size == regions.size)
         require(regions.all { it.x + it.width <= width && it.y + it.height <= height })
     }
@@ -88,6 +90,7 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
     fun toJson() = buildJsonObject {
         put("width", width); put("height", height)
         put("enabled", enabled)
+        put("displayId", displayId?.let(::JsonPrimitive) ?: JsonNull)
         put("regions", JsonArray(regions.map { region -> buildJsonObject {
             put("id", region.id); put("content", region.content.name)
             put("x", region.x); put("y", region.y); put("width", region.width); put("height", region.height)
@@ -110,7 +113,8 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
                     r["fields"]?.takeUnless { it == JsonNull }?.jsonArray?.map { field -> field.jsonPrimitive.let {
                         require(it.isString); it.content
                     } })
-            }, root["enabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true)
+            }, root["enabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
+                root["displayId"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content })
         }
 
         fun initial(settings: AppSettings) = HudSceneLayout(1280, 720, buildList {

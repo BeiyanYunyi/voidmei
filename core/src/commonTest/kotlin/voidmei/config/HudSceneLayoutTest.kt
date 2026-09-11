@@ -3,6 +3,13 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun selectedDisplaySurvivesCanvasAndRegionChanges() {
+        val scene = HudSceneLayout.initial(AppSettings()).copy(displayId = "external-display")
+        assertEquals(scene, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = scene))).hudSceneLayout)
+        assertEquals("external-display", scene.resizeCanvas(1920, 1080).displayId)
+        assertEquals("external-display", scene.addRegion(HudRegionContent.ENGINE).displayId)
+    }
+
     @Test fun resizeRegionKeepsOriginAndLimitsSizeToRemainingCanvas() {
         val region = HudRegion("one", HudRegionContent.ENGINE, 100, 50, 200, 150, .25f, .75f, 2, listOf("rpm"))
         val scene = HudSceneLayout(500, 400, listOf(region))

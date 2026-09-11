@@ -27,7 +27,8 @@ internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, I
     val density = LocalDensity.current.density
     var selected by remember { mutableStateOf<String?>(null) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val scale = minOf(maxWidth.value / layout.width, maxHeight.value / layout.height, 1f).coerceAtLeast(.01f)
+        val scale = minOf(maxWidth.value / layout.width, maxHeight.value / layout.height,
+            if (layout.displayId == null) 1f else Float.MAX_VALUE).coerceAtLeast(.01f)
         val pixelsPerUnit = density * scale
         Box(Modifier.fillMaxSize().testTag("hud-scene-drag-overlay")
             .pointerInput(layout.width, layout.height, pixelsPerUnit) {

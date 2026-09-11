@@ -25,7 +25,8 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
     val density = LocalDensity.current
     val flight = connection as? ConnectionState.Flying
     BoxWithConstraints(Modifier.fillMaxSize().testTag("hud-scene")) {
-        val scale = minOf(maxWidth.value / layout.width, maxHeight.value / layout.height, 1f).coerceAtLeast(0.01f)
+        val scale = minOf(maxWidth.value / layout.width, maxHeight.value / layout.height,
+            if (layout.displayId == null) 1f else Float.MAX_VALUE).coerceAtLeast(0.01f)
         CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale)) {
             layout.regions.forEach { region -> key(region.id) {
                 if (region.content != HudRegionContent.ALERTS || alerts.isNotEmpty()) {
