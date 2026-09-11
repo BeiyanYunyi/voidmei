@@ -53,6 +53,14 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                             HudAlertRegion(region.title, alerts)
                         } else if (flight != null && region.content == HudRegionContent.MAP) {
                             HudMapObjects(mapEndpoint, sharedMap, region.title)
+                        } else if (flight != null && region.content == HudRegionContent.COMPASS) {
+                            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                if (region.title.isNotBlank()) Text(region.title, maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                val heading = AttitudeGeometry.heading(flight.telemetry.headingDeg)
+                                if (heading == null) Text("航向未知")
+                                else CompassPanel(heading, settings.hudCompassHeadingUp, Modifier.fillMaxWidth().weight(1f))
+                            }
                         } else {
                         Column(Modifier.fillMaxSize().padding(end = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (region.title.isNotBlank()) Text(region.title)
@@ -79,6 +87,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                 HudRegionContent.MESSAGES -> HudRecentMessages(messages)
                                 HudRegionContent.MAP -> Unit
                                 HudRegionContent.CROSSHAIR -> Unit
+                                HudRegionContent.COMPASS -> Unit
                             }
                         }
                         HudScrollIndicator(scroll, Modifier.matchParentSize())

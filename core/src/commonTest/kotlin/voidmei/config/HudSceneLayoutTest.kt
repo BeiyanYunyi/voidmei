@@ -3,6 +3,15 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun compassRegionsPersistAndFitSmallCanvases() {
+        val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.COMPASS)
+        assertEquals(240, scene.regions.last().width)
+        assertEquals(240, scene.regions.last().height)
+        val small = scene.resizeCanvas(240, 120).addRegion(HudRegionContent.COMPASS)
+        assertEquals(120, small.regions.last().height)
+        assertEquals(small, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = small))).hudSceneLayout)
+    }
+
     @Test fun duplicatesKeepAllOptionsAndStayInsideCanvasWithoutChangingExistingRegions() {
         val source = HudRegion("region-1", HudRegionContent.ENGINE, 300, 200, 200, 200, .2f, .8f,
             2, listOf("rpm", "future"), visible = false, title = "右发动机", readingColumns = 1)

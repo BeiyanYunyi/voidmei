@@ -21,7 +21,7 @@ import voidmei.telemetry.AttitudeGeometry
 import kotlin.math.*
 
 @Composable
-internal fun CompassPanel(degrees: Double?, headingUp: Boolean = false) {
+internal fun CompassPanel(degrees: Double?, headingUp: Boolean = false, plotModifier: Modifier? = null) {
     val heading = AttitudeGeometry.heading(degrees) ?: return
     val measurer = rememberTextMeasurer()
     val labels = listOf("北", "东", "南", "西").map {
@@ -30,7 +30,7 @@ internal fun CompassPanel(degrees: Double?, headingUp: Boolean = false) {
     val labelExtent = labels.maxOf { maxOf(it.size.width, it.size.height) }.toFloat()
     val density = LocalDensity.current
     val height = with(density) { maxOf(140.dp, (labelExtent * 2 + 92.dp.toPx()).toDp()) }
-    Canvas(Modifier.fillMaxWidth().height(height).testTag("hud-compass").semantics {
+    Canvas((plotModifier ?: Modifier.fillMaxWidth().height(height)).testTag("hud-compass").semantics {
         contentDescription = "${if (headingUp) "航向朝上罗盘" else "固定北向罗盘"}，航向 ${round(heading).toInt() % 360}°"
     }) {
         val center = Offset(size.width / 2, size.height / 2)

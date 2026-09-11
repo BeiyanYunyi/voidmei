@@ -53,6 +53,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
             label = { Text("区域标题（可选）") }, supportingText = { Text("最多 80 字符；留空不显示额外标题。") },
             singleLine = true, modifier = Modifier.testTag("hud-region-title-${region.id}"))
         if (region.content == HudRegionContent.CROSSHAIR) Text("准星居中显示，大小随区域尺寸调整，样式沿用准星图片设置。存在准星区域时替代整窗准星，由区域显示开关控制。")
+        if (region.content == HudRegionContent.COMPASS) Text("独立显示罗盘，随区域尺寸调整，沿用北向固定／航向朝上设置。飞行读数中的航向显示保持独立。")
         Row {
             Switch(region.visible, { update(region.copy(visible = it)) }, Modifier.testTag("hud-region-visible-${region.id}"))
             Text("显示此区域")
