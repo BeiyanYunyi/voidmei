@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import subprocess
 
 EXTENSIONS = {"linux": ".deb", "windows": ".msi", "macos": ".dmg"}
 ARCHITECTURES = {"X64": "x64", "ARM64": "arm64", "X86": "x86"}
@@ -23,6 +24,16 @@ def digest(path):
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             value.update(chunk)
     return value.hexdigest()
+
+
+def verify_deb(path, version, architecture):
+    fields = {key: subprocess.check_output(["dpkg-deb", "--field", str(path), key],
+                text=True, timeout=15).strip() for key in ("Package", "Version", "Architecture")}
+    expected_arch = {"x64": "amd64", "arm64": "arm64", "x86": "i386"}.get(architecture)
+    if (fields["Package"] != "voidmei" or fields["Architecture"] != expected_arch or
+            not re.fullmatch(re.escape(version) + r"(?:-[0-9A-Za-z.+~]+)?", fields["Version"])):
+        raise ValueError(f"Deb control fields do not match requested version/architecture: {fields}")
+    return fields
 
 
 def record(root, build_file, revision, platform, architecture):

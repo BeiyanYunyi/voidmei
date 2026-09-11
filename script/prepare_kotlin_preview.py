@@ -5,12 +5,12 @@ import json
 from pathlib import Path
 import re
 import shutil
-from kotlin_package_metadata import package_version, digest, ARCHITECTURES
+from kotlin_package_metadata import package_version, digest, ARCHITECTURES, verify_deb
 
 PLATFORMS = {"ubuntu-latest": ("linux", ".deb"), "windows-latest": ("windows", ".msi"), "macos-latest": ("macos", ".dmg")}
 
 
-def prepare(artifacts: Path, output: Path, build_file: Path, revision: str):
+def prepare(artifacts: Path, output: Path, build_file: Path, revision: str, inspect_deb=verify_deb):
     if not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("Expected a full Git commit SHA")
     version = package_version(build_file)
@@ -32,6 +32,8 @@ def prepare(artifacts: Path, output: Path, build_file: Path, revision: str):
                 metadata.get("file") != source.name or metadata.get("bytes") != source.stat().st_size or
                 metadata.get("sha256") != digest(source)):
             raise ValueError(f"Build metadata does not match the requested revision or installer: {runner}")
+        if platform == "linux":
+            metadata["installer_control"] = inspect_deb(source, version, metadata["architecture"])
         selected.append((source, platform, extension, metadata))
     output.mkdir(parents=True, exist_ok=False)
     packages = []
@@ -41,7 +43,8 @@ def prepare(artifacts: Path, output: Path, build_file: Path, revision: str):
         checksum = digest(destination)
         if checksum != metadata["sha256"] or destination.stat().st_size != metadata["bytes"]:
             raise ValueError("Installer changed while preparing preview")
-        packages.append({"file": destination.name, "platform": platform, "architecture": metadata["architecture"],
+        packages.append({**({"installer_control": metadata["installer_control"]} if platform == "linux" else {}),
+                         "file": destination.name, "platform": platform, "architecture": metadata["architecture"],
                          "source_file": source.name, "bytes": destination.stat().st_size, "sha256": checksum})
     tag = f"kotlin-{version}-preview-{revision[:12]}"
     manifest = {"version": version, "revision": revision, "tag": tag, "packages": packages}

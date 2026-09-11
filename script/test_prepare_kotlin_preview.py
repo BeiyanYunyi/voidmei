@@ -4,9 +4,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from prepare_kotlin_preview import prepare, PLATFORMS
-from kotlin_package_metadata import record
+from kotlin_package_metadata import record, verify_deb
 
 
 class PreviewTest(unittest.TestCase):
@@ -28,7 +29,7 @@ class PreviewTest(unittest.TestCase):
             record(path.parent.parent, self.build, self.sha, platform, "ARM64" if platform == "macos" else "X64")
 
     def run_prepare(self):
-        return prepare(self.artifacts, self.output, self.build, self.sha)
+        return prepare(self.artifacts, self.output, self.build, self.sha, inspect_deb=lambda *_: {"Package": "voidmei", "Version": "2.0.0", "Architecture": "amd64"})
 
     def test_collects_only_installers_and_hashes_the_published_bytes(self):
         (self.artifacts / "unrelated.txt").write_text("not a release asset")
@@ -81,6 +82,19 @@ class PreviewTest(unittest.TestCase):
         metadata.write_text(json.dumps(original))
         self.files[0].write_bytes(b"changed package")
         with self.assertRaises(ValueError): self.run_prepare()
+        self.assertFalse(self.output.exists())
+
+    def test_deb_control_validation_rejects_wrong_package_version_or_architecture(self):
+        valid = ["voidmei\n", "2.0.0-1\n", "amd64\n"]
+        with patch("kotlin_package_metadata.subprocess.check_output", side_effect=valid):
+            self.assertEqual("2.0.0-1", verify_deb(self.files[0], "2.0.0", "x64")["Version"])
+        for values in [["other", "2.0.0", "amd64"], ["voidmei", "2.0.1", "amd64"], ["voidmei", "2.0.0", "arm64"]]:
+            with patch("kotlin_package_metadata.subprocess.check_output", side_effect=values):
+                with self.assertRaises(ValueError): verify_deb(self.files[0], "2.0.0", "x64")
+        def rejected(*_):
+            raise ValueError("wrong package control data")
+        with self.assertRaises(ValueError):
+            prepare(self.artifacts, self.output, self.build, self.sha, inspect_deb=rejected)
         self.assertFalse(self.output.exists())
 
     def test_version_must_be_single_and_explicit(self):
