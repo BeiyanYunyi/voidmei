@@ -49,6 +49,15 @@ class HudLayoutPreviewGuiTest {
         compose.waitUntil(5000) { frame.isVisible }
         compose.runOnIdle { assertSame(frame, windows().single()); assertEquals(bounds, frame.bounds) }
         compose.onNodeWithText("510 km/h").assertIsDisplayed()
+        compose.onNodeWithText("缺失数据").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(5000) { compose.onAllNodesWithText("— km/h").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("— km/h").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
+        compose.onNodeWithTag("flight-alerts").assertDoesNotExist()
+        savePreview("missing")
+        compose.runOnIdle { settings = settings.copy(hudWidthDp = 240) }
+        compose.waitUntil(5000) { frame.width == 240 }
+        compose.onNodeWithText("缺失数据").assertIsDisplayed()
+        savePreview("missing-narrow")
         compose.onNodeWithText("正常读数").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitUntil(5000) { compose.onAllNodesWithText("340 km/h").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("340 km/h").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))

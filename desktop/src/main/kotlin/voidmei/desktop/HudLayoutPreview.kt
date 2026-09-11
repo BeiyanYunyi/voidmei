@@ -17,7 +17,11 @@ import voidmei.telemetry.*
 import voidmei.fm.*
 
 /** Local illustrative samples; never enter the live telemetry or recording pipeline. */
-internal fun hudPreviewFlight(warnings: Boolean = false): ConnectionState.Flying {
+internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = false): ConnectionState.Flying {
+    if (missing) return ConnectionState.Flying(TelemetryParser.parse("""{"valid":true}""",
+        """{"valid":true,"type":"preview"}""")!!.copy(engines = (1..2).map {
+            Engine(it, null, null, null, null, null, null)
+        }), FlightMetrics())
     val telemetry = TelemetryParser.parse("""{
         "valid":true,"IAS, km/h":340,"TAS, km/h":360,"Mach":0.30,"H, m":1500,
         "Vy, m/s":5,"Ny":1.2,"AoA, deg":4,"Mfuel, kg":300,"Mfuel0, kg":600,
@@ -47,8 +51,8 @@ private fun hudPreviewModel() = AircraftAlertModel("preview", FlightModelParamet
     engineThermals = (1..2).map { EngineThermalParameters(it, listOf(EngineThermalBand(1, 100.0, 85.0, 200.0, 100.0))) }))
 
 @Composable
-internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false) {
-    val flight = remember(warnings) { hudPreviewFlight(warnings) }
+internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, missing: Boolean = false) {
+    val flight = remember(warnings, missing) { hudPreviewFlight(warnings, missing) }
     val model = remember { hudPreviewModel() }
     val thermal = remember(flight, model) { EngineThermalMonitor().update(flight, model, 0) }
     val alerts = remember(flight, model, thermal) {
@@ -71,6 +75,7 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false) 
 @Composable
 internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: Int, onClose: () -> Unit) {
     var warnings by remember { mutableStateOf(false) }
+    var missing by remember { mutableStateOf(false) }
     var nativeWindow by remember { mutableStateOf<java.awt.Frame?>(null) }
     val state = rememberWindowState(width = settings.hudWidthDp.dp, height = 640.dp)
     LaunchedEffect(settings.hudWidthDp) {
@@ -88,11 +93,12 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
         MaterialTheme(colorScheme = darkColorScheme()) {
             Surface(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize()) {
-                    Row(Modifier.padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(!warnings, { warnings = false }, label = { Text("正常读数") })
-                        FilterChip(warnings, { warnings = true }, label = { Text("告警示例") })
+                    FlowRow(Modifier.padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(!warnings && !missing, { warnings = false; missing = false }, label = { Text("正常读数") })
+                        FilterChip(warnings && !missing, { warnings = true; missing = false }, label = { Text("告警示例") })
+                        FilterChip(missing, { warnings = false; missing = true }, label = { Text("缺失数据") })
                     }
-                    Box(Modifier.weight(1f)) { HudLayoutPreview(settings, warnings) }
+                    Box(Modifier.weight(1f)) { HudLayoutPreview(settings, warnings, missing) }
                 }
             }
         }

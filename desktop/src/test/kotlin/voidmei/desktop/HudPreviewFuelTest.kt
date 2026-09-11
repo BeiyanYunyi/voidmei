@@ -5,6 +5,14 @@ import kotlin.test.*
 import voidmei.telemetry.HudField
 
 class HudPreviewFuelTest {
+    @Test fun missingPreviewDoesNotInventFuelOrEngineValues() {
+        val flight = hudPreviewFlight(missing = true)
+        for (field in HudField.entries) assertNull(field.value(flight), field.id)
+        assertEquals(listOf(1, 2), flight.telemetry.engines.map { it.index })
+        flight.telemetry.engines.forEach { engine ->
+            voidmei.telemetry.HudEngineField.entries.forEach { assertNull(it.value(engine), it.id) }
+        }
+    }
     @Test fun previewUsesSampledFuelEstimatesInBothModes() {
         for (warning in listOf(false, true)) {
             val flight = hudPreviewFlight(warning)

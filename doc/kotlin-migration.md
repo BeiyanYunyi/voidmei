@@ -3062,6 +3062,12 @@ FlightRecorder 对 Delayed 只跳过写入，保留当前 CSV 文件对和时间
 
 离线 Nix 构建通过（`/tmp/voidmei-delayed-recording-nix.log`）；当前主机隔离 Xvfb/xcompmgr 中的兼容 HUD 整包测试通过（`/tmp/voidmei-delayed-recording-package.log`）：85 对 HTTP 请求、84 对有效记录样本、单一 CSV 文件对、最大样本间隔 1583 ms；5 次 AWT 心跳延迟为 0、0、8、2、0 ms，正常退出码 0。产物和报告副本 `/tmp/voidmei-delayed-recording-artifacts/`。不扩大真实游戏、物理 UI 操作或其他平台验收结论。
 
+### HUD 缺失数据预览
+
+预览新增“缺失数据”模式：保留示例机型与两个发动机编号，所有数值输入及派生估计均为空，不补零。切换后使用现有计算与展示流程清除告警、显示未知读数和缺少输入说明。模式按钮使用 FlowRow，在 240 dp 最窄配置下换行显示。
+
+桌面单元及原生预览回归通过（`/tmp/voidmei-hud-preview-missing.log`，6 秒），逐项检查全部 HudField／HudEngineField 示例值为空，验证从告警切至缺失时高亮与告警列表清除，再切回正常数据。240 dp 原生窗口回归通过（`/tmp/voidmei-hud-preview-missing-narrow.log`，2 秒），已人工检查 `layout-preview-missing.png` 和 `layout-preview-missing-narrow.png`：按钮、示例标记及未知值均可见。本轮未重建 Nix 包。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
