@@ -471,3 +471,9 @@ AppSettings 新增 hudScenePresets，旧配置默认空集合。共享 JVM／JS�
 飞行区域新增“显示读数附带图形”开关，默认开启，旧配置保持原有显示。关闭后隐藏航向罗盘、迎角余量、油门、油量、燃油质量占比和速度限制附带组件，保留选定数值及其告警高亮；不同区域可分别配置。独立罗盘等区域不受此开关影响。
 
 共享 JVM／JS 配置、桌面单元测试通过（`/tmp/voidmei-reading-instruments.log`）；最终两项 GUI 回归通过（`/tmp/voidmei-reading-instruments-final.log`），覆盖双区域隔离、开关恢复、配置往返与关闭图形后迎角数值仍有告警标记。本轮未重建 Nix 包，未新增真实游戏验收。
+
+## 十区域离线整包验证
+
+实际启动测试扩展到当前十种区域：缩小地图，为独立操纵面区域留出空间，选择升降舵并注入 +67% 遥测。截图在预期正向刻度位置检查绿色位置点；退出保存同时检查操纵面选择，以及未启用预设中的 showFlightInstruments=false。
+
+离线包构建通过（`/tmp/voidmei-ten-regions-build.log`）。隔离 X11、SOFTWARE_FAST 兼容 HUD、80 ms 刷新及一次 1.5 秒响应延迟的整包测试通过（`/tmp/voidmei-ten-regions-package.log`），产生 86 对记录行；34 次采样保持同一个 900×600 HUD 窗口。升降舵位置点 36 像素，天空 26600、大地 9549、罗盘 137 像素；AWT 心跳延迟 5／0／0／7／0 ms，正常退出。人工查看截图确认操纵面区域与其他区域共同绘制。产物位于 `/tmp/voidmei-package-smoke-gke1aaep/`。Python 语法检查及四项脚本单元测试通过。本验证不代替真实游戏、物理多显示器或 GPU 后端验收。

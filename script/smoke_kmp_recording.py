@@ -43,7 +43,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                         {"Mfuel 1, kg": -65535, "Mfuel0 1, kg": None},
                     )[(requests[self.path] - 1) % 3])
                     if hud_scene:
-                        data.update({"gear, %": 0, "flaps, %": 25, "airbrake, %": 100})
+                        data.update({"gear, %": 0, "flaps, %": 25, "airbrake, %": 100, "elevator, %": 67})
                     if wep:
                         data["throttle 1, %"] = 110
                         if wep_dropout and 20 <= requests[self.path] <= 22:
@@ -95,11 +95,12 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                 region("compass", "COMPASS", 300, 180, 160, 180),
                 region("crosshair", "CROSSHAIR", 470, 180, 110, 110, 0),
                 region("attitude", "ATTITUDE", 300, 380, 280, 220),
-                region("map", "MAP", 600, 0, 300, 500),
+                region("map", "MAP", 600, 0, 300, 300),
+                region("controls", "CONTROLS", 600, 300, 300, 200, .5, ["elevator"]),
                 region("alerts", "ALERTS", 600, 500, 300, 100, .5, ["advisory"])])
             detail = json.loads(json.dumps(settings["hudSceneLayout"]))
             detail["enabled"] = False
-            detail["regions"][0].update(title="能量与速度", fontScale=1.5, readingColumns=1,
+            detail["regions"][0].update(title="能量与速度", fontScale=1.5, readingColumns=1, showFlightInstruments=False,
                                         fields=["ias", "sep", "future_field"])
             settings["hudScenePresets"] = {"巡航": settings["hudSceneLayout"], "详细": detail}
             (root / "require-single-hud").touch()
@@ -177,11 +178,11 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
             raise RuntimeError("Persisted compatibility setting did not activate the full HUD")
     if hud_scene:
         saved = json.loads((root / "config/settings-kmp.json").read_text())
-        if len(saved.get("hudSceneLayout", {}).get("regions", [])) != 9 or not saved["hudSceneLayout"].get("enabled"):
+        if len(saved.get("hudSceneLayout", {}).get("regions", [])) != 10 or not saved["hudSceneLayout"].get("enabled"):
             raise RuntimeError("Packaged scene configuration was not retained")
         regions = {region["id"]: region for region in saved["hudSceneLayout"]["regions"]}
         for name, fields in (("messages", ["event"]), ("alerts", ["advisory"]),
-                             ("mechanization", ["gear", "airbrake"])):
+                             ("mechanization", ["gear", "airbrake"]), ("controls", ["elevator"])):
             if regions.get(name, {}).get("fields") != fields:
                 raise RuntimeError("Packaged scene lost independent selection: " + name)
         if "[VoidMei exit test] single HUD stable" not in (root / "startup.log").read_text():
@@ -192,6 +193,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
         detail = presets["详细"]
         first = detail["regions"][0]
         if (detail.get("enabled") is not False or first.get("fontScale") != 1.5 or
+                first.get("showFlightInstruments") is not False or
                 first.get("readingColumns") != 1 or first.get("title") != "能量与速度" or
                 first.get("fields") != ["ias", "sep", "future_field"]):
             raise RuntimeError("Packaged runtime changed inactive preset properties")
@@ -309,7 +311,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path)
-    parser.add_argument("--hud-scene", action="store_true", help="Exercise nine regions in one HUD; requires --graceful-exit")
+    parser.add_argument("--hud-scene", action="store_true", help="Exercise ten regions in one HUD; requires --graceful-exit")
     parser.add_argument("--delayed-sample", action="store_true", help="Delay the twentieth HTTP sample by 1.5 seconds; require one continuous recording pair")
     parser.add_argument("--poll-interval-ms", type=int, default=100, help="Configured polling delay, 10–5000 ms")
     parser.add_argument("--timeout", type=float, default=60)
