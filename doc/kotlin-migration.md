@@ -2864,6 +2864,12 @@ macOS 构建元数据步骤新增只读挂载 DMG，要求镜像根目录有唯�
 
 新包在隔离 X11 中清除渲染环境变量与 JVM 覆盖，仅使用保存的 softwareRendering=true 启动，主窗口和兼容 HUD 的请求/实际后端均为 SOFTWARE_FAST，AWT 心跳与正常退出检查通过。首次最小夹具缺少冒烟脚本要求的绝对数据目录，补齐后复测同一包通过；日志 `/tmp/voidmei-saved-renderer-smoke-after.log`，报告与日志副本 `/tmp/voidmei-saved-renderer-artifacts/`。该证据覆盖本机软件后端，不扩大硬件加速、真实游戏或 Windows/macOS 验收范围。
 
+### 保存的软件渲染偏好接入包运行 CI
+
+新增 script/smoke_saved_renderer.py，将此前本地验证转为可复现的仓库脚本。接受 Deb 或独立 Nix 包，准备独立配置目录并显式清除渲染环境/JVM 覆盖，通过实际包启动检查主窗口和兼容 HUD 的请求及实际后端均为 SOFTWARE_FAST。复用 AWT 心跳、正常退出及最终设置保存检查，成功后在 report.json 标记 saved_software_renderer_checked。
+
+Linux Kotlin CI 在同次构建的 Deb 上执行该脚本，沿用既有制品上传保留日志、配置与报告。脚本在当前真实 Nix 包上通过（`/tmp/voidmei-saved-renderer-ci-script.log`，制品副本 `/tmp/voidmei-saved-renderer-ci-artifacts/`），actionlint 与 diff 检查通过。本轮未修改应用或重建包，远程 CI 的 Deb 执行结果仍应以对应 Actions run 为准。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
