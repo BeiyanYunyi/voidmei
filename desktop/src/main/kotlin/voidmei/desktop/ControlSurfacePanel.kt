@@ -37,6 +37,8 @@ internal fun ControlSurfacePanel(telemetry: Telemetry, fields: List<String>? = n
 
 @Composable
 private fun ControlAxisReadings(selected: List<Triple<String, String, Double?>>) {
+    val track = LocalReadingColors.current.label ?: Color(0xFF9EB1C0)
+    val marker = LocalReadingColors.current.value ?: Color(0xFF84DEC6)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         selected.forEach { (id, label, raw) ->
             val value = controlSurfacePercent(raw)
@@ -47,11 +49,11 @@ private fun ControlAxisReadings(selected: List<Triple<String, String, Double?>>)
             }) {
                 val inset = minOf(6.dp.toPx(), size.width / 2)
                 val y = size.height / 2
-                drawLine(Color(0xFF9EB1C0), Offset(inset, y), Offset(size.width - inset, y), 1.dp.toPx())
-                drawLine(Color(0xFF9EB1C0), Offset(size.width / 2, y - 6.dp.toPx()), Offset(size.width / 2, y + 6.dp.toPx()), 1.dp.toPx())
+                drawLine(track, Offset(inset, y), Offset(size.width - inset, y), 1.dp.toPx())
+                drawLine(track, Offset(size.width / 2, y - 6.dp.toPx()), Offset(size.width / 2, y + 6.dp.toPx()), 1.dp.toPx())
                 value?.let {
                     val x = inset + ((it + 100) / 200).toFloat() * (size.width - 2 * inset)
-                    drawCircle(Color(0xFF84DEC6), 4.dp.toPx().coerceAtMost(size.minDimension / 2), Offset(x, y))
+                    drawCircle(marker, 4.dp.toPx().coerceAtMost(size.minDimension / 2), Offset(x, y))
                 }
             }
         }

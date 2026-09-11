@@ -18,6 +18,36 @@ import voidmei.config.*
 class ControlStickGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun axisAndStickMarkersFollowLiveHudPaletteTogether() {
+        val region = HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 440, 260, showControlStick = true)
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(440, 260, listOf(region)),
+            hudLabelColor = "#00FF00", hudValueColor = "#0000FF"))
+        compose.setContent { MaterialTheme { Box(Modifier.size(440.dp, 260.dp)) {
+            HudPanel(hudPreviewFlight(), settings, emptyList(), null) {}
+        } } }
+        fun checkColors(track: Color, marker: Color) {
+            // One-dp tracks cover partial pixels; allow their antialiased blend with the HUD background.
+            fun Color.matches(expected: Color): Boolean = listOf(red to expected.red,
+                green to expected.green, blue to expected.blue).all { (actual, target) ->
+                if (target > .9f) actual > .35f else actual < .2f
+            }
+            for (tag in listOf("hud-control-stick", "hud-control-aileron", "hud-control-elevator", "hud-control-rudder")) {
+                val pixels = compose.onNodeWithTag(tag).captureToImage().toPixelMap()
+                var trackPixels = 0
+                var markerPixels = 0
+                for (y in 0 until pixels.height) for (x in 0 until pixels.width) {
+                    if (pixels[x, y].matches(track)) trackPixels++
+                    if (pixels[x, y].matches(marker)) markerPixels++
+                }
+                assertTrue(trackPixels > 10, "$tag must use the label color for its track")
+                assertTrue(markerPixels > 10, "$tag must use the value color for its marker")
+            }
+        }
+        checkColors(Color.Green, Color.Blue)
+        compose.runOnIdle { settings = settings.copy(hudLabelColor = "#FF0000", hudValueColor = "#00FF00") }
+        checkColors(Color.Red, Color.Green)
+    }
+
     @Test fun defaultRegionFitsBothInstrumentsAndNarrowRegionStacksThem() {
         val region = HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 440, 260, showControlStick = true)
         var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(440, 260, listOf(region))))
