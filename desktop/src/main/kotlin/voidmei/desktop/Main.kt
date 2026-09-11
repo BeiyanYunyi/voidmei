@@ -68,6 +68,7 @@ fun main(args: Array<String>) {
         var mainVisible by remember { mutableStateOf(true) }
         var mainRestoreRequest by remember { mutableStateOf(0L) }
         var trayAvailable by remember { mutableStateOf(false) }
+        var desktopTray by remember { mutableStateOf<DesktopTray?>(null) }
         var trayError by remember { mutableStateOf<String?>(null) }
         var recordingExitFailure by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
         LaunchedEffect(Unit) {
@@ -139,9 +140,13 @@ fun main(args: Array<String>) {
                 if (!available) trayShow()
             } }
                 catch (e: Exception) { trayError = e.message ?: "托盘创建失败"; null }
+            desktopTray = tray
             trayAvailable = tray != null
             mainVisible = !shouldStartInTray(settings.startInTray, trayAvailable, "--no-hud" in args, loaded.error != null)
-            onDispose { tray?.close() }
+            onDispose { desktopTray = null; tray?.close() }
+        }
+        RecordingNotificationEffect(recording, lastRecording) { notice ->
+            if (trayAvailable) desktopTray?.showMessage(notice.title, notice.message)
         }
         RecordingFailureEffect(recording, recordingError) { trayShow() }
         LaunchedEffect(settingsError, recordingExitFailure) {

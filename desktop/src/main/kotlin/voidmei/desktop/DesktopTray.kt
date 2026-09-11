@@ -3,8 +3,12 @@ package voidmei.desktop
 import java.awt.*
 import java.awt.image.BufferedImage
 
+internal interface DesktopTray : AutoCloseable {
+    fun showMessage(title: String, message: String)
+}
+
 /** Returns null when the desktop cannot provide a recoverable tray entry. */
-internal fun installDesktopTray(onShow: () -> Unit, onHud: () -> Unit, onExit: () -> Unit, onAvailability: (Boolean) -> Unit = {}): AutoCloseable? {
+internal fun installDesktopTray(onShow: () -> Unit, onHud: () -> Unit, onExit: () -> Unit, onAvailability: (Boolean) -> Unit = {}): DesktopTray? {
     if (!SystemTray.isSupported()) return null
     val image = BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB)
     image.createGraphics().let { g ->
@@ -30,10 +34,16 @@ internal fun installDesktopTray(onShow: () -> Unit, onHud: () -> Unit, onExit: (
     tray.add(icon)
     val availability = TrayAvailabilityListener(onAvailability)
     tray.addPropertyChangeListener("systemTray", availability)
-    return AutoCloseable {
-        availability.close()
-        tray.removePropertyChangeListener("systemTray", availability)
-        tray.remove(icon)
+    val messages = TrayMessages({ title, message -> icon.displayMessage(title, message, TrayIcon.MessageType.INFO) },
+        { icon in tray.trayIcons })
+    return object : DesktopTray {
+        override fun showMessage(title: String, message: String) = messages.show(title, message)
+        override fun close() {
+            messages.close()
+            availability.close()
+            tray.removePropertyChangeListener("systemTray", availability)
+            tray.remove(icon)
+        }
     }
 }
 
@@ -59,4 +69,17 @@ internal fun restoreMainWindow(window: Frame) {
     window.isVisible = true
     window.toFront()
     window.requestFocus()
+}
+
+/** Marshals delivery to AWT and invalidates messages pending when the tray is disposed. */
+internal class TrayMessages(private val deliver: (String, String) -> Unit, private val available: () -> Boolean = { true }) : AutoCloseable {
+    private val closed = java.util.concurrent.atomic.AtomicBoolean()
+    fun show(title: String, message: String) {
+        EventQueue.invokeLater {
+            if (!closed.get()) try {
+                if (available()) deliver(title, message)
+            } catch (e: Exception) { println("[VoidMei tray] 通知不可用：${e.message}") }
+        }
+    }
+    override fun close() { closed.set(true) }
 }
