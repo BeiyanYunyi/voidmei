@@ -29,12 +29,16 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
             if (layout.displayId == null) 1f else Float.MAX_VALUE).coerceAtLeast(0.01f)
         CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale)) {
             layout.regions.forEach { region -> key(region.id) {
+                val fields = region.fields ?: if (region.content == HudRegionContent.ENGINE) settings.hudEngineFields else settings.hudFields
+                val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields) {
+                    rememberScrollState()
+                }
                 if (region.content != HudRegionContent.ALERTS || alerts.isNotEmpty()) {
                     Box(Modifier.offset(region.x.dp, region.y.dp).size(region.width.dp, region.height.dp)
                         .clipToBounds().testTag("hud-region-${region.id}")
                         .background(Color(0xFF111820).copy(alpha = region.backgroundAlpha))) {
-                        Column(Modifier.fillMaxSize().graphicsLayer { alpha = region.contentAlpha }
-                            .padding(12.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(Modifier.fillMaxSize().graphicsLayer { alpha = region.contentAlpha }.padding(12.dp)) {
+                        Column(Modifier.fillMaxSize().padding(end = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (region.content == HudRegionContent.ALERTS) FlightAlertPanel(alerts, compact = true,
                                 maximumHeight = (region.height - 24).dp)
                             else if (flight == null) Text(connectionLabel ?: statusText(connection))
@@ -59,6 +63,8 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                 HudRegionContent.ALERTS -> Unit
                                 HudRegionContent.MESSAGES -> HudRecentMessages(messages)
                             }
+                        }
+                        HudScrollIndicator(scroll, Modifier.matchParentSize())
                         }
                     }
                 }
