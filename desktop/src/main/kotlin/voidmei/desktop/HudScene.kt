@@ -24,6 +24,11 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
     mapEndpoint: String?, sharedMap: kotlinx.coroutines.flow.StateFlow<MapConnection>?, connectionLabel: String?, messages: HudMessageState? = null) {
     val density = LocalDensity.current
     val flight = connection as? ConnectionState.Flying
+    val hasCrosshairRegions = layout.regions.any { it.content == HudRegionContent.CROSSHAIR }
+    val needsCrosshair = if (hasCrosshairRegions) layout.regions.any { it.visible && it.content == HudRegionContent.CROSSHAIR }
+        else settings.hudCrosshair
+    val crosshairImage = if (flight != null && needsCrosshair && settings.hudCrosshairImage.isNotEmpty())
+        rememberCrosshairImage(settings.hudCrosshairImage) else null
     BoxWithConstraints(Modifier.fillMaxSize().testTag("hud-scene")) {
         val scale = minOf(maxWidth.value / layout.width, maxHeight.value / layout.height,
             if (layout.displayId == null) 1f else Float.MAX_VALUE).coerceAtLeast(0.01f)
@@ -41,7 +46,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                         if (flight != null && region.content == HudRegionContent.CROSSHAIR) {
                             val size = minOf(region.width, region.height)
                             if (settings.hudCrosshairImage.isEmpty()) CrosshairPanel(size, Modifier.fillMaxSize())
-                            else ImageCrosshair(settings.hudCrosshairImage, size, Modifier.fillMaxSize(), settings.hudCrosshairStretch)
+                            else ImageCrosshair(settings.hudCrosshairImage, size, Modifier.fillMaxSize(), settings.hudCrosshairStretch, shared = crosshairImage)
                         } else {
                         Column(Modifier.fillMaxSize().padding(end = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (flight == null) Text(connectionLabel ?: statusText(connection))
@@ -78,9 +83,9 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                 }
             } }
         }
-        if (flight != null && settings.hudCrosshair && layout.regions.none { it.content == HudRegionContent.CROSSHAIR }) {
+        if (flight != null && settings.hudCrosshair && !hasCrosshairRegions) {
             if (settings.hudCrosshairImage.isEmpty()) CrosshairPanel(settings.hudCrosshairSizeDp, Modifier.matchParentSize(), settings.hudCrosshairRight)
-            else ImageCrosshair(settings.hudCrosshairImage, settings.hudCrosshairSizeDp, Modifier.matchParentSize(), settings.hudCrosshairStretch, settings.hudCrosshairRight)
+            else ImageCrosshair(settings.hudCrosshairImage, settings.hudCrosshairSizeDp, Modifier.matchParentSize(), settings.hudCrosshairStretch, settings.hudCrosshairRight, crosshairImage)
         }
     }
 }

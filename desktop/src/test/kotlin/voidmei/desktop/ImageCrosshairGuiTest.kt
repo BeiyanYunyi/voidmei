@@ -18,6 +18,52 @@ import kotlin.test.*
 class ImageCrosshairGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun sharedImageRemainsVisibleWhileReplacementDecodes() {
+        val file = Files.createTempFile("crosshair-shared-", ".png")
+        val loads = java.util.concurrent.atomic.AtomicInteger()
+        val replacement = kotlinx.coroutines.CompletableDeferred<Unit>()
+        fun write(rgb: Int, timestamp: Long) {
+            val image = BufferedImage(8, 8, BufferedImage.TYPE_INT_ARGB)
+            for (y in 0..7) for (x in 0..7) image.setRGB(x, y, rgb)
+            ImageIO.write(image, "png", file.toFile())
+            Files.setLastModifiedTime(file, java.nio.file.attribute.FileTime.fromMillis(timestamp))
+        }
+        fun allImagesHaveColor(green: Boolean): Boolean {
+            val nodes = compose.onAllNodesWithTag("hud-image-crosshair")
+            if (nodes.fetchSemanticsNodes().size != 2) return false
+            return (0..1).all {
+                val pixels = nodes[it].captureToImage().toPixelMap()
+                val color = pixels[pixels.width / 2, pixels.height / 2]
+                if (green) color.green > .9f && color.red < .1f else color.red > .9f && color.green < .1f
+            }
+        }
+        try {
+            write(0xFF00FF00.toInt(), 1000)
+            compose.setContent {
+                val shared = rememberCrosshairImage(file.toString()) { path ->
+                    if (loads.incrementAndGet() == 2) replacement.await()
+                    loadCrosshairImage(path)
+                }
+                MaterialTheme { Row {
+                    repeat(2) { ImageCrosshair(file.toString(), 80, Modifier.size(100.dp), shared = shared) }
+                } }
+            }
+            compose.waitUntil(5000) { allImagesHaveColor(true) }
+            assertEquals(1, loads.get())
+            write(0xFFFF0000.toInt(), 2000)
+            compose.waitUntil(5000) { loads.get() == 2 }
+            compose.waitForIdle()
+            assertTrue(allImagesHaveColor(true), "Keep both old images until decoding completes")
+            replacement.complete(Unit)
+            compose.waitUntil(5000) { allImagesHaveColor(false) }
+            assertEquals(2, loads.get())
+        } finally {
+            replacement.complete(Unit)
+            compose.setContent {}
+            Files.deleteIfExists(file)
+        }
+    }
+
     @Test fun samePathChangesDisappearAndRecoverWithoutReselection() {
         val file = Files.createTempFile("crosshair-live-", ".png")
         fun write(rgb: Int, timestamp: Long) {
