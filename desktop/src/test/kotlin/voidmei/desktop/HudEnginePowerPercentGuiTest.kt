@@ -56,6 +56,12 @@ class HudEnginePowerPercentGuiTest {
         } } }
         compose.onNodeWithText("40.0 % · FM 推力峰值").assertIsDisplayed()
         compose.onNodeWithText("75.0 % · FM 功率峰值").assertIsDisplayed()
+        val thrustCaption = "1 号动力量 · FM 推力峰值，满刻度 100%"
+        val powerCaption = "2 号动力量 · FM 功率峰值，满刻度 100%"
+        compose.onNodeWithText(thrustCaption).assertIsDisplayed()
+        compose.onNodeWithText(powerCaption).assertIsDisplayed()
+        compose.onNodeWithContentDescription(thrustCaption).assertExists()
+        compose.onNodeWithContentDescription(powerCaption).assertExists()
         compose.onNodeWithTag("hud-engine-fm_power_percent-1").assertRangeInfoEquals(ProgressBarRangeInfo(.4f, 0f..1f))
         compose.onNodeWithTag("hud-engine-fm_power_percent-2").assertRangeInfoEquals(ProgressBarRangeInfo(.75f, 0f..1f))
         compose.runOnIdle { settings = settings.copy(hudSceneLayout = settings.hudSceneLayout!!.copy(
@@ -68,5 +74,7 @@ class HudEnginePowerPercentGuiTest {
         compose.onNodeWithText("75.0 % · FM 功率峰值").assertDoesNotExist()
         compose.onAllNodesWithText("— %").assertCountEquals(2)
         compose.onNodeWithTag("hud-engine-fm_power_percent-2").assertDoesNotExist()
+        compose.onNodeWithText(thrustCaption).assertDoesNotExist()
+        compose.onNodeWithText(powerCaption).assertDoesNotExist()
     }
 }
