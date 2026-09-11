@@ -3,6 +3,21 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun regionFontScaleDefaultsToInheritanceAndPersistsAcrossCopies() {
+        val region = HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 240, 120)
+        for (scale in listOf(null, .75f, 1.5f, 2f)) {
+            val scene = HudSceneLayout(500, 300, listOf(region.copy(fontScale = scale)))
+            assertEquals(scene, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = scene))).hudSceneLayout)
+            assertEquals(scale, scene.duplicateRegion("one").regions.last().fontScale)
+        }
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(
+            SettingsJson.encode(AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region))))).toString()
+        assertNull(SettingsJson.decode(json.replace(",\"fontScale\":null", "")).hudSceneLayout!!.regions.single().fontScale)
+        for (bad in listOf(.74f, 2.01f, Float.NaN, Float.POSITIVE_INFINITY))
+            assertFailsWith<IllegalArgumentException> { region.copy(fontScale = bad) }
+        assertFails { SettingsJson.decode(json.replace("\"fontScale\":null", "\"fontScale\":\"1.5\"")) }
+    }
+
     @Test fun compassRegionsPersistAndFitSmallCanvases() {
         val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.COMPASS)
         assertEquals(240, scene.regions.last().width)

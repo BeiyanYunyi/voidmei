@@ -72,6 +72,14 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
         },
             enabled = scene.regions.size > 1, modifier = Modifier.testTag("hud-region-remove-${region.id}")) { Text("移除此区域") }
         HudRegionFieldsSettings(region, settings, ::update)
+        Text("区域文字大小")
+        FlowRow {
+            listOf<Float?>(null, .75f, 1f, 1.25f, 1.5f, 1.75f, 2f).forEach { scale ->
+                FilterChip(region.fontScale == scale, { update(region.copy(fontScale = scale)) },
+                    label = { Text(scale?.let { "${(it * 100).roundToInt()}%" } ?: "继承全局") },
+                    modifier = Modifier.testTag("hud-region-font-${region.id}-${scale ?: "inherit"}"))
+            }
+        }
         if (region.content == HudRegionContent.FLIGHT || region.content == HudRegionContent.ENGINE) {
             Text("区域读数列数")
             FlowRow {

@@ -19,6 +19,7 @@ data class HudRegion(
     val visible: Boolean = true,
     val title: String = "",
     val readingColumns: Int? = null,
+    val fontScale: Float? = null,
 ) {
     init {
         require(id.isNotBlank() && id.length <= 100 && id.none { it.isISOControl() })
@@ -29,6 +30,7 @@ data class HudRegion(
         require(fields == null || fields.all { it.isNotBlank() })
         require(title.length <= 80 && title.none { it.isISOControl() })
         require(readingColumns == null || readingColumns in 0..2)
+        require(fontScale == null || (fontScale.isFinite() && fontScale in .75f..2f))
     }
 }
 
@@ -143,6 +145,7 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
             put("visible", region.visible)
             put("title", region.title)
             put("readingColumns", region.readingColumns?.let(::JsonPrimitive) ?: JsonNull)
+            put("fontScale", region.fontScale?.let(::JsonPrimitive) ?: JsonNull)
         } }))
     }
 
@@ -160,7 +163,8 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
                         require(it.isString); it.content
                     } }, r["visible"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
                     r["title"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: "",
-                    r["readingColumns"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(!it.isString); it.int })
+                    r["readingColumns"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(!it.isString); it.int },
+                    r["fontScale"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(!it.isString); it.float })
             }, root["enabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
                 root["displayId"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content })
         }

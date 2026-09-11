@@ -34,7 +34,9 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
             if (layout.displayId == null) 1f else Float.MAX_VALUE).coerceAtLeast(0.01f)
         CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale)) {
             layout.regions.forEach { region -> key(region.id) {
-                CompositionLocalProvider(LocalReadingColumns provides (region.readingColumns ?: settings.hudReadingColumns)) {
+                CompositionLocalProvider(LocalReadingColumns provides (region.readingColumns ?: settings.hudReadingColumns),
+                    LocalDensity provides Density(density.density * scale,
+                        density.fontScale * ((region.fontScale ?: settings.hudFontScale) / settings.hudFontScale))) {
                 val fields = region.fields ?: when (region.content) {
                     HudRegionContent.ENGINE -> settings.hudEngineFields
                     HudRegionContent.MECHANIZATION -> HudMechanizationField.inherited(settings)
