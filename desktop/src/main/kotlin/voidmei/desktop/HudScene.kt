@@ -47,7 +47,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                 }
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields, region.messageLimit,
                     region.readingColumns ?: settings.hudReadingColumns, region.fontScale ?: settings.hudFontScale,
-                    region.width, region.height, region.showFlightInstruments, region.showFlightStatus, region.showEngineInstruments) {
+                    region.width, region.height, region.showFlightInstruments, region.showFlightStatus, region.showEngineInstruments, region.showControlStick) {
                     rememberScrollState()
                 }
                 val regionAlerts = if (region.content == HudRegionContent.ALERTS)
@@ -129,7 +129,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                 HudRegionContent.MAP -> Unit
                                 HudRegionContent.CROSSHAIR -> Unit
                                 HudRegionContent.COMPASS -> Unit
-                                HudRegionContent.CONTROLS -> ControlSurfacePanel(flight.telemetry, region.fields)
+                                HudRegionContent.CONTROLS -> ControlSurfacePanel(flight.telemetry, region.fields, region.showControlStick)
                             }
                         }
                         HudScrollIndicator(scroll, Modifier.matchParentSize())

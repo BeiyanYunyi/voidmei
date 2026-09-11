@@ -3,6 +3,18 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun optionalControlStickPersistsWithoutChangingOldLayouts() {
+        val region = HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 240, 400, showControlStick = true)
+        val scene = HudSceneLayout(240, 400, listOf(region))
+        val settings = AppSettings(hudSceneLayout = scene, hudScenePresets = mapOf("操纵面" to scene))
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(SettingsJson.encode(settings)).toString()
+        assertEquals(settings, SettingsJson.decode(json))
+        assertEquals(settings.hudScenePresets, HudPresetFile.decode(HudPresetFile.encode(settings.hudScenePresets)))
+        assertFalse(SettingsJson.decode(json.replace(",\"showControlStick\":true", "")).hudSceneLayout!!.regions.single().showControlStick)
+        for (bad in listOf("null", "0", "\"true\""))
+            assertFails { SettingsJson.decode(json.replace("\"showControlStick\":true", "\"showControlStick\":$bad")) }
+    }
+
     @Test fun engineInstrumentsPersistAndOldLayoutsKeepThem() {
         val region = HudRegion("engine", HudRegionContent.ENGINE, 0, 0, 240, 120, showEngineInstruments = false)
         val settings = AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region)))

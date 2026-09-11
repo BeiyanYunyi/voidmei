@@ -24,6 +24,7 @@ data class HudRegion(
     val messageLimit: Int = 5,
     val showFlightStatus: Boolean = true,
     val showEngineInstruments: Boolean = true,
+    val showControlStick: Boolean = false,
 ) {
     init {
         require(id.isNotBlank() && id.length <= 100 && id.none { it.isISOControl() })
@@ -156,6 +157,7 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
             put("messageLimit", region.messageLimit)
             put("showFlightStatus", region.showFlightStatus)
             put("showEngineInstruments", region.showEngineInstruments)
+            put("showControlStick", region.showControlStick)
         } }))
     }
 
@@ -178,7 +180,8 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
                     r["showFlightInstruments"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
                     r["messageLimit"]?.jsonPrimitive?.let { require(!it.isString); it.int } ?: 5,
                     r["showFlightStatus"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
-                    r["showEngineInstruments"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true)
+                    r["showEngineInstruments"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
+                    r["showControlStick"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: false)
             }, root["enabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
                 root["displayId"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content })
         }

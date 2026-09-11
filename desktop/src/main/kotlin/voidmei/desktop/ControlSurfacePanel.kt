@@ -15,11 +15,13 @@ import voidmei.telemetry.Telemetry
 import voidmei.telemetry.controlSurfacePercent
 
 @Composable
-internal fun ControlSurfacePanel(telemetry: Telemetry, fields: List<String>? = null) {
+internal fun ControlSurfacePanel(telemetry: Telemetry, fields: List<String>? = null, showStick: Boolean = false) {
     val axes = listOf(Triple("aileron", "副翼", telemetry.aileronPercent), Triple("elevator", "升降舵", telemetry.elevatorPercent),
         Triple("rudder", "方向舵", telemetry.rudderPercent))
     val selected = fields?.distinct()?.mapNotNull { id -> axes.find { it.first == id } } ?: axes
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (showStick && selected.any { it.first == "aileron" } && selected.any { it.first == "elevator" })
+            ControlStickPanel(telemetry)
         if (selected.isEmpty()) Text("未选择操纵面")
         selected.forEach { (id, label, raw) ->
             val value = controlSurfacePercent(raw)
