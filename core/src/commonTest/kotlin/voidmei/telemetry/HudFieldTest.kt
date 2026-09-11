@@ -4,6 +4,24 @@ import kotlin.test.*
 import voidmei.config.*
 
 class HudFieldTest {
+    @Test fun independentMechanizationFieldsKeepValidEndpointsAndRejectInvalidPercentages() {
+        val telemetry = TelemetryParser.parse("""{"valid":true,"gear, %":25,"flaps, %":50,"airbrake, %":100}""",
+            """{"valid":true}""")!!
+        val flight = ConnectionState.Flying(telemetry, FlightMetrics())
+        assertEquals(25.0, HudField.GEAR.value(flight))
+        assertEquals(50.0, HudField.FLAPS.value(flight))
+        assertEquals(100.0, HudField.AIRBRAKE.value(flight))
+        for (value in listOf(null, -1.0, 100.1, Double.NaN, Double.POSITIVE_INFINITY, 0.0, 100.0)) {
+            val sample = flight.copy(telemetry = telemetry.copy(gearPercent = value, flapsPercent = value, airbrakePercent = value))
+            for (field in listOf(HudField.GEAR, HudField.FLAPS, HudField.AIRBRAKE)) {
+                assertEquals(value?.takeIf { it in 0.0..100.0 }, field.value(sample))
+            }
+        }
+        val settings = AppSettings(hudFields = listOf("gear", "flaps", "airbrake"))
+        assertEquals(settings, SettingsJson.decode(SettingsJson.encode(settings)))
+        assertTrue(settings.hudFields.none { it in HudField.defaults })
+    }
+
     @Test fun attitudeReadingsMatchHorizonAndHandleEachMissingAxisIndependently() {
         val telemetry = TelemetryParser.parse("""{"valid":true}""",
             """{"valid":true,"aviahorizon_pitch":-13.177,"aviahorizon_roll":-88.9}""")!!

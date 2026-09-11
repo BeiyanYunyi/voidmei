@@ -569,6 +569,10 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
                 HudField.MACH -> FlightAlert.MACH_LIMIT
                 HudField.LOAD -> FlightAlert.LOAD_LIMIT
                 HudField.FUEL_PRESSURE_RAW -> FlightAlert.LOW_FUEL_PRESSURE
+                HudField.GEAR -> FlightAlert.GEAR_LIMIT.takeIf { t.gearPercent?.let { it > 0 && it <= 100 } == true }
+                HudField.FLAPS -> FlightAlert.FLAP_LIMIT.takeIf { t.flapsPercent?.let { it > 0 && it <= 100 } == true }
+                HudField.AIRBRAKE -> FlightAlert.AIRBRAKE_EXTENDED.takeIf {
+                    t.airbrakePercent?.let { it in 90.0..100.0 } == true && t.gearPercent?.let { it >= 0 && it < 100 } == true }
                 HudField.FUEL, HudField.FUEL_PERCENT -> fuelReadingWarning(readingAlerts)
                 else -> null
             }

@@ -47,7 +47,10 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
     FUEL_LOSS_RATE("fuel_loss_rate", "燃油减少率估计", "kg/min", 1),
     FUEL_PRESSURE_RAW("fuel_pressure_raw", "燃油压力原值", "仪表单位", 2),
     PITCH("pitch", "俯仰（抬头为正）", "°", 1),
-    ROLL("roll", "横滚", "°", 1);
+    ROLL("roll", "横滚", "°", 1),
+    GEAR("gear", "起落架", "%", 1),
+    FLAPS("flaps", "襟翼", "%", 1),
+    AIRBRAKE("airbrake", "减速板", "%", 1);
 
     fun decimalsFor(metrics: FlightMetrics): Int =
         if (this == ENGINE1_MANIFOLD_AUTO && metrics.cockpitAltitudeUnit == CockpitAltitudeUnit.FEET) 1 else decimals
@@ -139,6 +142,9 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
         HEADING -> AttitudeGeometry.heading(flight.telemetry.headingDeg)?.let { kotlin.math.round(it) % 360 }
         PITCH -> AttitudeGeometry.fromIndicators(flight.telemetry.pitchDeg, 0.0)?.pitchDeg
         ROLL -> AttitudeGeometry.fromIndicators(0.0, flight.telemetry.rollDeg)?.rollDeg
+        GEAR -> flight.telemetry.gearPercent?.takeIf { it in 0.0..100.0 }
+        FLAPS -> flight.telemetry.flapsPercent?.takeIf { it in 0.0..100.0 }
+        AIRBRAKE -> flight.telemetry.airbrakePercent?.takeIf { it in 0.0..100.0 }
         SIDESLIP -> flight.telemetry.sideslipAngleDeg
         ROLL_RATE -> flight.telemetry.rollRateDegPerSecond
         STALL_IAS -> model?.parametersFor(flight.telemetry.aircraft)?.stallSpeed?.speedKmh(
