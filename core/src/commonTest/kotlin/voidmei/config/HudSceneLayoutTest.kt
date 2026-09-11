@@ -3,6 +3,16 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun crosshairRegionDefaultsToTransparentAndPersistsGeometry() {
+        val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.CROSSHAIR)
+        val region = scene.regions.last()
+        assertEquals(HudRegionContent.CROSSHAIR, region.content)
+        assertEquals(128, region.width)
+        assertEquals(128, region.height)
+        assertEquals(0f, region.backgroundAlpha)
+        assertEquals(scene, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = scene))).hudSceneLayout)
+    }
+
     @Test fun restoringRemovedRegionPreservesLaterEditsAndHandlesReusedIdsAndSmallerCanvas() {
         val removed = HudRegion("region-1", HudRegionContent.ENGINE, 500, 300, 300, 200,
             .25f, .75f, 2, listOf("rpm", "future_field"), visible = false)

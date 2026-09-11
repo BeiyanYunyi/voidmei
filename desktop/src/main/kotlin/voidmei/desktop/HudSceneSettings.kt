@@ -49,6 +49,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
         fun update(value: HudRegion) = onChange(settings.copy(hudSceneLayout = scene.copy(
             regions = scene.regions.map { if (it.id == region.id) value else it })))
         Text("${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id}")
+        if (region.content == HudRegionContent.CROSSHAIR) Text("准星居中显示，大小随区域尺寸调整，样式沿用准星图片设置。存在准星区域时替代整窗准星，由区域显示开关控制。")
         Row {
             Switch(region.visible, { update(region.copy(visible = it)) }, Modifier.testTag("hud-region-visible-${region.id}"))
             Text("显示此区域")

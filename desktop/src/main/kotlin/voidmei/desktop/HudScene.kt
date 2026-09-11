@@ -38,6 +38,11 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                         .clipToBounds().testTag("hud-region-${region.id}")
                         .background(Color(0xFF111820).copy(alpha = region.backgroundAlpha))) {
                         Box(Modifier.fillMaxSize().graphicsLayer { alpha = region.contentAlpha }.padding(12.dp)) {
+                        if (flight != null && region.content == HudRegionContent.CROSSHAIR) {
+                            val size = minOf(region.width, region.height)
+                            if (settings.hudCrosshairImage.isEmpty()) CrosshairPanel(size, Modifier.fillMaxSize())
+                            else ImageCrosshair(settings.hudCrosshairImage, size, Modifier.fillMaxSize(), settings.hudCrosshairStretch)
+                        } else {
                         Column(Modifier.fillMaxSize().padding(end = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (flight == null) Text(connectionLabel ?: statusText(connection))
                             else if (region.content == HudRegionContent.ALERTS) FlightAlertPanel(alerts, compact = true,
@@ -63,15 +68,17 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                 HudRegionContent.ALERTS -> Unit
                                 HudRegionContent.MESSAGES -> HudRecentMessages(messages)
                                 HudRegionContent.MAP -> HudMapObjects(mapEndpoint, sharedMap, region.height)
+                                HudRegionContent.CROSSHAIR -> Unit
                             }
                         }
                         HudScrollIndicator(scroll, Modifier.matchParentSize())
+                        }
                         }
                     }
                 }
             } }
         }
-        if (flight != null && settings.hudCrosshair) {
+        if (flight != null && settings.hudCrosshair && layout.regions.none { it.content == HudRegionContent.CROSSHAIR }) {
             if (settings.hudCrosshairImage.isEmpty()) CrosshairPanel(settings.hudCrosshairSizeDp, Modifier.matchParentSize(), settings.hudCrosshairRight)
             else ImageCrosshair(settings.hudCrosshairImage, settings.hudCrosshairSizeDp, Modifier.matchParentSize(), settings.hudCrosshairStretch, settings.hudCrosshairRight)
         }

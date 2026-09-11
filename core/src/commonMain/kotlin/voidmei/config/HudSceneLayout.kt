@@ -3,7 +3,7 @@ package voidmei.config
 import kotlinx.serialization.json.*
 
 enum class HudRegionContent(val label: String) {
-    FLIGHT("飞行读数"), ENGINE("发动机"), ATTITUDE("姿态"), MECHANIZATION("机械化"), ALERTS("告警"), MESSAGES("游戏消息"), MAP("地图对象")
+    FLIGHT("飞行读数"), ENGINE("发动机"), ATTITUDE("姿态"), MECHANIZATION("机械化"), ALERTS("告警"), MESSAGES("游戏消息"), MAP("地图对象"), CROSSHAIR("准星")
 }
 
 /** Coordinates are relative to one transparent window; list order defines stacking. */
@@ -41,18 +41,24 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
         require(regions.size < 32)
         val id = (1..33).map { "region-$it" }.first { candidate -> regions.none { it.id == candidate } }
         val engine = (1..33).first { index -> regions.none { it.content == HudRegionContent.ENGINE && it.engineIndex == index } }
-        val regionWidth = minOf(width, if (content == HudRegionContent.ATTITUDE) 340 else 440)
+        val regionWidth = minOf(width, when (content) {
+            HudRegionContent.CROSSHAIR -> 128
+            HudRegionContent.ATTITUDE -> 340
+            else -> 440
+        })
         val regionHeight = minOf(height, when (content) {
             HudRegionContent.FLIGHT, HudRegionContent.ENGINE -> 470
             HudRegionContent.ATTITUDE, HudRegionContent.MECHANIZATION -> 204
             HudRegionContent.ALERTS -> 180
             HudRegionContent.MESSAGES -> 300
             HudRegionContent.MAP -> 500
+            HudRegionContent.CROSSHAIR -> 128
         })
         // Stagger new regions so overlapping instances do not look like one unchanged region.
         val offset = 16 * (regions.size + 1)
         return copy(regions = regions + HudRegion(id, content, minOf(offset, width - regionWidth),
-            minOf(offset, height - regionHeight), regionWidth, regionHeight, engineIndex = engine))
+            minOf(offset, height - regionHeight), regionWidth, regionHeight,
+            backgroundAlpha = if (content == HudRegionContent.CROSSHAIR) 0f else .5f, engineIndex = engine))
     }
 
     fun removeRegion(id: String): HudSceneLayout {
