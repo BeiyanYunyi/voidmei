@@ -1,0 +1,49 @@
+# 单窗口、多区域 HUD 可行性调研
+
+目标：所有运行中的 HUD 元素位于同一个鼠标穿透的顶层窗口内，在不同屏幕区域排列，各区域可独立设置透明度。设置窗口可以独立存在。此文记录调研和实施建议，尚未将运行布局改为自由布局。
+
+## 结论与依据
+
+可行。需要的是透明顶层窗口中的逐像素 alpha 与组件布局，而不是给每个 HUD 建立一个原生窗口。Compose 的 Box、Column、Canvas 和文字组件可以在同一内容树内组合；组件分组本身不创建顶层窗口。
+
+- [Kotlin 官方透明窗口说明](https://kotlinlang.org/docs/multiplatform/compose-desktop-top-level-windows-management.html#create-transparent-windows)：桌面 Window 使用 transparent=true、undecorated=true。
+- [Compose 官方图形说明](https://developer.android.com/develop/ui/compose/graphics/draw/modifiers)：颜色 alpha 可以控制局部绘制；graphicsLayer 的 alpha 可以整体合成一个组件组，默认策略在需要时使用离屏层。不能把每次绘制分别调低 alpha 与整个组统一淡化混为一谈，重叠部分的合成结果不同。
+- 当前 `HudWindow.kt` 已在原生和兼容两条路径间选择一个 HUD 顶层窗口。
+- 当前 `SwingGraphicsHudWindow.kt` 的 JFrame 背景透明；`BufferedHudComposePanel.kt` 使用 ARGB_PRE 缓冲、逐帧清空及 Src 整帧替换，保留每个像素的 alpha，避免旧像素残留。这与分散组件兼容。
+- 当前 `HudPanel.kt` 给整个容器绘制单一 hudOpacity 背景并纵向滚动；这是现有布局选择，不是透明窗口能力限制。
+
+## 建议的运行结构
+
+一个无边框、透明、置顶、不获取键盘焦点的 HUD 窗口，覆盖用户选定显示器的目标区域；窗口根容器不填充背景。飞行读数、发动机读数、姿态、机械化、消息、告警和准星成为容器内的组件组，各自拥有位置、尺寸和样式。
+
+第一阶段以单显示器为目标，使用稳定的屏幕覆盖边界，不随每次读数或告警内容改变原生窗口尺寸。当前 `updateHudWindowSize` 的内容驱动尺寸、1000 dp 宽度及 900 dp 高度上限不能直接用于这种模式。使用普通无边框覆盖窗口定位尺寸，不需要进入操作系统独占全屏。
+
+每组建议保存：稳定实例 ID、组件类型、锚点、dp 偏移、尺寸、层叠顺序、背景 alpha、内容 alpha，以及字段／发动机等内容选项。同种组件可有多个实例，例如分别显示发动机 1 和 2；遥测、模型及告警仍共享同一应用会话，组件实例不各自启动轮询。
+
+背景与内容透明度应分开：可以背景完全透明而文字保持清晰，也可以将整组内容一起淡化。父容器不施加整体 alpha，避免无意中连乘所有子组件的透明度。空白区域 alpha 为零。重叠组按明确层叠顺序正常合成。
+
+## 鼠标穿透与编辑
+
+视觉透明与输入穿透相互独立。即使某区域绘制不透明，整个 HUD 仍可穿透；透明像素也不能单凭颜色保证穿透。
+
+当前 `HudPointerInput.kt` 已统一控制整窗输入：Linux 路径用 X11 SHAPE 空输入区域，Windows 使用现有平台实现；macOS 目前明确不支持该项，原生 Wayland 路径也尚未实现。不能把当前 X11 验证直接推广到所有 NixOS 桌面会话。
+
+运行时整窗穿透；布局编辑优先在设置窗口的缩放预览内完成，拖动修改组件坐标，真实 HUD 同步显示。这样不依赖热键，也无需让覆盖整屏的 HUD 临时拦截鼠标。将来如果增加直接编辑模式，必须有设置／托盘上的可靠退出入口。
+
+## 成本与待验证项
+
+窗口数量减少不保证渲染成本下降。兼容路径当前每帧清空并复制整个缓冲：3840×2160 的单个四字节像素缓冲约 31.6 MiB，80 ms 更新间隔下，仅一次整帧写入的量级就约 396 MiB/s，尚未计清空、其他绘制／复制与合成。应先测量全屏尺寸的 CPU、帧耗时、内存和更新抖动，再决定是否优化绘制范围；保留已修复闪烁的整帧呈现语义。
+
+跨显示器的单一矩形窗口理论上可覆盖多个屏幕的包围矩形，但混合 DPI、负坐标、屏幕间空洞和热插拔都需专门处理，不能简单累加当前窗口宽度。透明置顶能否覆盖游戏还受窗口系统及游戏显示模式影响；当前用户验证的兼容 HUD 可作为基础，但不能替代新全屏布局实测。
+
+## 实施与验收顺序
+
+本轮复跑两个既有专用原生测试，通过（`/tmp/voidmei-single-window-research-after.log`，5 秒）：`NativeHudTransparencyTest.transparentAndTranslucentPixelsRevealChangingBackground` 在同一兼容窗口绘制 alpha 0、0.5、1 三个区域，Robot 像素采样验证底层从红色变成蓝色时的合成结果及内容隐藏／恢复；`NativeHudPointerTest.swingGraphicsHudPassesClicksThroughAndRestoresInput` 验证兼容窗口穿透与恢复输入。环境为隔离 Xvfb/xcompmgr，不是用户物理游戏桌面。这两项分别验证基础能力，尚未验证全屏多组件布局。首次误用只包含 GuiTest 的任务，未找到测试；改用仓库专用 nativeHudTransparencyTest／nativeHudPointerTest 后执行成功。
+
+1. 建立共享的组件布局数据与坐标计算；将已有布局迁移成等价的初始组件组，保留字段和样式。
+2. 在一个兼容 HUD 窗口中放置分散的实际组件，验证不同背景／内容 alpha、透明间隙、动态刷新、隐藏后无残影，以及显示 HUD 的顶层窗口数为一。
+3. 验证空白区和有内容区都将鼠标点击传给下层窗口；保持不抢焦点。
+4. 添加设置中的布局编辑预览与持久化，再补显示器选择、分辨率变化和 DPI 恢复策略。
+5. 用用户的 NixOS 兼容路径测量全屏更新成本，并验证游戏中的位置、透明和穿透；其他平台分别验收。
+
+热键继续后置。此方案不要求为每个 HUD 组件创建 Window、JFrame 或独立的渲染进程。
