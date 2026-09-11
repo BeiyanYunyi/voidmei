@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+from macos_package_identity import inspect_dmg
 
 EXTENSIONS = {"linux": ".deb", "windows": ".msi", "macos": ".dmg"}
 ARCHITECTURES = {"X64": "x64", "ARM64": "arm64", "X86": "x86"}
@@ -53,7 +54,7 @@ def inspect_msi(path, version, architecture):
     return validate_msi_identity(json.loads(output), version, architecture)
 
 
-def record(root, build_file, revision, platform, architecture, read_msi=inspect_msi):
+def record(root, build_file, revision, platform, architecture, read_msi=inspect_msi, read_dmg=inspect_dmg):
     if not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("Expected a full Git commit SHA")
     if platform not in EXTENSIONS or architecture not in ARCHITECTURES:
@@ -67,6 +68,8 @@ def record(root, build_file, revision, platform, architecture, read_msi=inspect_
                 "bytes": package.stat().st_size, "sha256": digest(package)}
     if platform == "windows":
         metadata["installer_control"] = read_msi(package, metadata["version"], metadata["architecture"])
+    if platform == "macos":
+        metadata["installer_control"] = read_dmg(package, metadata["version"], metadata["architecture"])
     with (root / "kotlin-build.json").open("x", encoding="utf-8") as stream:
         json.dump(metadata, stream, indent=2)
         stream.write("\n")

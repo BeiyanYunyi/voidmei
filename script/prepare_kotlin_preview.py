@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+from macos_package_identity import validate_identity as validate_macos_identity
 from kotlin_package_metadata import package_version, digest, ARCHITECTURES, verify_deb, validate_msi_identity
 
 PLATFORMS = {"ubuntu-latest": ("linux", ".deb"), "windows-latest": ("windows", ".msi"), "macos-latest": ("macos", ".dmg")}
@@ -32,6 +33,8 @@ def prepare(artifacts: Path, output: Path, build_file: Path, revision: str, insp
                 metadata.get("file") != source.name or metadata.get("bytes") != source.stat().st_size or
                 metadata.get("sha256") != digest(source)):
             raise ValueError(f"Build metadata does not match the requested revision or installer: {runner}")
+        if platform == "macos":
+            validate_macos_identity(metadata.get("installer_control"), version, metadata["architecture"])
         if platform == "windows":
             validate_msi_identity(metadata.get("installer_control"), version, metadata["architecture"])
         if platform == "linux":

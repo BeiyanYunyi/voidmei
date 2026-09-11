@@ -27,7 +27,8 @@ class PreviewTest(unittest.TestCase):
             path.write_bytes((runner + " installer fixture").encode())
             self.files.append(path)
             record(path.parent.parent, self.build, self.sha, platform, "ARM64" if platform == "macos" else "X64",
-                   read_msi=lambda *_: {"ProductName": "VoidMei", "ProductVersion": "2.0.0", "Template": "x64;1033"})
+                   read_msi=lambda *_: {"ProductName": "VoidMei", "ProductVersion": "2.0.0", "Template": "x64;1033"},
+                   read_dmg=lambda *_: {"CFBundleName": "VoidMei", "CFBundleShortVersionString": "2.0.0", "ExecutableArchitectures": ["arm64"]})
 
     def run_prepare(self):
         return prepare(self.artifacts, self.output, self.build, self.sha, inspect_deb=lambda *_: {"Package": "voidmei", "Version": "2.0.0", "Architecture": "amd64"})
@@ -109,6 +110,18 @@ class PreviewTest(unittest.TestCase):
         metadata.write_text(json.dumps(data))
         with self.assertRaises(ValueError): self.run_prepare()
         self.assertFalse(self.output.exists())
+
+    def test_macos_identity_is_required_and_must_match_before_output(self):
+        metadata = self.files[2].parent.parent / "kotlin-build.json"
+        data = json.loads(metadata.read_text())
+        identity = data["installer_control"]
+        for invalid in (None, dict(identity, CFBundleName="other"),
+                        dict(identity, CFBundleShortVersionString="2.0.1"),
+                        dict(identity, ExecutableArchitectures=["x86_64"])):
+            metadata.write_text(json.dumps(dict(data, installer_control=invalid)))
+            with self.assertRaises(ValueError):
+                self.run_prepare()
+            self.assertFalse(self.output.exists())
 
     def test_version_must_be_single_and_explicit(self):
         for source in ['packageVersion = version', 'packageVersion = "2.0.0"\npackageVersion = "3.0.0"']:
