@@ -31,8 +31,10 @@ internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = fals
         "aileron, %":0,"elevator, %":20,"rudder, %":-10,
         "throttle 1, %":95,"RPM 1":2400,"power 1, hp":900,"thrust 1, kgs":700,
         "water temp 1, C":95,"oil temp 1, C":80,
+        "RPM throttle 1, %":80,"mixture 1, %":100,"radiator 1, %":35,"oil radiator 1, %":20,
         "throttle 2, %":90,"RPM 2":2300,"power 2, hp":850,"thrust 2, kgs":650,
-        "water temp 2, C":90,"oil temp 2, C":75
+        "water temp 2, C":90,"oil temp 2, C":75,
+        "RPM throttle 2, %":70,"mixture 2, %":90,"radiator 2, %":50,"oil radiator 2, %":40
     }""", """{"valid":true,"type":"preview","aviahorizon_pitch":-5,"aviahorizon_roll":15,"compass":45}""")!!
     val next = if (warnings) telemetry.copy(iasKmh = 510.0, tasKmh = 550.0, mach = .95,
         angleOfAttackDeg = 16.0, fuelKg = 30.0, engines = telemetry.engines.map {

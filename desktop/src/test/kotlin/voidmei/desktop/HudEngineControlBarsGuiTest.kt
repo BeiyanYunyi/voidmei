@@ -11,9 +11,34 @@ import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 import voidmei.telemetry.*
+import voidmei.config.*
 
 class HudEngineControlBarsGuiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun previewShowsIndependentEngineControlsAndClearsThemInMissingMode() {
+        val fields = listOf("rpm_control", "mixture", "radiator", "oil_radiator")
+        val one = HudRegion("one", HudRegionContent.ENGINE, 0, 0, 400, 400, fields = fields)
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(800, 400,
+            listOf(one, one.copy(id = "two", x = 400, engineIndex = 2))))
+        var missing by mutableStateOf(false)
+        compose.setContent { MaterialTheme { Box(Modifier.size(800.dp, 400.dp)) {
+            HudLayoutPreview(settings, missing = missing)
+        } } }
+        fun checkVisible() {
+            for (index in 1..2) for (field in fields)
+                compose.onNodeWithTag("hud-engine-$field-$index").assertIsDisplayed()
+            compose.onNodeWithTag("hud-engine-radiator-1").assertRangeInfoEquals(ProgressBarRangeInfo(.35f, 0f..1f))
+            compose.onNodeWithTag("hud-engine-radiator-2").assertRangeInfoEquals(ProgressBarRangeInfo(.5f, 0f..1f))
+        }
+        checkVisible()
+        compose.runOnIdle { missing = true }
+        for (index in 1..2) for (field in fields)
+            compose.onNodeWithTag("hud-engine-$field-$index").assertDoesNotExist()
+        compose.onAllNodesWithText("— %").assertCountEquals(8)
+        compose.runOnIdle { missing = false }
+        checkVisible()
+    }
 
     @Test fun waterAndOilRadiatorsRemainIndependentAndInvalidValuesNeverLookClosed() {
         var engine by mutableStateOf(hudPreviewFlight().telemetry.engines.first().copy(
