@@ -35,15 +35,18 @@ internal fun MechanizationPanel(telemetry: Telemetry, model: AircraftAlertModel?
     fun Double?.deployed() = this != null && isFinite() && this > 0 && this <= 100
     val gearWarning = showGear && gearPercent.deployed() && FlightAlert.GEAR_LIMIT in alerts
     val flapWarning = showFlaps && !showSweep && flapsPercent.deployed() && FlightAlert.FLAP_LIMIT in alerts
+    val airbrakeWarning = showAirbrake && airbrakePercent != null && airbrakePercent >= 90 &&
+        gearPercent != null && gearPercent < 100 && FlightAlert.AIRBRAKE_EXTENDED in alerts
     val warningText = listOfNotNull(
         FlightAlert.GEAR_LIMIT.label.takeIf { gearWarning },
-        FlightAlert.FLAP_LIMIT.label.takeIf { flapWarning }).joinToString("；")
+        FlightAlert.FLAP_LIMIT.label.takeIf { flapWarning },
+        FlightAlert.AIRBRAKE_EXTENDED.label.takeIf { airbrakeWarning }).joinToString("；")
     val normal = Color(0xFF84DEC6)
     val warning = MaterialTheme.colorScheme.error
     val parts = listOfNotNull(
         if (showGear) "起落架 ${gearPercent.shown()}%" to gearWarning else null,
         if (showFlaps) (if (showSweep) "后掠 ${sweepPercent.shown()}%" else "襟翼 ${flapsPercent.shown()}%") to flapWarning else null,
-        if (showAirbrake) "减速板 ${airbrakePercent.shown()}%" to false else null)
+        if (showAirbrake) "减速板 ${airbrakePercent.shown()}%" to airbrakeWarning else null)
     Column {
         if (parts.isNotEmpty()) Text(buildAnnotatedString {
             parts.forEachIndexed { index, (text, warned) ->
@@ -52,6 +55,9 @@ internal fun MechanizationPanel(telemetry: Telemetry, model: AircraftAlertModel?
             }
         }, modifier = Modifier.semantics { if (warningText.isNotEmpty()) stateDescription = warningText },
             color = normal, fontSize = 13.sp)
+        if (showFlapBar && flapsPercent == null) {
+            Text("襟翼开度条 · 数据不可用", color = Color(0xFF9EB1C0), fontSize = 13.sp)
+        }
         if (showFlapBar && flapsPercent != null) {
             val maximum = flaps?.maximumPercentAt(telemetry.iasKmh)
             if (!showFlaps || showSweep) {
