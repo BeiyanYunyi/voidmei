@@ -22,6 +22,7 @@ fun main(args: Array<String>) {
     val defaults = SettingsStore.desktopDefaults()
     val store = SettingsStore(SettingsStore.defaultPath(), defaults)
     val loaded = store.load()
+    configureStartupRenderer(loaded.settings.softwareRendering)
     application {
         DisposableEffect(Unit) {
             val heartbeat = if (java.lang.Boolean.getBoolean("voidmei.diagnostics.uiHeartbeat")) startUiHeartbeat() else null
@@ -265,7 +266,10 @@ fun main(args: Array<String>) {
                             Text("VOIDMEI", style = MaterialTheme.typography.headlineLarge)
                             Text("飞行遥测 · Kotlin Multiplatform", color = MaterialTheme.colorScheme.primary)
                             TextButton(onClick = { showRenderer = !showRenderer }) { Text("渲染信息") }
-                            if (showRenderer) Text(renderer, style = MaterialTheme.typography.bodySmall)
+                            if (showRenderer) {
+                                Text(renderer, style = MaterialTheme.typography.bodySmall)
+                                SoftwareRenderingSettings(settings.softwareRendering) { settings = settings.copy(softwareRendering = it) }
+                            }
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 OutlinedTextField(endpoint, { endpoint = it }, Modifier.weight(1f), label = { Text("遥测服务器") }, singleLine = true)
                                 Button(onClick = {

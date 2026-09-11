@@ -41,6 +41,7 @@ data class AppSettings(
     val connectionNotifications: Boolean = false,
     val recordingPerformanceNotifications: Boolean = false,
     val hudCompatibilityMode: Boolean = false,
+    val softwareRendering: Boolean = false,
     val hudClickThrough: Boolean = false,
     val hudAutoHideOnFocusLoss: Boolean = false,
     val hudAoaBarWarningPercent: Double = 25.0,
@@ -199,6 +200,7 @@ object SettingsJson {
             hudAoaBarWarningPercent = root["hudAoaBarWarningPercent"]?.jsonPrimitive?.double ?: defaults.hudAoaBarWarningPercent,
             hudMechanization = root["hudMechanization"]?.jsonPrimitive?.boolean ?: defaults.hudMechanization,
             hudHotkeyEnabled = root["hudHotkeyEnabled"]?.jsonPrimitive?.boolean ?: defaults.hudHotkeyEnabled,
+            softwareRendering = root["softwareRendering"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.softwareRendering,
             voiceVolume = root["voiceVolume"]?.jsonPrimitive?.int ?: defaults.voiceVolume,
             voiceDirectory = root["voiceDirectory"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.voiceDirectory,
             voicePack = root["voicePack"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.voicePack,
@@ -242,6 +244,7 @@ object SettingsJson {
         fields["readingColors"] = JsonObject(settings.readingColors.mapValues { JsonPrimitive(it.value) })
         fields["startInTray"] = JsonPrimitive(settings.startInTray)
         fields["recordingAutoStart"] = JsonPrimitive(settings.recordingAutoStart)
+        fields["softwareRendering"] = JsonPrimitive(settings.softwareRendering)
         fields["hudCompatibilityMode"] = JsonPrimitive(settings.hudCompatibilityMode)
         fields["hudClickThrough"] = JsonPrimitive(settings.hudClickThrough)
         fields["hudAutoHideOnFocusLoss"] = JsonPrimitive(settings.hudAutoHideOnFocusLoss)

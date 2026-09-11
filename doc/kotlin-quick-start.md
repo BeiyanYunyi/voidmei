@@ -20,6 +20,8 @@ nix run path:. -- --no-hud
 
 `--no-hud` 先显示主窗口，便于调整配置；即使保存了“下次启动进入托盘”，也能使用这个入口恢复。主窗口的“渲染信息”显示当前渲染后端。开启 HUD 后若出现卡顿，可重新以 `--no-hud` 启动，在主窗口启用“HUD 兼容显示”再打开 HUD。
 
+主窗口展开“渲染信息”后，可勾选“软件渲染（重启后生效）”。该偏好请求 SOFTWARE_FAST，关闭后恢复平台默认后端；实际后端以重启后的渲染信息为准。显式 `SKIKO_RENDER_API` 环境变量或 `skiko.renderApi` JVM 参数优先于保存的偏好。软件渲染与“HUD 兼容显示”独立，已有兼容 HUD 设置不会因切换渲染偏好而改变。
+
 ## Linux 数据与旧版并存
 
 Kotlin 配置默认存于 `${XDG_CONFIG_HOME:-$HOME/.config}/voidmei/settings-kmp.json`，可用 `VOIDMEI_CONFIG_HOME` 指定配置目录。它不会直接使用或覆盖旧版 `ui_layout.cfg`；需要在设置中预览并导入旧配置。

@@ -2856,6 +2856,14 @@ macOS 构建元数据步骤新增只读挂载 DMG，要求镜像根目录有唯�
 
 默认 `nix build path:.` 构建通过（`/tmp/voidmei-import-cancel-nix.log`），产物 `/nix/store/72hkc13kdb2dlzarrga2miclfc29c6a8-voidmei-kotlin-2.0.0`，包含旧设置读取取消功能。此次未重复执行包运行冒烟；上一轮 10 ms 包冒烟证据仍对应当时产物，不混作本包运行证据。
 
+### 可保存的软件渲染偏好
+
+主窗口“渲染信息”新增软件渲染开关，保存到严格布尔值 softwareRendering，默认关闭。启动时在 Compose 创建窗口前读取偏好；开启且未提供 SKIKO_RENDER_API 环境变量或 skiko.renderApi JVM 属性时请求 SOFTWARE_FAST。关闭后保持平台默认选择，不强制 OpenGL；修改需重启，与 HUD 兼容显示相互独立。当前 Skiko 0.9.22.2 的字节码已核对环境变量优先、属性次之的读取顺序（`/tmp/voidmei-skiko-properties.txt`）。旧 Java 开关由独立外部文件保存，布局中的默认值不等于真实启用状态，本轮不从旧布局自动导入该值。
+
+共享 JVM/JS 与桌面测试通过（`/tmp/voidmei-software-renderer-tests.log`），验证默认关闭、JSON 往返和非法类型拒绝；四组独立 JVM 启动检查直接读取 Skiko 实际请求后端，覆盖启用软件选择与环境/JVM 显式覆盖。GUI 测试通过（`/tmp/voidmei-software-renderer-gui.log`），验证开关更新偏好但不改当前进程后端或兼容 HUD 设置。默认 Nix 包构建通过（`/tmp/voidmei-software-renderer-nix.log`）。
+
+新包在隔离 X11 中清除渲染环境变量与 JVM 覆盖，仅使用保存的 softwareRendering=true 启动，主窗口和兼容 HUD 的请求/实际后端均为 SOFTWARE_FAST，AWT 心跳与正常退出检查通过。首次最小夹具缺少冒烟脚本要求的绝对数据目录，补齐后复测同一包通过；日志 `/tmp/voidmei-saved-renderer-smoke-after.log`，报告与日志副本 `/tmp/voidmei-saved-renderer-artifacts/`。该证据覆盖本机软件后端，不扩大硬件加速、真实游戏或 Windows/macOS 验收范围。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
