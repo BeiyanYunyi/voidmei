@@ -847,3 +847,9 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 `nix build path:.#kotlin-offline` 成功（`/tmp/voidmei-controls-package-build.log`），产物 `/nix/store/5ky29jghknfag8lnjl6hlv2k6nqazrib-voidmei-kotlin-2.0.0`。实际兼容 HUD、SOFTWARE_FAST、80 ms 轮询及延迟样本场景通过（`/tmp/voidmei-controls-package-run.log`）：34 次检查保持同一窗口，86 对 CSV 行，正常退出和配置保存通过。已查看 `/tmp/voidmei-package-smoke-zkj93n2c/hud-scene.png`，二维十字位于对应左下象限且与单轴读数并排可见。真机数据文件未改动。
 
 这是隔离 Xvfb/xcompmgr 与合成遥测的验收，不扩大真实游戏、物理 GPU 或其他平台结论。新包包含预设改名／选择导入，但该包级脚本不操作这些入口，其交互证据来自完整 GUI 回归。
+
+## 二维操纵面的 OpenGL 兼容路径
+
+同一离线产物 `/nix/store/5ky29jghknfag8lnjl6hlv2k6nqazrib-voidmei-kotlin-2.0.0` 在隔离 Xvfb/xcompmgr 中请求 OpenGL，使用 Mesa 软件驱动运行十区域兼容 HUD（`/tmp/voidmei-controls-package-opengl.log`）。运行日志确认 HUD 实际后端为 OPENGL；主窗口创建 Linux GL 上下文失败后回退 SOFTWARE_FAST，不据此宣称主窗口 OpenGL 或物理 GPU 通过。
+
+80 ms 轮询及延迟样本场景通过：34 次检查保持同一个 1040×600 HUD 窗口，84 对 CSV 行，正常退出与配置保存通过。二维操纵面标记、升降舵条形图、混合比、姿态及罗盘像素检查通过；已查看 `/tmp/voidmei-package-smoke-sj06tmmo/hud-scene.png`，图形与软件路径一致可见。本轮未修改运行源码或重建产物，未新增真实游戏验收。
