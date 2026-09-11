@@ -2718,6 +2718,12 @@ F-14 同时提供真实的未支持字段证据：升降舵有效速度 `[1801, 
 
 `nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-connection-notifications-nix.log`），包含连接状态通知及配置开关。
 
+### 后台模型与通知集成后的完整 GUI 回归
+
+在 `126619a` 生产代码上运行不带过滤的 `:desktop:guiTest`，48 个测试类、167 项测试，零失败、零错误、零跳过，36 秒通过。涵盖应用共享模型会话、燃油选择与面板生命周期、后掠载荷、后台录制失败及成功通知、连接状态通知，并重新执行原有字体、HUD、离线模型、记录分析、地图与 X11 前台检测回归。
+
+日志 `/tmp/voidmei-full-gui-after-background-model.log`；JUnit XML 和 HTML 报告已复制至 `/tmp/voidmei-full-gui-after-background-model-results/`，避免后续定向测试覆盖证据。使用隔离 Xvfb/xcompmgr，SOFTWARE_FAST；不包含独立 native HUD 指针、全局热键、原生托盘任务，也不作为真实游戏、物理 GPU 或 Windows/macOS 验收。本轮没有修改生产代码，无需重建包。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
