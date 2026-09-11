@@ -21,6 +21,57 @@ import voidmei.telemetry.*
 class HudCompressorAdviceGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun recommendationChangesWithWepAndClearsAfterShiftingOrLosingItsModel() {
+        val stages = listOf(CompressorStage(1000.0, 1000.0, 800.0), CompressorStage(1000.0, 1500.0, 1200.0))
+        val models = PistonModels(PistonMilitaryModel(stages, 3000.0), stages.reversed(), null)
+        val parameters = FlightModelExtractor.extract(BlkParser.parse("Vne:r=800"))
+            .copy(engineCompressors = mapOf(2 to models))
+        var model by mutableStateOf(AircraftAlertModel("test", parameters))
+        val telemetry = TelemetryParser.parse(
+            """{"valid":true,"H, m":1000,"TAS, km/h":0,"throttle 2, %":100,"compressor stage 2":1}""",
+            """{"valid":true,"type":"test"}""")!!
+        var flight by mutableStateOf(ConnectionState.Flying(telemetry, FlightMetrics()))
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(400, 300, listOf(
+            HudRegion("engine", HudRegionContent.ENGINE, 0, 0, 400, 300,
+                engineIndex = 2, fields = listOf("compressor")))))
+        compose.setContent { MaterialTheme { Box(Modifier.size(400.dp, 300.dp)) {
+            HudPanel(flight, settings, emptyList(), model) {}
+        } } }
+        fun update(throttle: Double, stage: Double) = compose.runOnIdle {
+            flight = flight.copy(telemetry = telemetry.copy(engines = telemetry.engines.map {
+                it.copy(throttlePercent = throttle, compressorStage = stage)
+            }))
+        }
+        fun check(actual: Int, recommended: Int?) {
+            val gauge = compose.onNodeWithTag("hud-compressor-stage-2")
+            gauge.assertRangeInfoEquals(ProgressBarRangeInfo(actual.toFloat(), 1f..2f))
+            if (recommended == null) {
+                gauge.assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
+                compose.onNodeWithTag("hud-compressor-advice-2").assertDoesNotExist()
+            } else {
+                gauge.assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription,
+                    "模型建议 $recommended 档；圆点为当前档位，长线为建议档位"))
+                compose.onNodeWithText("#2 增压器 $actual → $recommended（基础燃油、15°C 模型估算）").assertIsDisplayed()
+            }
+        }
+        check(1, 2)
+        update(110.0, 1.0) // WEP favours the opposite stage; the old suggestion is gone.
+        check(1, null)
+        update(110.0, 2.0)
+        check(2, 1)
+        compose.runOnIdle { model = model.copy(parameters = parameters.copy(
+            engineCompressors = mapOf(2 to models.copy(wepStages = null)))) }
+        check(2, null) // A missing WEP model must not fall back to military advice.
+        compose.runOnIdle { model = AircraftAlertModel("test", parameters) }
+        check(2, 1)
+        update(110.0, 1.0) // Pilot reaches the suggested stage.
+        check(1, null)
+        update(100.0, 1.0)
+        check(1, 2)
+        update(99.0, 1.0)
+        check(1, null)
+    }
+
     @Test fun previewShowsFirstAndLastCompressorStagesWithoutInventingMissingValues() {
         val region = HudRegion("one", HudRegionContent.ENGINE, 0, 0, 400, 300, fields = listOf("compressor"))
         val settings = AppSettings(hudSceneLayout = HudSceneLayout(800, 300,
