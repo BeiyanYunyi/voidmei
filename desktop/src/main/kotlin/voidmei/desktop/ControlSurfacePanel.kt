@@ -10,6 +10,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
 import voidmei.telemetry.Telemetry
 import voidmei.telemetry.controlSurfacePercent
@@ -40,13 +42,23 @@ internal fun ControlSurfacePanel(telemetry: Telemetry, fields: List<String>? = n
 
 @Composable
 private fun ControlAxisReadings(selected: List<Triple<String, String, Double?>>) {
-    val track = LocalReadingColors.current.label ?: Color(0xFF9EB1C0)
-    val marker = LocalReadingColors.current.value ?: Color(0xFF84DEC6)
+    val colors = LocalReadingColors.current
+    val track = colors.label ?: Color(0xFF9EB1C0)
+    val marker = colors.value ?: Color(0xFF84DEC6)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         selected.forEach { (id, label, raw) ->
             val minimum = if (id == "wing_sweep") 0 else -100
             val value = if (id == "wing_sweep") raw?.takeIf { it in 0.0..100.0 } else controlSurfacePercent(raw)
-            Text("$label ${readingNumber(value, 1)}%")
+            Text(buildAnnotatedString {
+                append(label)
+                colors.label?.let { addStyle(SpanStyle(color = it), 0, length) }
+                append(" ")
+                val numberStart = length
+                append(readingNumber(value, 1))
+                colors.value?.let { addStyle(SpanStyle(color = it), numberStart, length) }
+                append("%")
+                (colors.unit ?: colors.value)?.let { addStyle(SpanStyle(color = it), length - 1, length) }
+            }, Modifier.testTag("hud-control-reading-$id"))
             Canvas(Modifier.fillMaxWidth().height(24.dp).testTag("hud-control-$id").semantics {
                 contentDescription = if (id == "wing_sweep") "$label，刻度 0% 至 100%" else "$label，刻度 -100% 至 +100%"
                 stateDescription = value?.let { "${readingNumber(it, 1)}%" } ?: "数据不可用"

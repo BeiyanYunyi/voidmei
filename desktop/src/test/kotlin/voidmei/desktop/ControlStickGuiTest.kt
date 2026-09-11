@@ -21,11 +21,11 @@ class ControlStickGuiTest {
     @Test fun axisAndStickMarkersFollowLiveHudPaletteTogether() {
         val region = HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 440, 260, showControlStick = true)
         var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(440, 260, listOf(region)),
-            hudLabelColor = "#00FF00", hudValueColor = "#0000FF"))
+            hudLabelColor = "#00FF00", hudValueColor = "#0000FF", hudUnitColor = "#FF0000"))
         compose.setContent { MaterialTheme { Box(Modifier.size(440.dp, 260.dp)) {
             HudPanel(hudPreviewFlight(), settings, emptyList(), null) {}
         } } }
-        fun checkColors(track: Color, marker: Color) {
+        fun checkColors(track: Color, marker: Color, unit: Color) {
             // One-dp tracks cover partial pixels; allow their antialiased blend with the HUD background.
             fun Color.matches(expected: Color): Boolean = listOf(red to expected.red,
                 green to expected.green, blue to expected.blue).all { (actual, target) ->
@@ -42,10 +42,16 @@ class ControlStickGuiTest {
                 assertTrue(trackPixels > 10, "$tag must use the label color for its track")
                 assertTrue(markerPixels > 10, "$tag must use the value color for its marker")
             }
+            for (id in listOf("aileron", "elevator", "rudder")) {
+                val pixels = compose.onNodeWithTag("hud-control-reading-$id").captureToImage().toPixelMap()
+                for (color in listOf(track, marker, unit)) assertTrue((0 until pixels.height).any { y ->
+                    (0 until pixels.width).any { x -> pixels[x, y].matches(color) }
+                }, "$id must render its label, number and percent sign in their configured colors")
+            }
         }
-        checkColors(Color.Green, Color.Blue)
-        compose.runOnIdle { settings = settings.copy(hudLabelColor = "#FF0000", hudValueColor = "#00FF00") }
-        checkColors(Color.Red, Color.Green)
+        checkColors(Color.Green, Color.Blue, Color.Red)
+        compose.runOnIdle { settings = settings.copy(hudLabelColor = "#FF0000", hudValueColor = "#00FF00", hudUnitColor = "#0000FF") }
+        checkColors(Color.Red, Color.Green, Color.Blue)
     }
 
     @Test fun defaultRegionFitsBothInstrumentsAndNarrowRegionStacksThem() {
