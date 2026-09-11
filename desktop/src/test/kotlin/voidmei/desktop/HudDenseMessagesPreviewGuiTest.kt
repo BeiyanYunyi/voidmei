@@ -32,7 +32,12 @@ class HudDenseMessagesPreviewGuiTest {
         compose.waitUntil(5000) { compose.onAllNodesWithText("事件 #20 · 示例事件消息 20").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("事件 #20 · 示例事件消息 20").assertIsDisplayed()
         compose.onNodeWithTag("hud-preview-dense-messages").performSemanticsAction(SemanticsActions.OnClick) { it() }
-        compose.waitUntil(5000) { compose.onAllNodesWithText("事件 #1 · 示例事件消息").fetchSemanticsNodes().isNotEmpty() }
+        // The native preview recomposes and measures in separate frames; text presence alone
+        // does not prove that ScrollState.maxValue has settled after the content shrinks.
+        compose.waitUntil(5000) {
+            compose.onAllNodesWithText("事件 #1 · 示例事件消息").fetchSemanticsNodes().isNotEmpty() &&
+                compose.onAllNodesWithTag("hud-scroll-indicator").fetchSemanticsNodes().isEmpty()
+        }
         compose.onNodeWithText("事件 #1 · 示例事件消息").assertIsDisplayed()
         compose.onAllNodesWithTag("hud-scroll-indicator").assertCountEquals(0)
     }

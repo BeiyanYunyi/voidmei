@@ -962,3 +962,10 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 ## 底图缓存的重连与端点隔离验证
 
 新增使用真实 HTTP 图片响应、实际 rememberTelemetryMapSession 和 HudPanel 的 GUI 回归。地图边界和 generation 始终相同，服务端图片由红变蓝：初次加载 1 次，短暂 Delayed 恢复后仍为 1 次；Disconnected 后重新 Flying 下载第 2 次并显示蓝图；端点由 127.0.0.1 切到 localhost 后下载第 3 次并显示更新后的红图。像素采样验证实际画面，不只检查请求计数。底图与共享会话相关 GUI 测试通过（/tmp/voidmei-map-cache-session.log，4 秒）。本次无运行代码变更，未重建包。
+
+
+## 底图缓存与耐热时更新的完整验收
+
+最新生产代码的桌面检查与完整 GUI 回归通过：130 个类、312 项，零失败、错误或跳过，63 秒完成（/tmp/voidmei-map-thermal-full-final.log）。首次完整运行发现原生预览在文本更新后、滚动布局测量完成前就断言滚动条消失；HudDenseMessagesPreviewGuiTest 现等待文本和滚动条状态同时满足，仍要求 5 秒内清除滚动条，未修改运行逻辑或放宽最终要求。
+
+包级场景进一步要求未变化的地图底图仅下载一次，包括模拟遥测延迟前后。最新离线包 `/nix/store/hv3s0d68r3mhcsl2swdh3xhiq15k6007-voidmei-kotlin-2.0.0` 构建与兼容 HUD 冒烟通过，实际 /map.img 请求数为 1。86 对 CSV、单一 HUD 窗口、既有绘制像素、配置保存及正常退出通过；七项 Python 辅助测试通过。构建日志 /tmp/voidmei-map-cache-package-build.log，运行日志 /tmp/voidmei-map-cache-package-run.log，制品 /tmp/voidmei-package-smoke-o1mjm_ib。隔离 X11、SOFTWARE_FAST，不扩展物理 GPU 或真实游戏的验收结论。

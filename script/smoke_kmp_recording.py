@@ -194,8 +194,8 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
         if saved.get("hudCompatibilityMode") is not True or "Presentation: SwingGraphics; full HUD" not in (root / "startup.log").read_text():
             raise RuntimeError("Persisted compatibility setting did not activate the full HUD")
     if hud_scene:
-        if requests.get("/map.img", 0) < 1:
-            raise RuntimeError("Packaged HUD did not request the map background")
+        if requests.get("/map.img", 0) != 1:
+            raise RuntimeError("Packaged HUD must download the unchanged map background once, including across a telemetry delay")
         saved = json.loads((root / "config/settings-kmp.json").read_text())
         if len(saved.get("hudSceneLayout", {}).get("regions", [])) != 10 or not saved["hudSceneLayout"].get("enabled"):
             raise RuntimeError("Packaged scene configuration was not retained")
