@@ -44,7 +44,8 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
     BOOSTER_FUEL_PERCENT("booster_fuel_percent", "助推燃料余量", "%", 0),
     WEP_FUEL("wep_fuel", "WEP 燃料上限", "kg", 1),
     WEP_TIME("wep_time", "WEP 续航上限（分:秒）", "", 0),
-    FUEL_LOSS_RATE("fuel_loss_rate", "燃油减少率估计", "kg/min", 1);
+    FUEL_LOSS_RATE("fuel_loss_rate", "燃油减少率估计", "kg/min", 1),
+    FUEL_PRESSURE_RAW("fuel_pressure_raw", "燃油压力原值", "仪表单位", 2);
 
     fun decimalsFor(metrics: FlightMetrics): Int =
         if (this == ENGINE1_MANIFOLD_AUTO && metrics.cockpitAltitudeUnit == CockpitAltitudeUnit.FEET) 1 else decimals
@@ -152,6 +153,7 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
         FUEL_PERCENT -> flight.metrics.fuelPercent
         ENDURANCE -> flight.metrics.fuelEnduranceSeconds?.div(60)
         FUEL_LOSS_RATE -> flight.metrics.fuelConsumptionKgPerMinute?.takeIf { it >= 0 }
+        FUEL_PRESSURE_RAW -> flight.telemetry.fuelPressureRaw?.takeIf { it >= 0 }
         ACCELERATION -> flight.metrics.accelerationMps2
         TURN_RATE -> flight.metrics.estimatedTurnRateDegps
         TURN_RADIUS -> flight.metrics.estimatedTurnRadiusM

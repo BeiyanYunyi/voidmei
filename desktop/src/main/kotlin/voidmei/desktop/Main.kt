@@ -564,6 +564,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
                 HudField.IAS -> FlightAlert.IAS_LIMIT
                 HudField.MACH -> FlightAlert.MACH_LIMIT
                 HudField.LOAD -> FlightAlert.LOAD_LIMIT
+                HudField.FUEL_PRESSURE_RAW -> FlightAlert.LOW_FUEL_PRESSURE
                 HudField.FUEL, HudField.FUEL_PERCENT -> fuelReadingWarning(readingAlerts)
                 else -> null
             }
@@ -583,6 +584,9 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         }
         if (compact && HudField.SEP in fields) SepStatusPanel(flight, pollingIntervalMs)
         if (compact) FuelEstimateStatusPanel(flight, fields)
+        if (compact && HudField.FUEL_PRESSURE_RAW in fields) Text(
+            "燃油压力来自未编号座舱仪表，单位及发动机归属未确定。",
+            style = MaterialTheme.typography.bodySmall, color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
         if (compact && HudField.HEADING in fields) CompassPanel(t.headingDeg, compassHeadingUp)
         if (compact && HudField.AOA in fields) AoaMarginPanel(t, model, aoaBarWarningPercent)
         if (compact && HudField.ENGINE1_THROTTLE in fields) ThrottleBar(flight)
