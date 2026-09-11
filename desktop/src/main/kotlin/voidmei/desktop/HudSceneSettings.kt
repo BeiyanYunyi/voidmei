@@ -32,10 +32,17 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
         }
     }
     Text("同类区域可重复添加；读数字段默认沿用 HUD 设置，也可独立选择。至少保留一个区域。")
-    scene.regions.forEach { region -> key(region.id) {
+    Text("区域列表从底层到顶层排列；重叠时，顶层区域会覆盖下层。")
+    scene.regions.forEachIndexed { layer, region -> key(region.id) {
         fun update(value: HudRegion) = onChange(settings.copy(hudSceneLayout = scene.copy(
             regions = scene.regions.map { if (it.id == region.id) value else it })))
         Text("${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id}")
+        Row {
+            TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, false))) },
+                enabled = layer > 0, modifier = Modifier.testTag("hud-region-layer-down-${region.id}")) { Text("下移一层") }
+            TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, true))) },
+                enabled = layer < scene.regions.lastIndex, modifier = Modifier.testTag("hud-region-layer-up-${region.id}")) { Text("上移一层") }
+        }
         TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.removeRegion(region.id))) },
             enabled = scene.regions.size > 1, modifier = Modifier.testTag("hud-region-remove-${region.id}")) { Text("移除此区域") }
         HudRegionFieldsSettings(region, settings, ::update)

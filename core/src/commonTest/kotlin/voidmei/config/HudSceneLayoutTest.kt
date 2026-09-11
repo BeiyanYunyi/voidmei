@@ -3,6 +3,18 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun layerMovesPreserveRegionsAndPersistPaintingOrder() {
+        val scene = HudSceneLayout.initial(AppSettings(hudEngineIndex = 2))
+        val first = scene.regions.first()
+        val moved = scene.moveRegionLayer(first.id, true)
+        assertEquals(listOf(scene.regions[1], first) + scene.regions.drop(2), moved.regions)
+        assertEquals(scene, moved.moveRegionLayer(first.id, false))
+        assertSame(scene, scene.moveRegionLayer(first.id, false))
+        assertSame(scene, scene.moveRegionLayer(scene.regions.last().id, true))
+        assertSame(scene, scene.moveRegionLayer("missing", true))
+        assertEquals(moved, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = moved))).hudSceneLayout)
+    }
+
     @Test fun independentFieldsPreserveUnknownIdsOrderAndEmptySelection() {
         val base = HudRegion("flight", HudRegionContent.FLIGHT, 0, 0, 240, 120)
         for (fields in listOf(null, emptyList(), listOf("altitude", "future_field", "ias"))) {

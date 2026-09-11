@@ -56,6 +56,15 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
         return copy(regions = remaining)
     }
 
+    /** Later regions paint over earlier ones; reordering never changes region geometry or fields. */
+    fun moveRegionLayer(id: String, towardFront: Boolean): HudSceneLayout {
+        val index = regions.indexOfFirst { it.id == id }
+        if (index < 0) return this
+        val target = index + if (towardFront) 1 else -1
+        if (target !in regions.indices) return this
+        return copy(regions = regions.toMutableList().apply { add(target, removeAt(index)) })
+    }
+
     /** Enlarging the canvas preserves geometry; shrinking keeps each region inside it. */
     fun resizeCanvas(newWidth: Int, newHeight: Int): HudSceneLayout {
         require(newWidth in 240..8192 && newHeight in 120..8192)
