@@ -54,6 +54,9 @@ internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = fals
 /** Deliberately synthetic limits for checking presentation, never loaded into the live model session. */
 private fun hudPreviewModel() = AircraftAlertModel("preview", FlightModelParameters(null, null,
     listOf(WingConfiguration(0.0, 500.0, .9, -10.0, 15.0, -8.0, 18.0)), false, emptyList(),
+    engineBindings = (1..2).map { EngineBinding(it, "Engine${it - 1}", "Engine${it - 1}", "Inline") },
+    enginePeaks = listOf(EnginePeakReference(1, EnginePeakKind.SHAFT_POWER_HP, 1200.0),
+        EnginePeakReference(2, EnginePeakKind.SHAFT_POWER_HP, 1700.0)),
     engineRpmLimits = (1..2).map { EngineRpmLimit(it, 3000.0) },
     engineCompressors = (1..2).associateWith { PistonModels(PistonMilitaryModel(listOf(
         CompressorStage(1000.0, 1000.0, 800.0), CompressorStage(3000.0, 1100.0, 850.0)), 3000.0),
