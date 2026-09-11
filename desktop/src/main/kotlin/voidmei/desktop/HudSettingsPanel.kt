@@ -9,12 +9,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import voidmei.config.AppSettings
+import voidmei.config.withHudLayout
 import voidmei.telemetry.HudField
 import kotlin.math.roundToInt
 
 @Composable
 internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> Unit) {
     var preview by remember { mutableStateOf(false) }
+    var beforeReset by remember { mutableStateOf<AppSettings?>(null) }
     TextButton(onClick = { preview = true }, modifier = Modifier.testTag("hud-layout-preview")) { Text("预览 HUD 布局") }
     if (preview) HudLayoutPreviewWindow(settings) { preview = false }
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -98,7 +100,17 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         FilterChip(settings.hudAttitude, { onChange(settings.copy(hudAttitude = !settings.hudAttitude)) }, label = { Text("姿态图") })
         FilterChip(settings.hudMechanization, { onChange(settings.copy(hudMechanization = !settings.hudMechanization)) }, label = { Text("起落架/襟翼/减速板") })
-        TextButton(onClick = { onChange(settings.copy(hudAltitudeMode = voidmei.telemetry.HudAltitudeMode.SEA_LEVEL, hudNumberFont = null, hudLabelColor = null, hudValueColor = null, hudWarningColor = null, hudUnitColor = null, hudShadeColor = null, hudFields = HudField.defaults, hudCrosshair = false, hudCrosshairSizeDp = 160, hudCrosshairImage = "", hudCrosshairStretch = false, hudCrosshairRight = false, hudHiddenLabels = emptyList(), hudAttitude = true, hudAttitudeEarthFixed = false, hudAttitudeAoaLimits = true, hudCompassHeadingUp = false, hudMechanization = true, hudAoaBarWarningPercent = 25.0, hudAoaWarningPercent = 20.0, hudGear = true, hudFlaps = true, hudFlapBar = true, hudAirbrake = true, hudFontScale = 1f, hudEngineIndex = null, hudEngineFields = voidmei.telemetry.HudEngineField.defaults, hudWidthDp = 440, hudReadingColumns = 0)) }) { Text("恢复默认") }
+        TextButton(onClick = {
+            val defaults = settings.withHudLayout(AppSettings())
+            if (defaults != settings) beforeReset = settings
+            onChange(defaults)
+        }) { Text("恢复默认") }
+        beforeReset?.let { previous ->
+            TextButton(onClick = {
+                onChange(settings.withHudLayout(previous))
+                beforeReset = null
+            }) { Text("恢复重置前布局") }
+        }
     }
     if (settings.hudMechanization) FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         FilterChip(settings.hudGear, { onChange(settings.copy(hudGear = !settings.hudGear)) }, label = { Text("起落架") })
