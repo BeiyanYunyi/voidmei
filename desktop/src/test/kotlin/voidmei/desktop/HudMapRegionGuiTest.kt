@@ -17,6 +17,46 @@ import kotlin.test.*
 class HudMapRegionGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun mapStatusTransitionsKeepConfiguredStyleAndClearOldMap() {
+        var settings by mutableStateOf(AppSettings(hudLabelColor = "#00FF00", hudShadeColor = "#FF0000",
+            hudSceneLayout = HudSceneLayout(500, 500, listOf(
+                HudRegion("map", HudRegionContent.MAP, 0, 0, 500, 500, title = "战场地图")))))
+        val map = MutableStateFlow<MapConnection>(MapConnection.Available(hudPreviewMap()))
+        var shared by mutableStateOf<kotlinx.coroutines.flow.StateFlow<MapConnection>?>(map)
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp)) {
+            HudPanel(hudPreviewFlight(), settings, emptyList(), null, sharedMap = shared) {}
+        } } }
+        fun check(text: String, shadow: Boolean = true) {
+            val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            compose.onNodeWithText(text).assertIsDisplayed().performSemanticsAction(
+                androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(results) }
+            val style = results.single().layoutInput.style
+            assertEquals(androidx.compose.ui.graphics.Color.Green, style.color)
+            if (shadow) assertEquals(androidx.compose.ui.graphics.Color.Red, style.shadow!!.color)
+            else assertNull(style.shadow)
+        }
+        check("战场地图")
+        compose.onNodeWithTag("map-objects-plot").assertIsDisplayed()
+        for ((state, text) in listOf(
+            MapConnection.Connecting to "正在连接地图…",
+            MapConnection.Waiting to "等待有效飞行地图",
+            MapConnection.Unavailable("测试断线") to "地图不可用：测试断线")) {
+            compose.runOnIdle { map.value = state }
+            check(text)
+            compose.onNodeWithTag("map-objects-plot").assertDoesNotExist()
+            compose.onNodeWithText("玩家位置 0.500, 0.500").assertDoesNotExist()
+        }
+        compose.runOnIdle { settings = settings.copy(hudShadeColor = null) }
+        check("地图不可用：测试断线", shadow = false)
+        check("战场地图", shadow = false)
+        compose.runOnIdle { map.value = MapConnection.Available(hudPreviewMap()) }
+        compose.onNodeWithTag("map-objects-plot").assertIsDisplayed()
+        compose.onNodeWithText("地图不可用：测试断线").assertDoesNotExist()
+        compose.runOnIdle { shared = null }
+        check("地图数据不可用", shadow = false)
+        compose.onNodeWithTag("map-objects-plot").assertDoesNotExist()
+    }
+
     @Test fun coordinateDigitsUseSelectedNumberFontWhileMissingPositionStaysPlain() {
         var settings by mutableStateOf(AppSettings(hudNumberFont = "serif", hudSceneLayout = HudSceneLayout(500, 500,
             listOf(HudRegion("map", HudRegionContent.MAP, 0, 0, 500, 500)))))

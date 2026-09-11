@@ -1,7 +1,7 @@
 package voidmei.desktop
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Text
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -13,17 +13,18 @@ import voidmei.telemetry.MapConnection
 
 @Composable
 internal fun HudMapObjects(endpoint: String?, shared: StateFlow<MapConnection>?, title: String) {
+    val labelColor = LocalReadingColors.current.label ?: LocalContentColor.current
     Column(Modifier.fillMaxSize().padding(end = 8.dp)) {
-    if (title.isNotBlank()) Text(title, maxLines = 2, overflow = TextOverflow.Ellipsis)
-    if (endpoint == null && shared == null) { Text("地图数据不可用"); return@Column }
+    if (title.isNotBlank()) HudOverlayText(title, color = labelColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    if (endpoint == null && shared == null) { HudOverlayText("地图数据不可用", color = labelColor); return@Column }
     key(endpoint, shared) {
         val cache = LocalHudMapBackgroundCache.current ?: remember(endpoint) { endpoint?.let(::HudMapBackgroundCache) }
         val flow = shared ?: remember(endpoint) { mapStates(requireNotNull(endpoint)) }
         val state by flow.collectAsState(MapConnection.Connecting)
         when (val current = state) {
-            MapConnection.Connecting -> Text("正在连接地图…")
-            MapConnection.Waiting -> Text("等待有效飞行地图")
-            is MapConnection.Unavailable -> Text("地图不可用：${current.reason}")
+            MapConnection.Connecting -> HudOverlayText("正在连接地图…", color = labelColor)
+            MapConnection.Waiting -> HudOverlayText("等待有效飞行地图", color = labelColor)
+            is MapConnection.Unavailable -> HudOverlayText("地图不可用：${current.reason}", color = labelColor)
             is MapConnection.Available -> {
                 val bounds = current.snapshot.bounds
                 var background by remember(endpoint, bounds) { mutableStateOf<ImageBitmap?>(null) }
