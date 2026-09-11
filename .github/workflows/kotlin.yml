@@ -36,6 +36,7 @@ jobs:
           python script/test_capture_flight_sequence.py
           python script/test_mock_messages.py
           python script/test_smoke_renderers.py
+          python script/test_smoke_exit.py
           python script/test_prepare_kotlin_preview.py
           python script/test_macos_package_identity.py
       - name: Package desktop application

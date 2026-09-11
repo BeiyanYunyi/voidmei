@@ -897,3 +897,9 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 `nix build path:.#kotlin-offline` 成功（`/tmp/voidmei-propulsion-package-build.log`），产物 `/nix/store/wxb63k43p26wj92yjdzxckq2v1d14wpg-voidmei-kotlin-2.0.0`。首轮截图显示新增读数正常，但原混合比像素采样范围未随图形下移而更新，导致检查失败并等待退出超时；修正外部测试夹具采样位置后复跑通过（`/tmp/voidmei-propulsion-package-final.log`）。
 
 最终实际兼容 HUD、SOFTWARE_FAST、80 ms 与延迟样本场景获得 86 对 CSV 行；34 次检查保持同一个 1040×600 HUD 窗口，正常退出与保存通过。已查看 `/tmp/voidmei-package-smoke-43si04z0/hud-scene.png`，推进读数、混合比及二维操纵面均可见。Python 冒烟辅助 4 项测试通过。本次使用隔离 Xvfb/xcompmgr 和合成遥测，未新增真实游戏或物理 GPU 验收。
+
+## 包级 HUD 断言的及时失败诊断
+
+修复像素断言失败后只显示退出超时的问题。测试代理的窗口检查与关闭定时回调捕获失败，记录专用 FAILED 标记及堆栈；Python 等待关闭时检查该标记，立即报告原因及日志位置，由原有 finally 清理自己启动的进程。成功退出仍检查退出码、关闭事件及已保存配置，真正超时单独报告。
+
+7 项 Python 测试通过，新增子进程场景覆盖失败时进程仍存活、成功／非零退出码以及超时路径，已加入 Kotlin CI 命令。现有离线包在更新后的测试代理下复跑通过（`/tmp/voidmei-exit-diagnostics-package.log`），87 对 CSV 行、HUD 像素与正常关闭检查通过；制品目录 `/tmp/voidmei-package-smoke-8n88czna`。本轮仅修改测试工具和 CI 配置，未修改应用运行逻辑、触发远程 CI 或新增真机验收。

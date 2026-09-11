@@ -12,6 +12,11 @@ public final class CloseWindowAgent {
     private static int hudSamples;
     private static boolean hudChanged;
 
+    private static void fail(Throwable error) {
+        System.err.println("[VoidMei exit test] FAILED: " + error);
+        error.printStackTrace();
+    }
+
     public static void premain(String requestPath, Instrumentation instrumentation) {
         if (Files.exists(Path.of(requestPath).getParent().resolve("require-single-hud"))) {
             EventQueue.invokeLater(() -> new javax.swing.Timer(250, event -> {
@@ -35,6 +40,7 @@ public final class CloseWindowAgent {
             try {
                 while (!Files.exists(Path.of(requestPath))) Thread.sleep(50);
                 EventQueue.invokeLater(() -> {
+                    try {
                     for (Frame frame : Frame.getFrames()) {
                         if (frame.isDisplayable() && "VoidMei · Kotlin".equals(frame.getTitle())) {
                             if (Files.exists(Path.of(requestPath).getParent().resolve("require-single-hud"))) {
@@ -95,8 +101,8 @@ public final class CloseWindowAgent {
                                         + " scale=" + transform.getScaleX() + "," + transform.getScaleY());
                                     System.out.println("[VoidMei exit test] dispatch WINDOW_CLOSING");
                                     frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
-                                } catch (java.io.IOException error) {
-                                    throw new java.io.UncheckedIOException(error);
+                                } catch (Throwable error) {
+                                    fail(error);
                                 }
                             });
                             close.setRepeats(false);
@@ -104,7 +110,8 @@ public final class CloseWindowAgent {
                             return;
                         }
                     }
-                    System.err.println("[VoidMei exit test] main window not found");
+                    throw new AssertionError("main window not found");
+                    } catch (Throwable error) { fail(error); }
                 });
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();

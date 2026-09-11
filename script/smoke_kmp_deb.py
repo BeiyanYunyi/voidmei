@@ -19,6 +19,26 @@ import wave
 import zipfile
 
 
+def wait_for_test_exit(process, log, timeout=15):
+    """Report agent failures promptly while leaving owned-process cleanup to the caller."""
+    deadline = time.monotonic() + timeout
+    while True:
+        code = process.poll()
+        text = log.read_text(errors="replace")
+        failure = re.search(r"\[VoidMei exit test\] FAILED: ([^\r\n]+)", text)
+        if failure:
+            raise RuntimeError("HUD exit check failed: " + failure.group(1) + "; inspect " + str(log))
+        if code is not None:
+            return code
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError("Normal window closure timed out; inspect " + str(log))
+        try:
+            process.wait(timeout=min(.1, remaining))
+        except subprocess.TimeoutExpired:
+            pass
+
+
 def check_reported_renderers(text, expected, hud=True, hud_renderer=None):
     """A reported fallback is a failed renderer check, not pending startup."""
     windows = [("VoidMei · Kotlin", expected)] + ([("VoidMei HUD", hud_renderer or expected)] if hud else [])
@@ -113,7 +133,7 @@ def smoke(package, timeout, prepare=None, ready_check=None, renderer="OPENGL", h
                 raise RuntimeError("Package did not satisfy settings, renderer or additional readiness checks; inspect " + str(log))
             if graceful_exit:
                 (root / "request-close").touch()
-                exit_code = process.wait(timeout=15)
+                exit_code = wait_for_test_exit(process, log)
                 if exit_code != 0 or "[VoidMei exit test] dispatch WINDOW_CLOSING" not in log.read_text(errors="replace"):
                     raise RuntimeError("Normal window closure failed; inspect " + str(log))
         finally:
