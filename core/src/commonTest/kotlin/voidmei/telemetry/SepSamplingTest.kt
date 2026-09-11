@@ -10,7 +10,7 @@ class SepSamplingTest {
     )!!
 
     @Test fun repeatedQuantizedSpeedsDoNotAlternateBetweenClimbAndAccelerationSpikes() {
-        for (interval in listOf(50L, 100L, 200L)) {
+        for (interval in listOf(10L, 50L, 80L, 100L, 125L, 200L)) {
             val calculator = FlightCalculator()
             val readings = mutableListOf<Double>()
             for (time in 0L..4000L step interval) {
@@ -24,6 +24,28 @@ class SepSamplingTest {
                 }
             }
             assertTrue(readings.max() - readings.min() < 3.0)
+        }
+    }
+
+    @Test fun quantizedSpeedRemainsStableWithJitterAroundEightyMillisecondPolling() {
+        for (direction in listOf(-1, 1)) {
+            val calculator = FlightCalculator()
+            var time = 0L
+            var index = 0
+            val jitter = listOf(71L, 89L, 75L, 85L, 110L, 52L)
+            val readings = mutableListOf<Double>()
+            while (time <= 5000) {
+                val speed = 360.0 + direction * (time / 200)
+                val sep = calculator.update(flight(speed, 1.0), time).specificExcessPowerMps
+                if (time >= 1000) {
+                    val expected = 1.0 + direction * (speed / 3.6) * (1 / 0.2 / 3.6) / FlightCalculator.G
+                    assertTrue(abs(assertNotNull(sep) - expected) < 2.0,
+                        "direction=$direction time=$time SEP=$sep expected=$expected")
+                    readings += sep
+                }
+                time += jitter[index++ % jitter.size]
+            }
+            assertTrue(readings.all { if (direction > 0) it > 10 else it < -10 })
         }
     }
 
