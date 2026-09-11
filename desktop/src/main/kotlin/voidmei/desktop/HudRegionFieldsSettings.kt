@@ -10,6 +10,24 @@ import voidmei.telemetry.*
 
 @Composable
 internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, onChange: (HudRegion) -> Unit) {
+    if (region.content == HudRegionContent.MECHANIZATION) {
+        Row {
+            Switch(region.fields != null, { onChange(region.copy(fields = if (it) HudMechanizationField.inherited(settings) else null)) },
+                Modifier.testTag("hud-region-fields-${region.id}"))
+            Text("此区域独立选择机械化内容")
+        }
+        region.fields?.let { fields ->
+            FlowRow {
+                HudMechanizationField.entries.forEach { field ->
+                    FilterChip(field.id in fields, { onChange(region.copy(fields =
+                        if (field.id in fields) fields.filterNot { it == field.id } else fields + field.id)) },
+                        label = { Text(field.label) }, modifier = Modifier.testTag("hud-region-mechanization-${region.id}-${field.id}"))
+                }
+            }
+            if (HudMechanizationField.entries.none { it.id in fields }) Text("此区域未选择机械化内容。")
+        }
+        return
+    }
     if (region.content != HudRegionContent.FLIGHT && region.content != HudRegionContent.ENGINE) return
     val inherited = if (region.content == HudRegionContent.FLIGHT) settings.hudFields else settings.hudEngineFields
     Row {

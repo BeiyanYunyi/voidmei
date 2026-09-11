@@ -35,7 +35,11 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
         CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale)) {
             layout.regions.forEach { region -> key(region.id) {
                 CompositionLocalProvider(LocalReadingColumns provides (region.readingColumns ?: settings.hudReadingColumns)) {
-                val fields = region.fields ?: if (region.content == HudRegionContent.ENGINE) settings.hudEngineFields else settings.hudFields
+                val fields = region.fields ?: when (region.content) {
+                    HudRegionContent.ENGINE -> settings.hudEngineFields
+                    HudRegionContent.MECHANIZATION -> HudMechanizationField.inherited(settings)
+                    else -> settings.hudFields
+                }
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields) {
                     rememberScrollState()
                 }
@@ -89,9 +93,12 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     fields = HudEngineField.selected(region.fields ?: settings.hudEngineFields),
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal))
                                 HudRegionContent.ATTITUDE -> Unit
-                                HudRegionContent.MECHANIZATION -> MechanizationPanel(flight.telemetry, model,
-                                    settings.hudGear, settings.hudFlaps, settings.hudAirbrake, automaticSweep = true,
-                                    alerts = alerts, showFlapBar = settings.hudFlapBar)
+                                HudRegionContent.MECHANIZATION -> {
+                                    MechanizationPanel(flight.telemetry, model,
+                                        HudMechanizationField.GEAR.id in fields, HudMechanizationField.FLAPS.id in fields,
+                                        HudMechanizationField.AIRBRAKE.id in fields, automaticSweep = true,
+                                        alerts = alerts, showFlapBar = HudMechanizationField.FLAP_BAR.id in fields)
+                                }
                                 HudRegionContent.ALERTS -> Unit
                                 HudRegionContent.MESSAGES -> HudRecentMessages(messages)
                                 HudRegionContent.MAP -> Unit
