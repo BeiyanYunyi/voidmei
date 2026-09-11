@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import voidmei.telemetry.AlertSeverity
 import voidmei.telemetry.FlightAlert
@@ -20,12 +21,12 @@ import voidmei.telemetry.FlightAlert
 internal const val HUD_ALERT_HEIGHT_DP = 112
 
 @Composable
-internal fun FlightAlertPanel(alerts: List<FlightAlert>, compact: Boolean = false) {
+internal fun FlightAlertPanel(alerts: List<FlightAlert>, compact: Boolean = false, maximumHeight: Dp = HUD_ALERT_HEIGHT_DP.dp) {
     if (alerts.isEmpty()) return
     val ordered = alerts.distinct().sortedBy { it.severity }
     val scroll = key(ordered) { rememberScrollState() }
     Box(Modifier.fillMaxWidth().testTag("flight-alerts")
-        .then(if (compact) Modifier.heightIn(max = HUD_ALERT_HEIGHT_DP.dp) else Modifier)) {
+        .then(if (compact) Modifier.heightIn(max = maximumHeight.coerceIn(0.dp, HUD_ALERT_HEIGHT_DP.dp)) else Modifier)) {
         Column(Modifier.fillMaxWidth()
             .then(if (compact) Modifier.verticalScroll(scroll).padding(end = 14.dp) else Modifier),
             verticalArrangement = Arrangement.spacedBy(4.dp)) {

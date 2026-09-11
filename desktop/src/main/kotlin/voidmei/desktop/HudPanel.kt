@@ -64,6 +64,7 @@ private fun HudPanelContent(
     val bodyScroll = key(flight != null, flight?.telemetry?.aircraft?.lowercase(), fields,
         settings.hudEngineIndex, engineFields, settings.hudReadingColumns) { rememberScrollState() }
     var headerHeight by remember { mutableStateOf(-1) }
+    var titleHeight by remember { mutableStateOf(0) }
     var bodyHeight by remember { mutableStateOf(-1) }
     val reportHeight by rememberUpdatedState(onContentHeightChanged)
     LaunchedEffect(headerHeight, bodyHeight, density) {
@@ -71,14 +72,17 @@ private fun HudPanelContent(
             reportHeight(headerHeight.toDp() + bodyHeight.toDp() + 40.dp)
         }
     }
-    Box(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    // Reserve two thirds of the space below the title for scrollable readings.
+    val alertHeight = ((maxHeight - with(density) { titleHeight.toDp() } - 48.dp).coerceAtLeast(0.dp) / 3)
+        .coerceAtMost(HUD_ALERT_HEIGHT_DP.dp)
     Column(Modifier.fillMaxSize().testTag("hud-panel")
         .background(Color(0xFF111820).copy(alpha = settings.hudOpacity)).padding(16.dp)) {
         Column(Modifier.fillMaxWidth().onSizeChanged { headerHeight = it.height }) {
-            Box(Modifier.fillMaxWidth().testTag("hud-header")) { header() }
+            Box(Modifier.fillMaxWidth().testTag("hud-header").onSizeChanged { titleHeight = it.height }) { header() }
             if (alerts.isNotEmpty()) {
                 Spacer(Modifier.height(8.dp))
-                FlightAlertPanel(alerts, compact = true)
+                FlightAlertPanel(alerts, compact = true, maximumHeight = alertHeight)
             }
         }
         Spacer(Modifier.height(8.dp))
