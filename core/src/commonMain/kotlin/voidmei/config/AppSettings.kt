@@ -36,6 +36,7 @@ data class AppSettings(
     val hudFontScale: Float = 1f,
     val hudEngineIndex: Int? = null,
     val hudWidthDp: Int = 440,
+    val hudReadingColumns: Int = 0,
     val recordingAutoStart: Boolean = false,
     val startInTray: Boolean = false,
     val connectionNotifications: Boolean = false,
@@ -80,6 +81,7 @@ data class AppSettings(
         require(recordingDirectory.isNotBlank())
         require(pollIntervalMs in 10..5000)
         require(hudOpacity.isFinite() && hudOpacity in 0f..1f)
+        require(hudReadingColumns in 0..2)
         require(hudFontScale.isFinite() && hudFontScale in 0.75f..2f)
         require(hudEngineIndex == null || hudEngineIndex > 0)
         require(hudWidthDp in 240..1000)
@@ -200,6 +202,7 @@ object SettingsJson {
             hudAoaBarWarningPercent = root["hudAoaBarWarningPercent"]?.jsonPrimitive?.double ?: defaults.hudAoaBarWarningPercent,
             hudMechanization = root["hudMechanization"]?.jsonPrimitive?.boolean ?: defaults.hudMechanization,
             hudHotkeyEnabled = root["hudHotkeyEnabled"]?.jsonPrimitive?.boolean ?: defaults.hudHotkeyEnabled,
+            hudReadingColumns = root["hudReadingColumns"]?.jsonPrimitive?.let { require(!it.isString); it.int } ?: defaults.hudReadingColumns,
             softwareRendering = root["softwareRendering"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.softwareRendering,
             voiceVolume = root["voiceVolume"]?.jsonPrimitive?.int ?: defaults.voiceVolume,
             voiceDirectory = root["voiceDirectory"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.voiceDirectory,
@@ -244,6 +247,7 @@ object SettingsJson {
         fields["readingColors"] = JsonObject(settings.readingColors.mapValues { JsonPrimitive(it.value) })
         fields["startInTray"] = JsonPrimitive(settings.startInTray)
         fields["recordingAutoStart"] = JsonPrimitive(settings.recordingAutoStart)
+        fields["hudReadingColumns"] = JsonPrimitive(settings.hudReadingColumns)
         fields["softwareRendering"] = JsonPrimitive(settings.softwareRendering)
         fields["hudCompatibilityMode"] = JsonPrimitive(settings.hudCompatibilityMode)
         fields["hudClickThrough"] = JsonPrimitive(settings.hudClickThrough)

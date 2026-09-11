@@ -17,12 +17,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 internal data class ReadingColors(val label: Color? = null, val value: Color? = null, val warning: Color? = null, val shade: Color? = null, val unit: Color? = null)
+internal val LocalReadingColumns = staticCompositionLocalOf { 0 }
 internal val LocalReadingNumberFont = staticCompositionLocalOf<FontFamily> { FontFamily.Monospace }
 internal val LocalReadingColors = androidx.compose.runtime.staticCompositionLocalOf { ReadingColors() }
 
 /** Keep both the label and its reading visible as width, font scale and values change. */
 @Composable
 internal fun FlightReadings(rows: List<Pair<String, String>>, compact: Boolean, warningRows: Map<Int, String> = emptyMap(), hiddenLabels: Set<Int> = emptySet(), unitRanges: Map<Int, IntRange> = emptyMap()) {
+    val requestedColumns = LocalReadingColumns.current
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val colors = LocalReadingColors.current
@@ -49,7 +51,7 @@ internal fun FlightReadings(rows: List<Pair<String, String>>, compact: Boolean, 
     // Growth is still measured immediately, and explicit layout/font changes reset the budget.
     SideEffect { if (widestReading != layoutWidth) widestReading = layoutWidth }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val columns = if (layoutWidth * 2 + 20.dp <= maxWidth) 2 else 1
+        val columns = if (requestedColumns in 1..2) requestedColumns else if (layoutWidth * 2 + 20.dp <= maxWidth) 2 else 1
         val cellWidth = (maxWidth - 20.dp * (columns - 1)) / columns
         Column(verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 16.dp)) {
             rows.indices.toList().chunked(columns).forEach { indices ->

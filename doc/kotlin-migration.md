@@ -2870,6 +2870,14 @@ macOS 构建元数据步骤新增只读挂载 DMG，要求镜像根目录有唯�
 
 Linux Kotlin CI 在同次构建的 Deb 上执行该脚本，沿用既有制品上传保留日志、配置与报告。脚本在当前真实 Nix 包上通过（`/tmp/voidmei-saved-renderer-ci-script.log`，制品副本 `/tmp/voidmei-saved-renderer-ci-artifacts/`），actionlint 与 diff 检查通过。本轮未修改应用或重建包，远程 CI 的 Deb 执行结果仍应以对应 Actions run 为准。
 
+### HUD 信息展示：可固定读数列数
+
+按用户优先级，将 HUD 热键后置，优先推进信息展示。HUD 字段设置新增自动/单列/双列选择，持久化 hudReadingColumns（0/1/2），默认自动，恢复默认时清除此偏好。只通过 HUD 的组合环境传递给飞行与发动机表格，不改变主窗口表格。固定列数按字段顺序从左到右、从上到下排列，保持已有标签隐藏、告警、单位颜色和阴影；单元格不足时标签与数值分行，数值继续换行，不覆盖相邻字段。
+
+共享 JVM/JS、桌面测试与新增实际 Compose 布局测试通过（`/tmp/voidmei-hud-columns.log`，12 秒）。覆盖默认/往返/非法配置，单列纵向顺序、双列同行及下一行顺序、长读数不侵入邻列、恢复短读数后仍保持双列。该改动不修改飞行计算或原始数据。
+
+既有 FlightReadingsGuiTest、HudFontScaleGuiTest 与 HudReadingColorGuiTest 回归通过（`/tmp/voidmei-hud-columns-regression.log`）。默认 Nix 包构建通过（`/tmp/voidmei-hud-columns-nix.log`），产物 `/nix/store/94fm27c3qlnay07pv44j0ica1amj11gg-voidmei-kotlin-2.0.0`。实机布局效果仍需用户按自己的字段与窗口宽度检查。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

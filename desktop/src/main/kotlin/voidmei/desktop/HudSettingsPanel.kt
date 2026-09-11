@@ -53,6 +53,15 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
         valueRange = 240f..1000f, steps = 37,
         modifier = Modifier.testTag("hud-width").semantics { contentDescription = "HUD 宽度" })
     Text("实际宽度受当前显示器工作区限制。", style = MaterialTheme.typography.bodySmall)
+    Text("HUD 读数列数")
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(0 to "自动", 1 to "单列", 2 to "双列").forEach { (columns, label) ->
+            FilterChip(settings.hudReadingColumns == columns,
+                { onChange(settings.copy(hudReadingColumns = columns)) },
+                label = { Text(label) }, modifier = Modifier.testTag("hud-columns-$columns"))
+        }
+    }
+    Text("自动根据文字宽度排列；固定列数按从左到右、从上到下显示。空间不足时标签与读数换行。", style = MaterialTheme.typography.bodySmall)
     Text("HUD 文字大小 ${(settings.hudFontScale * 100).roundToInt()}%")
     Slider(value = settings.hudFontScale,
         onValueChange = { onChange(settings.copy(hudFontScale = it)) },
@@ -85,7 +94,7 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         FilterChip(settings.hudAttitude, { onChange(settings.copy(hudAttitude = !settings.hudAttitude)) }, label = { Text("姿态图") })
         FilterChip(settings.hudMechanization, { onChange(settings.copy(hudMechanization = !settings.hudMechanization)) }, label = { Text("起落架/襟翼/减速板") })
-        TextButton(onClick = { onChange(settings.copy(hudAltitudeMode = voidmei.telemetry.HudAltitudeMode.SEA_LEVEL, hudNumberFont = null, hudLabelColor = null, hudValueColor = null, hudWarningColor = null, hudUnitColor = null, hudShadeColor = null, hudFields = HudField.defaults, hudCrosshair = false, hudCrosshairSizeDp = 160, hudCrosshairImage = "", hudCrosshairStretch = false, hudCrosshairRight = false, hudHiddenLabels = emptyList(), hudAttitude = true, hudAttitudeEarthFixed = false, hudAttitudeAoaLimits = true, hudCompassHeadingUp = false, hudMechanization = true, hudAoaBarWarningPercent = 25.0, hudAoaWarningPercent = 20.0, hudGear = true, hudFlaps = true, hudFlapBar = true, hudAirbrake = true, hudFontScale = 1f, hudEngineIndex = null, hudWidthDp = 440)) }) { Text("恢复默认") }
+        TextButton(onClick = { onChange(settings.copy(hudAltitudeMode = voidmei.telemetry.HudAltitudeMode.SEA_LEVEL, hudNumberFont = null, hudLabelColor = null, hudValueColor = null, hudWarningColor = null, hudUnitColor = null, hudShadeColor = null, hudFields = HudField.defaults, hudCrosshair = false, hudCrosshairSizeDp = 160, hudCrosshairImage = "", hudCrosshairStretch = false, hudCrosshairRight = false, hudHiddenLabels = emptyList(), hudAttitude = true, hudAttitudeEarthFixed = false, hudAttitudeAoaLimits = true, hudCompassHeadingUp = false, hudMechanization = true, hudAoaBarWarningPercent = 25.0, hudAoaWarningPercent = 20.0, hudGear = true, hudFlaps = true, hudFlapBar = true, hudAirbrake = true, hudFontScale = 1f, hudEngineIndex = null, hudWidthDp = 440, hudReadingColumns = 0)) }) { Text("恢复默认") }
     }
     if (settings.hudMechanization) FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         FilterChip(settings.hudGear, { onChange(settings.copy(hudGear = !settings.hudGear)) }, label = { Text("起落架") })

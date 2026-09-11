@@ -36,6 +36,7 @@ internal fun HudPanel(
         LocalReadingNumberFont provides remember(settings.hudNumberFont, settings.numberFont) {
             resolveHudNumberFont(settings.hudNumberFont ?: settings.numberFont).family
         },
+        LocalReadingColumns provides settings.hudReadingColumns,
         LocalReadingColors provides readingColors(settings, hud = true)) {
         HudPanelContent(connection, settings, alerts, model, onContentHeightChanged, thermal, mapEndpoint, sharedMap, header)
     }
