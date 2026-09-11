@@ -549,3 +549,9 @@ HUD 设置始终保留布局预设组件，避免“载入预设 → 返回纵�
 扩展真实 SettingsStore 文件回归，在 16 套预设、每套 32 区域的大配置中使用关闭飞行标题／附带图形及 20 条消息的非默认值。首次保存、新实例加载、修改音量后再次保存均比较完整配置，并保留未知根键和文件大小检查。
 
 新增共享层操作链回归：重置当前布局保留预设，之后修改预设名称／停用状态及音量，再撤销布局重置，恢复原区域选项且保留后续独立修改。共享 JVM／JS 和桌面单元测试通过（`/tmp/voidmei-region-options-persistence.log`）。本轮仅补充验证，未修改运行代码或重建 Nix 包。
+
+## 当前十区域的 OpenGL 兼容 HUD 整包验证
+
+当前离线包构建通过（`/tmp/voidmei-opengl-scene-build.log`）。最初要求主窗口及 HUD 均为 OPENGL 的测试失败：主窗口无法创建 Linux GL context，回退 SOFTWARE_FAST（`/tmp/voidmei-opengl-scene-run.log`）；显式选择 Mesa 后仍同样失败（`/tmp/voidmei-opengl-mesa-scene-run.log`）。独立 glxinfo 在隔离显示可使用 Mesa llvmpipe（`/tmp/voidmei-isolated-glx-diagnostic.log`），不能把该问题归为整个环境不支持 GLX。
+
+按已知隔离环境行为分别校验主窗口 SOFTWARE_FAST、兼容 HUD OPENGL 后，十区域实际进程测试通过（`/tmp/voidmei-opengl-hud-scene-run.log`）。80 ms 刷新、一次 1.5 秒延迟、86 对记录行，34 次采样保持一个 900×600 HUD；升降舵 36、天空 26623、大地 9572、罗盘 127 像素，AWT 心跳 11／0／0／0／18 ms，正常退出及配置保存通过。产物 `/tmp/voidmei-package-smoke-zk44apn2/`。这仅证明该环境的 OpenGL 兼容 HUD 路径可用，主窗口 OpenGL 仍未通过，且不证明 NVIDIA 硬件加速或真实游戏行为。
