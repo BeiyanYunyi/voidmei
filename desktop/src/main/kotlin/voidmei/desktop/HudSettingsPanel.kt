@@ -83,16 +83,7 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
         { onChange(settings.copy(hudEngineIndex = if (settings.hudEngineIndex == null) 1 else null)) },
         label = { Text("发动机读数") })
     settings.hudEngineIndex?.let { index ->
-        Text("发动机显示字段")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            voidmei.telemetry.HudEngineField.entries.forEach { field ->
-                val selected = field.id in settings.hudEngineFields
-                FilterChip(selected, { onChange(settings.copy(hudEngineFields = if (selected)
-                    settings.hudEngineFields - field.id else settings.hudEngineFields + field.id)) },
-                    label = { Text(field.label) }, modifier = Modifier.testTag("hud-engine-field-${field.id}"))
-            }
-        }
-        Text("取消不需要的项目以缩短面板；重新加入的字段排在末尾。", style = MaterialTheme.typography.bodySmall)
+        HudEngineFieldSettings(settings.hudEngineFields) { onChange(settings.copy(hudEngineFields = it)) }
         var input by remember(index) { mutableStateOf(index.toString()) }
         val parsed = input.toIntOrNull()?.takeIf { it > 0 }
         OutlinedTextField(input, { text ->
