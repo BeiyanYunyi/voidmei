@@ -5,6 +5,22 @@ import kotlinx.coroutines.*
 import java.nio.file.Path
 import voidmei.fm.*
 import voidmei.telemetry.AircraftAlertModel
+import voidmei.telemetry.ConnectionState
+
+/** Delayed requests invalidate live readings, not the last aircraft's static model or selected fuel. */
+@Composable
+internal fun rememberTelemetryFlightModelSession(connection: ConnectionState, dataRoot: String, sessionKey: Any?,
+    parameterExtractor: (BlkBlock, FuelModification?) -> FlightModelParameters = FlightModelExtractor::extract,
+): FlightModelSession = key(sessionKey) {
+    var previousAircraft by remember { mutableStateOf<String?>(null) }
+    val aircraft = when (connection) {
+        is ConnectionState.Flying -> connection.telemetry.aircraft
+        ConnectionState.Delayed -> previousAircraft
+        else -> null
+    }
+    SideEffect { previousAircraft = aircraft }
+    rememberFlightModelSession(aircraft, dataRoot, parameterExtractor)
+}
 
 /** Loaded at application scope so hiding the settings window cannot suspend model loading. */
 internal data class FlightModelSession(

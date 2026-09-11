@@ -183,8 +183,7 @@ fun main(args: Array<String>) {
         ConnectionNotificationEffect(connection, activeEndpoint, generation) { title, message ->
             if (settings.connectionNotifications && trayAvailable) desktopTray?.showMessage(title, message)
         }
-        val flightModel = rememberFlightModelSession(
-            (connection as? ConnectionState.Flying)?.telemetry?.aircraft, settings.fmDataRoot)
+        val flightModel = rememberTelemetryFlightModelSession(connection, settings.fmDataRoot, activeEndpoint to generation)
         val modelForAlerts = flightModel.alertModel
         val currentAlertModel by rememberUpdatedState(modelForAlerts)
         LaunchedEffect(activeEndpoint, generation) {

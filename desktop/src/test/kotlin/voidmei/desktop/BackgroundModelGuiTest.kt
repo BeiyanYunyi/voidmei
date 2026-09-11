@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import voidmei.fm.FlightModelExtractor
 import voidmei.telemetry.TelemetryParser
+import voidmei.telemetry.ConnectionState
+import voidmei.telemetry.FlightMetrics
 import java.util.concurrent.atomic.AtomicInteger
 import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
@@ -30,10 +32,13 @@ class BackgroundModelGuiTest {
         val telemetry = TelemetryParser.parse("""{"valid":true}""", """{"valid":true,"type":"test"}""")!!
         val calculations = AtomicInteger()
         var visible by mutableStateOf(true)
+        val flight = ConnectionState.Flying(telemetry, FlightMetrics())
+        var connection by mutableStateOf<ConnectionState>(flight)
+        var generation by mutableStateOf(0)
         var session: FlightModelSession? = null
         try {
             compose.setContent {
-                val shared = rememberFlightModelSession(telemetry.aircraft, root.toString()) { document, fuel ->
+                val shared = rememberTelemetryFlightModelSession(connection, root.toString(), generation) { document, fuel ->
                     calculations.incrementAndGet()
                     FlightModelExtractor.extract(document, fuel)
                 }
@@ -52,6 +57,14 @@ class BackgroundModelGuiTest {
                 visible = false
             }
             compose.onNodeWithText("气动模型文件").assertDoesNotExist()
+            val selectedModel = session?.parameterResult
+            compose.runOnIdle { connection = ConnectionState.Delayed }
+            compose.runOnIdle {
+                assertSame(selectedModel, session?.parameterResult)
+                assertEquals("ussr_fuel_b-100", session?.fuelId)
+                assertEquals(2, calculations.get())
+                connection = flight
+            }
             compose.runOnIdle {
                 assertEquals("ussr_fuel_b-100", session?.fuelId)
                 assertNotNull(session?.alertModel)
@@ -65,6 +78,13 @@ class BackgroundModelGuiTest {
             compose.onNodeWithText("重新加载").performScrollTo().performClick()
             compose.waitUntil(10000) { calculations.get() == 4 && session?.alertModel != null }
             compose.runOnIdle { assertNull(session?.fuelId) }
+            compose.runOnIdle { connection = ConnectionState.Delayed }
+            compose.runOnIdle { generation++ }
+            compose.waitUntil(5000) { session?.state == FlightModelState.Unresolved }
+            compose.runOnIdle { assertNull(session?.alertModel); connection = flight }
+            compose.waitUntil(10000) { session?.alertModel != null }
+            compose.runOnIdle { connection = ConnectionState.Disconnected("timeout") }
+            compose.waitUntil(5000) { session?.state == FlightModelState.Unresolved }
         } finally {
             root.toFile().deleteRecursively()
         }
