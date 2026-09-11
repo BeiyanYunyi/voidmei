@@ -2936,6 +2936,14 @@ Linux Kotlin CI 在同次构建的 Deb 上执行该脚本，沿用既有制品�
 
 桌面单元验证 0/1/2 位小数的近零边界、正负零及非法数值，GUI 验证实际爬升/SEP 读数的近零、负值和缺失恢复，发动机字段回归继续通过（`/tmp/voidmei-hud-negative-zero.log`、`/tmp/voidmei-hud-negative-zero-after.log`）。初始 GUI 断言误按 SEP 整数格式编写，已依当前一位小数规则修正。本轮未重建 Nix 包，不作为实机 SEP 跳变已消失的证据。
 
+### HUD 对比度与数字格式后的完整 GUI 回归
+
+在 `20add28` 生产代码上无过滤运行 :desktop:guiTest，61 个测试类、181 项测试，零失败、零错误、零跳过，39 秒通过。此次完整运行包含真机快照常规/窄窗大字号排版与标题像素对比度、负零格式、滚动位置指示及近期发动机/字段布局，也覆盖现有告警、姿态、录制、模型和设置交互。
+
+日志 `/tmp/voidmei-full-gui-hud-contrast.log`；XML/HTML 与 HUD 截图副本 `/tmp/voidmei-full-gui-hud-contrast-results/`。运行环境为隔离 Xvfb/xcompmgr、SOFTWARE_FAST；未运行独立热键/托盘/HUD 指针任务，不扩大实机游戏及 Windows/macOS 验收结论。
+
+默认 Nix 构建通过（`/tmp/voidmei-hud-contrast-current-nix.log`），产物 `/nix/store/nk7svm4ryva7da2bqmnxsm0rmhwy5hz5-voidmei-kotlin-2.0.0`，包含负零读数修正。本轮未改变应用代码，也未重复包运行冒烟。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
