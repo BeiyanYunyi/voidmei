@@ -15,7 +15,7 @@ class TelemetryPoller(
     private val intervalProvider: (() -> Long)? = null,
     private val timeSource: TimeSource = TimeSource.Monotonic,
 ) {
-    init { require(intervalMs in 20..5000) }
+    init { require(intervalMs in 10..5000) }
 
     /** Cold flow: cancelling its collector cancels requests and polling together. */
     fun states(): Flow<ConnectionState> = flow {
@@ -48,7 +48,7 @@ class TelemetryPoller(
             emit(next)
             // Read settings between samples without recreating the transport or calculator.
             val nextInterval = intervalProvider?.invoke() ?: intervalMs
-            require(nextInterval in 20..5000) { "Telemetry interval must be between 20 and 5000 ms" }
+            require(nextInterval in 10..5000) { "Telemetry interval must be between 10 and 5000 ms" }
             delay(nextInterval)
         }
     }

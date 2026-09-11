@@ -2834,6 +2834,14 @@ macOS 构建元数据步骤新增只读挂载 DMG，要求镜像根目录有唯�
 
 使用默认开发环境运行默认构建产物的隔离 X11 冒烟通过：80 ms 轮询、兼容 HUD OPENGL、主窗口 SOFTWARE_FAST、托盘后台启动，101 组配对采样，油门缺失恢复及正常退出（退出码 0）通过。日志 `/tmp/voidmei-default-kotlin-smoke.log`，制品副本 `/tmp/voidmei-default-kotlin-artifacts/`。此证据为模拟遥测与软件驱动，不扩大此前用户实机验证范围。本轮没有应用代码变化；数字标签发行仍沿用旧流程，Windows/macOS 和剩余功能迁移验收仍未完成。
 
+### 恢复旧版 10–19 ms 刷新间隔
+
+旧 ui_layout.cfg 的 dataPollIntervalMs 最小值为 10 ms。Kotlin 设置校验、轮询器初始值与动态值、界面输入和旧配置导入现统一支持 10–5000 ms，合法的 10–19 ms 原值导入并参与 JSON 往返，不再列为未迁移。默认间隔和预设不变；实际采样周期包含请求与处理耗时，10 ms 配置不保证游戏提供 100 Hz 的新数据。
+
+共享 JVM/JS、桌面单元与 PollingIntervalGuiTest 通过（`/tmp/voidmei-fast-poll-tests.log`，9 秒）。回归覆盖两个旧间隔字段名的 10/19 ms 导入及持久化、GUI 应用 10 ms/拒绝 9 ms，以及 10 ms 轮询遇到 35 ms 请求时每 45 ms 开始一轮、最多一对并发请求、取消清理在途请求和连续恒速 SEP。原动态间隔与 SEP 历史测试继续通过。冒烟脚本参数范围同步更新，四项渲染检查脚本测试通过。
+
+`nix build path:.` 通过（`/tmp/voidmei-fast-poll-nix.log`），新包 `/nix/store/wrj0131qd7mswa1znd2xc56a91919xzk-voidmei-kotlin-2.0.0`。以 10 ms 配置执行隔离 X11/软件驱动冒烟通过：兼容 HUD OPENGL、主窗口 SOFTWARE_FAST、托盘后台启动，762 组配对 CSV、748 条 WEP 估算及 3 条油门缺失恢复，正常退出码 0，五次 AWT 心跳延迟 0–1 ms。日志 `/tmp/voidmei-fast-poll-smoke.log`，制品副本 `/tmp/voidmei-fast-poll-artifacts/`。这不证明真实游戏数据更新频率或实机 SEP 稳定性。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

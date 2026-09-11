@@ -12,8 +12,8 @@ from smoke_kmp_deb import smoke
 
 
 def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False, hud_renderer=None, poll_interval_ms=100):
-    if not isinstance(poll_interval_ms, int) or isinstance(poll_interval_ms, bool) or not 20 <= poll_interval_ms <= 5000:
-        raise ValueError("poll interval must be an integer between 20 and 5000 ms")
+    if not isinstance(poll_interval_ms, int) or isinstance(poll_interval_ms, bool) or not 10 <= poll_interval_ms <= 5000:
+        raise ValueError("poll interval must be an integer between 10 and 5000 ms")
     flying = threading.Event()
     flying.set()
     requests = {}
@@ -237,7 +237,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path)
-    parser.add_argument("--poll-interval-ms", type=int, default=100, help="Configured polling delay, 20–5000 ms")
+    parser.add_argument("--poll-interval-ms", type=int, default=100, help="Configured polling delay, 10–5000 ms")
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--renderer", choices=("OPENGL", "SOFTWARE_FAST"), default="OPENGL")
     parser.add_argument("--hud-renderer", choices=("OPENGL", "SOFTWARE_FAST"), help="Expected HUD renderer; defaults to --renderer")
@@ -253,8 +253,8 @@ if __name__ == "__main__":
     parser.add_argument("--tray-recovery", action="store_true", help="Verify --no-hud shows the main window despite the saved tray startup preference")
     parser.add_argument("--wep-dropout", action="store_true", help="Temporarily omit throttle while flying; requires --wep")
     args = parser.parse_args()
-    if not 20 <= args.poll_interval_ms <= 5000:
-        parser.error("--poll-interval-ms must be between 20 and 5000")
+    if not 10 <= args.poll_interval_ms <= 5000:
+        parser.error("--poll-interval-ms must be between 10 and 5000")
     if args.wep_dropout and not args.wep:
         parser.error("--wep-dropout requires --wep")
     if args.wep and args.jet:

@@ -219,10 +219,7 @@ object LegacySettingsReader {
             require(type in setOf("slider", "input")) { "刷新间隔类型不支持" }
             val parsed = value.toLongOrNull()?.also { require(it in 10..5000) { "旧刷新间隔需在 10–5000 ms 内" } }
                 ?: error("刷新间隔不是整数")
-            if (parsed < 20) {
-                unmigrated += UnmigratedLegacySetting("旧刷新间隔 $parsed ms 小于新版最小值 20 ms，保留当前间隔", intervalTarget)
-                null
-            } else parsed
+            parsed
         }
         fun flag(key: String) = targets[key]?.let { (type, value) ->
             require(type == "switch" || type == "switch-inv") { "$key 类型不支持" }

@@ -7,6 +7,39 @@ import kotlinx.coroutines.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LivePollingIntervalTest {
+    @Test fun fastestIntervalWaitsForRequestsAndCancelsWithoutStartingAnotherRound() = runTest {
+        val starts = mutableListOf<Long>()
+        var active = 0
+        var peakActive = 0
+        val transport = TelemetryTransport { path ->
+            active++
+            peakActive = maxOf(peakActive, active)
+            try {
+                if (path == "/state") starts += currentTime
+                delay(35)
+                if (path == "/state") """{"valid":true,"TAS, km/h":360,"Vy, m/s":2}"""
+                else """{"valid":true,"type":"test"}"""
+            } finally { active-- }
+        }
+        val states = mutableListOf<ConnectionState>()
+        val job = launch {
+            TelemetryPoller(transport, intervalMs = 10, timeSource = testScheduler.timeSource)
+                .states().toList(states)
+        }
+        runCurrent()
+        advanceTimeBy(150)
+        runCurrent()
+        job.cancelAndJoin()
+        advanceTimeBy(1000)
+        assertEquals(listOf(0L, 45L, 90L, 135L), starts)
+        assertEquals(2, peakActive) // One state/indicators pair; no overlapping rounds.
+        assertEquals(0, active)
+        val flying = states.filterIsInstance<ConnectionState.Flying>()
+        assertEquals(3, flying.size)
+        assertNull(flying.first().metrics.specificExcessPowerMps)
+        flying.drop(1).forEach { assertEquals(2.0, it.metrics.specificExcessPowerMps) }
+    }
+
     @Test fun customIntervalChangesKeepTheSepHistoryOnTheSameClock() = runTest {
         var interval = 100L
         val states = mutableListOf<ConnectionState>()
@@ -74,7 +107,7 @@ class LivePollingIntervalTest {
     }
 
     @Test fun invalidLiveIntervalsFailInsteadOfCreatingATightPollingLoop() = runTest {
-        for (invalid in listOf(0L, 19L, 5001L, Long.MAX_VALUE)) {
+        for (invalid in listOf(0L, 9L, 5001L, Long.MAX_VALUE)) {
             var requests = 0
             val transport = TelemetryTransport { requests++; """{"valid":true}""" }
             assertFailsWith<IllegalArgumentException> {

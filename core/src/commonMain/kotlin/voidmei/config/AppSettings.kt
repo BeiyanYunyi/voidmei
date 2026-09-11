@@ -77,7 +77,7 @@ data class AppSettings(
         require(endpoint.isNotBlank())
         require(fmDataRoot.isNotBlank())
         require(recordingDirectory.isNotBlank())
-        require(pollIntervalMs in 20..5000)
+        require(pollIntervalMs in 10..5000)
         require(hudOpacity.isFinite() && hudOpacity in 0f..1f)
         require(hudFontScale.isFinite() && hudFontScale in 0.75f..2f)
         require(hudEngineIndex == null || hudEngineIndex > 0)
