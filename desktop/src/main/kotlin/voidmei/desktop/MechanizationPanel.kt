@@ -55,7 +55,7 @@ internal fun MechanizationPanel(telemetry: Telemetry, model: AircraftAlertModel?
             }
         }, modifier = Modifier.semantics { if (warningText.isNotEmpty()) stateDescription = warningText },
             color = normal, fontSize = 13.sp)
-        if (showFlapBar && flapsPercent == null) {
+        if (showFlapBar && !showFlaps && flapsPercent == null) {
             Text("襟翼开度条 · 数据不可用", color = Color(0xFF9EB1C0), fontSize = 13.sp)
         }
         if (showFlapBar && flapsPercent != null) {
