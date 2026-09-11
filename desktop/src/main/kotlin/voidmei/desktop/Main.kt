@@ -534,7 +534,7 @@ private fun FlightAnalysisPanel(metrics: FlightMetrics) {
 }
 
 @Composable
-internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = false, fields: List<HudField> = HudField.selected(HudField.defaults), mechanization: Boolean = true, model: AircraftAlertModel? = null, thermal: EngineThermalObservation? = null, showGear: Boolean = true, showFlaps: Boolean = true, showAirbrake: Boolean = true, aoaBarWarningPercent: Double = 25.0, aoaWarningPercent: Double = 20.0, readingAlerts: List<FlightAlert> = emptyList(), showFlapBar: Boolean = true, compassHeadingUp: Boolean = false, hiddenLabels: List<String> = emptyList(), altitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL, pollingIntervalMs: Long? = null) {
+internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = false, fields: List<HudField> = HudField.selected(HudField.defaults), mechanization: Boolean = true, model: AircraftAlertModel? = null, thermal: EngineThermalObservation? = null, showGear: Boolean = true, showFlaps: Boolean = true, showAirbrake: Boolean = true, aoaBarWarningPercent: Double = 25.0, aoaWarningPercent: Double = 20.0, readingAlerts: List<FlightAlert> = emptyList(), showFlapBar: Boolean = true, compassHeadingUp: Boolean = false, hiddenLabels: List<String> = emptyList(), altitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL, pollingIntervalMs: Long? = null, showInstruments: Boolean = true) {
     val t = flight.telemetry
     val altitude = if (compact) altitudeMode.reading(flight) else HudAltitudeMode.SEA_LEVEL.reading(flight)
     fun readingUnit(field: HudField) = if (field == HudField.ALTITUDE) altitude.unit else field.unitFor(t, flight.metrics, model)
@@ -597,12 +597,12 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         if (compact && HudField.FUEL_PRESSURE_RAW in fields) Text(
             "燃油压力来自未编号座舱仪表，单位及发动机归属未确定。",
             style = MaterialTheme.typography.bodySmall, color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
-        if (compact && HudField.HEADING in fields) CompassPanel(t.headingDeg, compassHeadingUp)
-        if (compact && HudField.AOA in fields) AoaMarginPanel(t, model, aoaBarWarningPercent)
-        if (compact && HudField.ENGINE1_THROTTLE in fields) ThrottleBar(flight)
-        if (compact && HudField.FUEL_PERCENT in fields) FuelQuantityPanel(flight, readingAlerts)
-        if (compact && HudField.FUEL_MASS_SHARE in fields) FuelMassShareBar(flight, model)
-        if (compact && HudField.SPEED_LIMIT_RATIO in fields) SpeedLimitBar(flight, model)
+        if (compact && showInstruments && HudField.HEADING in fields) CompassPanel(t.headingDeg, compassHeadingUp)
+        if (compact && showInstruments && HudField.AOA in fields) AoaMarginPanel(t, model, aoaBarWarningPercent)
+        if (compact && showInstruments && HudField.ENGINE1_THROTTLE in fields) ThrottleBar(flight)
+        if (compact && showInstruments && HudField.FUEL_PERCENT in fields) FuelQuantityPanel(flight, readingAlerts)
+        if (compact && showInstruments && HudField.FUEL_MASS_SHARE in fields) FuelMassShareBar(flight, model)
+        if (compact && showInstruments && HudField.SPEED_LIMIT_RATIO in fields) SpeedLimitBar(flight, model)
         if (mechanization) MechanizationPanel(t, model, showGear, showFlaps, showAirbrake, automaticSweep = compact, alerts = if (compact) readingAlerts else emptyList(), showFlapBar = compact && showFlapBar)
     }
 }

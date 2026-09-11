@@ -76,6 +76,11 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
         },
             enabled = scene.regions.size > 1, modifier = Modifier.testTag("hud-region-remove-${region.id}")) { Text("移除此区域") }
         HudRegionFieldsSettings(region, settings, ::update)
+        if (region.content == HudRegionContent.FLIGHT) Row {
+            Switch(region.showFlightInstruments, { update(region.copy(showFlightInstruments = it)) },
+                Modifier.testTag("hud-region-instruments-${region.id}"))
+            Text("显示读数附带图形")
+        }
         Text("区域文字大小")
         FlowRow {
             listOf<Float?>(null, .75f, 1f, 1.25f, 1.5f, 1.75f, 2f).forEach { scale ->

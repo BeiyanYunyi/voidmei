@@ -3,6 +3,15 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun optionalFlightInstrumentsPersistAndOldLayoutsKeepThem() {
+        val region = HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 240, 120, showFlightInstruments = false)
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region)))
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(SettingsJson.encode(settings)).toString()
+        assertEquals(settings, SettingsJson.decode(json))
+        assertTrue(SettingsJson.decode(json.replace(",\"showFlightInstruments\":false", "")).hudSceneLayout!!.regions.single().showFlightInstruments)
+        assertFails { SettingsJson.decode(json.replace("\"showFlightInstruments\":false", "\"showFlightInstruments\":\"false\"")) }
+    }
+
     @Test fun controlsRegionCanBeAddedAndSavedOnSmallAndNormalCanvases() {
         val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.CONTROLS)
         assertEquals(440, scene.regions.last().width)

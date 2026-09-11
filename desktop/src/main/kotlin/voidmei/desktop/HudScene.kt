@@ -93,7 +93,8 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                         mechanization = false, model = model, thermal = thermal, readingAlerts = alerts,
                                         aoaBarWarningPercent = settings.hudAoaBarWarningPercent, aoaWarningPercent = settings.hudAoaWarningPercent,
                                         compassHeadingUp = settings.hudCompassHeadingUp, hiddenLabels = settings.hudHiddenLabels,
-                                        altitudeMode = settings.hudAltitudeMode, pollingIntervalMs = settings.pollIntervalMs)
+                                        altitudeMode = settings.hudAltitudeMode, pollingIntervalMs = settings.pollIntervalMs,
+                                        showInstruments = region.showFlightInstruments)
                                     if (HudField.HEADING.id in (region.fields ?: settings.hudFields) && mapEndpoint != null) HudMapGrid(mapEndpoint, sharedMap)
                                 }
                                 HudRegionContent.ENGINE -> HudEnginePanel(flight.telemetry.engines, region.engineIndex,
