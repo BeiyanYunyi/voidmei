@@ -80,7 +80,8 @@ private fun HudPanelContent(
             }
         }
         Spacer(Modifier.height(8.dp))
-        Column(Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(bodyScroll)
+        Box(Modifier.weight(1f, fill = false).fillMaxWidth()) {
+        Column(Modifier.fillMaxWidth().padding(end = 8.dp).verticalScroll(bodyScroll)
             .testTag("hud-body").onSizeChanged { bodyHeight = it.height },
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(statusText(connection), color = Color.White)
@@ -94,6 +95,8 @@ private fun HudPanelContent(
                 settings.hudEngineIndex?.let { index -> key(it.telemetry.aircraft, index) { HudEnginePanel(it.telemetry.engines, index, fields = HudEngineField.selected(settings.hudEngineFields)) } }
                 if (settings.hudAttitude) AttitudePanel(it.telemetry, compact = true, model = model, earthFixed = settings.hudAttitudeEarthFixed, showAoaLimits = settings.hudAttitudeAoaLimits)
             }
+        }
+        HudScrollIndicator(bodyScroll, Modifier.matchParentSize())
         }
     }
         if (flight != null && settings.hudCrosshair)
