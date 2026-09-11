@@ -15,6 +15,29 @@ import kotlin.test.assertTrue
 class HudEngineFieldsGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun fieldSearchMatchesNamesIdsAndUnitsWithoutChangingSelection() {
+        var ids by mutableStateOf(listOf("rpm", "future_field"))
+        compose.setContent { MaterialTheme { Column(Modifier.width(600.dp)) {
+            HudEngineFieldSettings(ids) { ids = it }
+        } } }
+        val search = compose.onNodeWithTag("hud-engine-field-search")
+        search.performTextInput(" 推进  KW ")
+        compose.onNodeWithTag("hud-engine-field-thrust_power").assertIsDisplayed()
+        compose.onNodeWithTag("hud-engine-field-power").assertDoesNotExist()
+        compose.onNodeWithTag("hud-engine-field-rpm").assertIsDisplayed()
+        compose.runOnIdle { kotlin.test.assertEquals(listOf("rpm", "future_field"), ids) }
+        compose.onNodeWithTag("hud-engine-field-thrust_power").performClick()
+        compose.runOnIdle { kotlin.test.assertEquals(listOf("rpm", "future_field", "thrust_power"), ids) }
+        compose.onNodeWithText("没有匹配的可添加发动机字段").assertIsDisplayed()
+        search.performTextReplacement("PROPULSIVE_EFFICIENCY")
+        compose.onNodeWithTag("hud-engine-field-propulsive_efficiency").assertIsDisplayed()
+        search.performTextReplacement("no_match")
+        compose.onNodeWithText("没有匹配的可添加发动机字段").assertIsDisplayed()
+        compose.onNodeWithTag("hud-engine-field-search-clear").performClick()
+        compose.onNodeWithTag("hud-engine-field-power").assertExists()
+        compose.runOnIdle { kotlin.test.assertEquals(listOf("rpm", "future_field", "thrust_power"), ids) }
+    }
+
     @Test fun selectedReadingsRetainOrderMissingValuesAndEngineIdentity() {
         var fields by mutableStateOf(listOf(HudEngineField.OIL_TEMPERATURE, HudEngineField.THROTTLE))
         var engines by mutableStateOf(listOf(Engine(1, 99.0, null, null, null, null, null), Engine(2, 0.0, null, null, null, null, null)))
