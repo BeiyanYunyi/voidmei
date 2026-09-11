@@ -85,6 +85,11 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
                 Modifier.testTag("hud-region-instruments-${region.id}"))
             Text("显示读数附带图形")
         }
+        if (region.content == HudRegionContent.ENGINE) Row {
+            Switch(region.showEngineInstruments, { update(region.copy(showEngineInstruments = it)) },
+                Modifier.testTag("hud-region-engine-instruments-${region.id}"))
+            Text("显示读数附带图形")
+        }
         Text("区域文字大小")
         FlowRow {
             listOf<Float?>(null, .75f, 1f, 1.25f, 1.5f, 1.75f, 2f).forEach { scale ->

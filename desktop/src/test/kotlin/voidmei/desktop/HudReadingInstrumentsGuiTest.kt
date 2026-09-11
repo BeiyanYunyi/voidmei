@@ -19,6 +19,27 @@ import voidmei.fm.*
 class HudReadingInstrumentsGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun engineGraphicsTogglePreservesNumbersAndOtherRegions() {
+        val one = HudRegion("one", HudRegionContent.ENGINE, 0, 0, 400, 400, fields = listOf("throttle"))
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(800, 400,
+            listOf(one, one.copy(id = "two", x = 400)))))
+        compose.setContent { MaterialTheme { Row {
+            Column(Modifier.width(450.dp).height(600.dp).verticalScroll(rememberScrollState())) {
+                HudSceneSettings(settings) { settings = it }
+            }
+            Box(Modifier.size(800.dp, 400.dp)) { HudPanel(hudPreviewFlight(), settings, emptyList(), null) {} }
+        } } }
+        compose.onAllNodesWithTag("hud-engine-throttle-1").assertCountEquals(2)
+        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.onNodeWithTag("hud-region-engine-instruments-one").performScrollTo().performClick()
+        compose.onAllNodesWithText("95 %").assertCountEquals(2)
+        compose.onAllNodesWithTag("hud-engine-throttle-1").assertCountEquals(1)
+        compose.onNode(hasTestTag("hud-engine-throttle-1") and hasAnyAncestor(hasTestTag("hud-region-two"))).assertIsDisplayed()
+        compose.runOnIdle { assertEquals(settings, SettingsJson.decode(SettingsJson.encode(settings))) }
+        compose.onNodeWithTag("hud-region-engine-instruments-one").performClick()
+        compose.onAllNodesWithTag("hud-engine-throttle-1").assertCountEquals(2)
+    }
+
     @Test fun hidingInstrumentsRetainsNumericAoaWarning() {
         val flight = hudPreviewFlight().let { it.copy(telemetry = it.telemetry.copy(angleOfAttackDeg = 30.0)) }
         val model = AircraftAlertModel("preview", FlightModelParameters(null, null,

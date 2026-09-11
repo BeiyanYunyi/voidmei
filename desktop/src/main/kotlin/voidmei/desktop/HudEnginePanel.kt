@@ -26,7 +26,7 @@ internal fun engineReadingWarnings(flight: ConnectionState.Flying, index: Int, m
 
 @Composable
 internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.selected(HudEngineField.defaults),
-    warnings: Map<HudEngineField, String> = emptyMap()) {
+    warnings: Map<HudEngineField, String> = emptyMap(), showInstruments: Boolean = true) {
     Column {
         Text("发动机 #$index")
         val engine = engines.singleOrNull { it.index == index }
@@ -47,7 +47,7 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
                 val unit = reading.third
                 if (unit.isEmpty()) null else index to (rows[index].second.length - unit.length until rows[index].second.length)
             }.toMap())
-            if (compact && HudEngineField.THROTTLE in fields)
+            if (compact && showInstruments && HudEngineField.THROTTLE in fields)
                 ThrottleBar(HudEngineField.THROTTLE.value(engine), index, "hud-engine-throttle-$index")
         }
     }

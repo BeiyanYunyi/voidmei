@@ -47,7 +47,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                 }
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields, region.messageLimit,
                     region.readingColumns ?: settings.hudReadingColumns, region.fontScale ?: settings.hudFontScale,
-                    region.width, region.height, region.showFlightInstruments, region.showFlightStatus) {
+                    region.width, region.height, region.showFlightInstruments, region.showFlightStatus, region.showEngineInstruments) {
                     rememberScrollState()
                 }
                 val regionAlerts = if (region.content == HudRegionContent.ALERTS)
@@ -105,7 +105,8 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                 }
                                 HudRegionContent.ENGINE -> HudEnginePanel(flight.telemetry.engines, region.engineIndex,
                                     fields = HudEngineField.selected(region.fields ?: settings.hudEngineFields),
-                                    warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal))
+                                    warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal),
+                                    showInstruments = region.showEngineInstruments)
                                 HudRegionContent.ATTITUDE -> Unit
                                 HudRegionContent.MECHANIZATION -> {
                                     if (HudMechanizationField.entries.none { it.id in fields }) Text("未选择机械化内容")

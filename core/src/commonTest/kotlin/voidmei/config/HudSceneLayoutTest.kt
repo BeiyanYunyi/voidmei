@@ -3,6 +3,16 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun engineInstrumentsPersistAndOldLayoutsKeepThem() {
+        val region = HudRegion("engine", HudRegionContent.ENGINE, 0, 0, 240, 120, showEngineInstruments = false)
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region)))
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(SettingsJson.encode(settings)).toString()
+        assertEquals(settings, SettingsJson.decode(json))
+        assertTrue(SettingsJson.decode(json.replace(",\"showEngineInstruments\":false", "")).hudSceneLayout!!.regions.single().showEngineInstruments)
+        for (bad in listOf("null", "0", "\"false\""))
+            assertFails { SettingsJson.decode(json.replace("\"showEngineInstruments\":false", "\"showEngineInstruments\":$bad")) }
+    }
+
     @Test fun flightStatusVisibilityPersistsAndOldLayoutsKeepTheTitle() {
         val region = HudRegion("flight", HudRegionContent.FLIGHT, 0, 0, 240, 120, showFlightStatus = false)
         val settings = AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region)))
