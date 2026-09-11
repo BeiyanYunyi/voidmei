@@ -2736,6 +2736,18 @@ FlightRecorder 在两份 CSV 追加并 flush 成功后更新观察器；每个�
 
 `nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-performance-notifications-nix.log`）。
 
+### 离线爬升及机动采样图与汇总导出
+
+新增 FlightPerformanceAnalyzer，先以已有严格 CSV 读取器验证元数据、机型一致性、时间与数值，再逐行分析原始样本，不使用时间图的降采样结果。每个上升到的新 100 m 档保存该档首次观察的相对时间、功率、推力及 SEP；跳过的高度档不补零。10 km/h 速度档采用与采样通知一致的操纵面/滚转筛选及过载/SEP 平滑规则，保留有依据的采样点。过载平滑改为两个半值相加，避免有限大数相加先溢出。
+
+记录回看新增按需统计入口，随当前时间区间使用对应原始 CSV；重新选择区间会移除旧统计。后台分析可取消，最多保存各 256 档，缺少字段时对应图项为空。七项散点图覆盖爬升时间/功率/推力/SEP、滚转率、平滑过载和机动 SEP，提供滑块读数；不对未观测档位连线或插值。引擎时间线不显示该飞行分析入口。
+
+汇总 CSV 包含 kind、高度/速度档及相应观测值，缺失字段留空；复用现有发布完整文件且不覆盖同名文件的导出逻辑。和旧 FlightLog 导出相比，这是实际观测档位的汇总：不生成从零高度开始的虚构空档，不套用相邻档三点平滑；爬升 SEP 是到达档位的样本而非该档累积均值，不宣称与旧表逐值相同或等于完整性能极限。
+
+共享 JVM/JS、桌面与新 GUI 回归通过（`/tmp/voidmei-performance-analysis-tests.log`），覆盖稀疏爬升、低操纵输入不覆盖滚转记录、缺失 SEP、重排/缺列、非法数值/多机型拒绝、取消、图项切换及导出同名文件保护。首轮 JS 测试中的整数格式断言已改为数值断言，兼容有效的 `6` 与 `6.0` CSV 表示。
+
+新增入口后的既有 RecordExportGuiTest、RecordingSourceSwitchGuiTest、DesktopGuiTest 回归通过（`/tmp/voidmei-performance-analysis-integration.log`）。`nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-performance-analysis-nix.log`）。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

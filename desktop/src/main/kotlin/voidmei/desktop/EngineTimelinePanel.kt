@@ -49,6 +49,6 @@ internal fun EngineTimelinePanel(engineText: String, engineIndex: Int, fields: L
         val result = loaded.analysis
         Text("对应飞行记录：$source · ${result.summary.aircraft.ifBlank { "未知机型" }}")
         result.notes.forEach { Text(it) }
-        key(loaded) { RecordingWindowPanel(loaded.text, result, fields) }
+        key(loaded) { RecordingWindowPanel(loaded.text, result, fields, performance = false) }
     }
 }

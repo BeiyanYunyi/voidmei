@@ -13,19 +13,20 @@ import kotlin.math.roundToLong
 internal fun RecordingWindowPanel(text: String, full: FlightRecordAnalysis,
     fields: List<Pair<String, String>> = RecordedField.entries.map { it.id to it.label },
     chooseExport: (String) -> String? = ::chooseCsvExport,
+    performance: Boolean = true,
     analyzeWindow: suspend (String, Long, Long, List<String>) -> RecordWindowAnalysis = { source, start, end, columns ->
         val context = currentCoroutineContext()
         FlightRecordWindow.analyze(source, start, end, columns) { context.ensureActive() }
     }) {
     key(text, fields.map { it.first }) {
-        RecordingWindowContent(text, full, fields, chooseExport, analyzeWindow)
+        RecordingWindowContent(text, full, fields, chooseExport, analyzeWindow, performance)
     }
 }
 
 @Composable
 private fun RecordingWindowContent(text: String, full: FlightRecordAnalysis,
     fields: List<Pair<String, String>>, chooseExport: (String) -> String?,
-    analyzeWindow: suspend (String, Long, Long, List<String>) -> RecordWindowAnalysis) {
+    analyzeWindow: suspend (String, Long, Long, List<String>) -> RecordWindowAnalysis, performance: Boolean) {
     var seek by remember(text) { mutableStateOf<ReplaySeekRequest?>(null) }
     var serial by remember(text) { mutableStateOf(0) }
     var replayFrame by remember(text) { mutableStateOf<RecordedFrame?>(null) }
@@ -98,6 +99,7 @@ private fun RecordingWindowContent(text: String, full: FlightRecordAnalysis,
     }) { Text(if (exportBusy) "正在导出…" else "导出当前区间 CSV") }
     Text("导出已读取的数据，保留采样编号和时间列；旧版日志输出为转换后的 CSV。请选择新文件名。", style = MaterialTheme.typography.bodySmall)
     exportMessage?.let { Text(it) }
+    if (performance) key(result?.text ?: text) { PerformanceAnalysisPanel(result?.text ?: text, chooseExport) }
     RecordingPlotPanel(analysis.summary, analysis.plots, fields, offset, replayFrame = replayFrame,
         onPointSelected = if (replayFrame == null) null else { point ->
             point.sampleId?.let { seek = ReplaySeekRequest(++serial, it) }

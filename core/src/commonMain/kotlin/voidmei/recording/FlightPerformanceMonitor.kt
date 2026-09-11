@@ -55,8 +55,8 @@ class FlightPerformanceMonitor {
         val currentSep = flight.metrics.specificExcessPowerMps?.takeIf { it.isFinite() }
         val elev = t.elevatorPercent?.takeIf { it.isFinite() && abs(it) <= 100 }?.let(::abs)
         if (g != null && currentSep != null && elev != null && g > 1 && currentSep < 5 && elev >= elevator[bin]) {
-            val nextLoad = (load[bin] + g) / 2
-            val nextSep = (sep[bin] + currentSep) / 2
+            val nextLoad = load[bin] / 2 + g / 2
+            val nextSep = sep[bin] / 2 + currentSep / 2
             if (g - load[bin] > 3) result += PerformanceObservation.Turn(bin * 10, nextLoad, nextSep)
             load[bin] = nextLoad; sep[bin] = nextSep; elevator[bin] = elev
         }
