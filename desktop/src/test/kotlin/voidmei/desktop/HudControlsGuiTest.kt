@@ -1,0 +1,44 @@
+package voidmei.desktop
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.dp
+import org.junit.Rule
+import org.junit.Test
+import kotlin.test.*
+import voidmei.config.*
+
+class HudControlsGuiTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test fun signedControlPositionsMoveAcrossScaleAndMissingInputClearsMarker() {
+        val scene = HudSceneLayout(440, 300, listOf(HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 440, 300)))
+        var flight by mutableStateOf(hudPreviewFlight().let { it.copy(telemetry = it.telemetry.copy(
+            aileronPercent = -100.0, elevatorPercent = 0.0, rudderPercent = 100.0)) })
+        compose.setContent { MaterialTheme { Box(Modifier.size(440.dp, 300.dp)) {
+            HudPanel(flight, AppSettings(hudSceneLayout = scene), emptyList(), null) {}
+        } } }
+        fun markerX(id: String): Double? {
+            val pixels = compose.onNodeWithTag("hud-control-$id").captureToImage().toPixelMap()
+            val xs = mutableListOf<Int>()
+            for (y in 0 until pixels.height) for (x in 0 until pixels.width) {
+                val c = pixels[x, y]
+                if (c.green > .8f && c.red in .45f.. .6f && c.blue in .7f.. .85f) xs += x
+            }
+            return xs.takeIf { it.isNotEmpty() }?.average()
+        }
+        compose.onNodeWithText("副翼 -100.0%").assertIsDisplayed()
+        compose.onNodeWithText("升降舵 0.0%").assertIsDisplayed()
+        compose.onNodeWithText("方向舵 100.0%").assertIsDisplayed()
+        assertTrue(markerX("aileron")!! < markerX("elevator")!!)
+        assertTrue(markerX("elevator")!! < markerX("rudder")!!)
+        compose.runOnIdle { flight = flight.copy(telemetry = flight.telemetry.copy(aileronPercent = null, elevatorPercent = 101.0, rudderPercent = Double.NaN)) }
+        for (id in listOf("aileron", "elevator", "rudder")) assertNull(markerX(id))
+        compose.onNodeWithText("副翼 —%").assertIsDisplayed()
+    }
+}

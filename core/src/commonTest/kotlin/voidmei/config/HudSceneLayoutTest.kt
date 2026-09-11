@@ -3,6 +3,16 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun controlsRegionCanBeAddedAndSavedOnSmallAndNormalCanvases() {
+        val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.CONTROLS)
+        assertEquals(440, scene.regions.last().width)
+        assertEquals(260, scene.regions.last().height)
+        val small = scene.resizeCanvas(240, 120).addRegion(HudRegionContent.CONTROLS)
+        assertEquals(120, small.regions.last().height)
+        for (layout in listOf(scene, small))
+            assertEquals(layout, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = layout))).hudSceneLayout)
+    }
+
     @Test fun regionFontScaleDefaultsToInheritanceAndPersistsAcrossCopies() {
         val region = HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 240, 120)
         for (scale in listOf(null, .75f, 1.5f, 2f)) {

@@ -111,6 +111,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                 HudRegionContent.MAP -> Unit
                                 HudRegionContent.CROSSHAIR -> Unit
                                 HudRegionContent.COMPASS -> Unit
+                                HudRegionContent.CONTROLS -> ControlSurfacePanel(flight.telemetry)
                             }
                         }
                         HudScrollIndicator(scroll, Modifier.matchParentSize())

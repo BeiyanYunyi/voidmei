@@ -1,0 +1,39 @@
+package voidmei.desktop
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
+import androidx.compose.ui.unit.dp
+import voidmei.telemetry.Telemetry
+
+@Composable
+internal fun ControlSurfacePanel(telemetry: Telemetry) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        listOf(Triple("aileron", "副翼", telemetry.aileronPercent), Triple("elevator", "升降舵", telemetry.elevatorPercent),
+            Triple("rudder", "方向舵", telemetry.rudderPercent)).forEach { (id, label, raw) ->
+            val value = raw?.takeIf { it.isFinite() && it in -100.0..100.0 }
+            Text("$label ${readingNumber(value, 1)}%")
+            Canvas(Modifier.fillMaxWidth().height(24.dp).testTag("hud-control-$id").semantics {
+                contentDescription = "$label，刻度 -100% 至 +100%"
+                stateDescription = value?.let { "${readingNumber(it, 1)}%" } ?: "数据不可用"
+            }) {
+                val inset = minOf(6.dp.toPx(), size.width / 2)
+                val y = size.height / 2
+                drawLine(Color(0xFF9EB1C0), Offset(inset, y), Offset(size.width - inset, y), 1.dp.toPx())
+                drawLine(Color(0xFF9EB1C0), Offset(size.width / 2, y - 6.dp.toPx()), Offset(size.width / 2, y + 6.dp.toPx()), 1.dp.toPx())
+                value?.let {
+                    val x = inset + ((it + 100) / 200).toFloat() * (size.width - 2 * inset)
+                    drawCircle(Color(0xFF84DEC6), 4.dp.toPx().coerceAtMost(size.minDimension / 2), Offset(x, y))
+                }
+            }
+        }
+        Text("刻度 −100% / 0 / +100%；百分比不代表实际偏转角。", style = MaterialTheme.typography.bodySmall)
+    }
+}
