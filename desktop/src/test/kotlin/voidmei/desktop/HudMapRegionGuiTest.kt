@@ -17,6 +17,30 @@ import kotlin.test.*
 class HudMapRegionGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun mapUsesRemainingHeightAfterWrappedTitleAndKeepsScaleVisible() {
+        val original = HudRegion("map", HudRegionContent.MAP, 0, 0, 240, 500)
+        var region by mutableStateOf(original)
+        val map = MutableStateFlow<MapConnection>(MapConnection.Available(hudPreviewMap()))
+        compose.setContent { MaterialTheme { Box(Modifier.size(240.dp, 500.dp)) {
+            HudPanel(hudPreviewFlight(), AppSettings(hudFontScale = 2f,
+                hudSceneLayout = HudSceneLayout(240, 500, listOf(region))), emptyList(), null, sharedMap = map) {}
+        } } }
+        val first = compose.onNodeWithTag("map-objects-plot").getUnclippedBoundsInRoot()
+        compose.runOnIdle { region = region.copy(title = "战场地图与位置".repeat(8)) }
+        val next = compose.onNodeWithTag("map-objects-plot").getUnclippedBoundsInRoot()
+        assertTrue(next.bottom - next.top < first.bottom - first.top)
+        assertTrue(next.bottom - next.top >= 60.dp)
+        val bounds = compose.onNodeWithTag("hud-region-map").getUnclippedBoundsInRoot()
+        for (node in listOf(compose.onNodeWithText(region.title), compose.onNodeWithText("玩家位置 0.500, 0.500"),
+            compose.onNodeWithTag("map-distance-scale"))) {
+            node.assertIsDisplayed()
+            assertTrue(node.getUnclippedBoundsInRoot().bottom <= bounds.bottom)
+        }
+        compose.onAllNodes(hasScrollAction()).assertCountEquals(0)
+        compose.runOnIdle { region = original }
+        assertEquals(first, compose.onNodeWithTag("map-objects-plot").getUnclippedBoundsInRoot())
+    }
+
     @Test fun narrowRegionKeepsPlayerAndScaleVisibleWithLargerFonts() {
         val scene = HudSceneLayout(240, 400, listOf(HudRegion("map", HudRegionContent.MAP, 0, 0, 240, 400)))
         var fontScale by mutableStateOf(1f)

@@ -68,7 +68,8 @@ private data class MapSelection(val obj: MapObject, val distanceM: Double?)
 
 @Composable
 internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = null,
-    interactive: Boolean = true, side: androidx.compose.ui.unit.Dp = 320.dp, compact: Boolean = false) {
+    interactive: Boolean = true, side: androidx.compose.ui.unit.Dp = 320.dp, compact: Boolean = false,
+    plotModifier: Modifier? = null) {
     val distanceScale = MapScale.fromBounds(snapshot.bounds)
     var selection by remember(snapshot.bounds) { mutableStateOf<MapSelection?>(null) }
     val currentSnapshot by rememberUpdatedState(snapshot)
@@ -80,7 +81,7 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
     if (compact) MapPlayerPosition(snapshot)
     if (gridLines == null) Text("地图网格不可用", style = MaterialTheme.typography.bodySmall)
     val grid = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-    Canvas(Modifier.size(side).onSizeChanged { plotSize = it }.clipToBounds().pointerInput(snapshot.bounds, interactive) {
+    Canvas((plotModifier ?: Modifier.size(side)).onSizeChanged { plotSize = it }.clipToBounds().pointerInput(snapshot.bounds, interactive) {
         if (!interactive) return@pointerInput
         detectTapGestures { tap ->
             val current = currentSnapshot
@@ -138,7 +139,8 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
         val distance = if (scale.metres >= 1000) "${(scale.metres / 1000).toString().removeSuffix(".0")} km"
             else "${scale.metres.toString().removeSuffix(".0")} m"
         Text("距离标尺：$distance", style = MaterialTheme.typography.bodySmall)
-        Canvas(Modifier.size(side, 16.dp).testTag("map-distance-scale").semantics { contentDescription = "距离标尺 $distance" }) {
+        Canvas((if (plotModifier == null) Modifier.size(side, 16.dp) else Modifier.fillMaxWidth().height(16.dp))
+            .testTag("map-distance-scale").semantics { contentDescription = "距离标尺 $distance" }) {
             val viewport = MapViewport.fit(snapshot.bounds, plotSize.width.toDouble(), plotSize.height.toDouble()) ?: return@Canvas
             val length = (viewport.width * scale.widthFraction).toFloat()
             val y = size.height / 2

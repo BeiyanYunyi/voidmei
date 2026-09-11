@@ -50,6 +50,8 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                             if (region.title.isNotBlank()) Text(region.title, Modifier.align(androidx.compose.ui.Alignment.TopCenter))
                         } else if (flight != null && region.content == HudRegionContent.ALERTS) {
                             HudAlertRegion(region.title, alerts)
+                        } else if (flight != null && region.content == HudRegionContent.MAP) {
+                            HudMapObjects(mapEndpoint, sharedMap, region.title)
                         } else {
                         Column(Modifier.fillMaxSize().padding(end = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (region.title.isNotBlank()) Text(region.title)
@@ -74,7 +76,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     alerts = alerts, showFlapBar = settings.hudFlapBar)
                                 HudRegionContent.ALERTS -> Unit
                                 HudRegionContent.MESSAGES -> HudRecentMessages(messages)
-                                HudRegionContent.MAP -> HudMapObjects(mapEndpoint, sharedMap, region.height)
+                                HudRegionContent.MAP -> Unit
                                 HudRegionContent.CROSSHAIR -> Unit
                             }
                         }
