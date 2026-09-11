@@ -28,6 +28,7 @@ internal fun HudPanel(
     thermal: EngineThermalObservation? = null,
     mapEndpoint: String? = null,
     sharedMap: kotlinx.coroutines.flow.StateFlow<MapConnection>? = null,
+    connectionLabel: String? = null,
     header: @Composable () -> Unit,
 ) {
     val systemDensity = LocalDensity.current
@@ -40,7 +41,7 @@ internal fun HudPanel(
         },
         LocalReadingColumns provides settings.hudReadingColumns,
         LocalReadingColors provides readingColors(settings, hud = true)) {
-        HudPanelContent(connection, settings, alerts, model, onContentHeightChanged, thermal, mapEndpoint, sharedMap, header)
+        HudPanelContent(connection, settings, alerts, model, onContentHeightChanged, thermal, mapEndpoint, sharedMap, connectionLabel, header)
     }
 }
 
@@ -54,6 +55,7 @@ private fun HudPanelContent(
     thermal: EngineThermalObservation?,
     mapEndpoint: String?,
     sharedMap: kotlinx.coroutines.flow.StateFlow<MapConnection>?,
+    connectionLabel: String?,
     header: @Composable () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -90,7 +92,7 @@ private fun HudPanelContent(
         Column(Modifier.fillMaxWidth().padding(end = 8.dp).verticalScroll(bodyScroll)
             .testTag("hud-body").onSizeChanged { bodyHeight = it.height },
             verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(statusText(connection), color = Color.White)
+            Text(connectionLabel ?: statusText(connection), color = Color.White)
             flight?.let {
                 FlightPanel(it, compact = true, fields = fields,
                     mechanization = settings.hudMechanization, model = model, thermal = thermal,

@@ -3012,6 +3012,16 @@ HUD 的过载 G 值现在跟随现有 LOAD_LIMIT 告警使用配置的告警色�
 
 共享 JVM／JS、桌面单元及四项相关 GUI 回归通过（`/tmp/voidmei-hud-sep-status.log`，11 秒），覆盖首次样本、真实计算恢复、分别／同时缺少输入、长间隔重置、修改刷新间隔、字段隐藏与延迟状态；真机快照布局、矮窗口和负零读数回归通过。本轮未重建 Nix 包，未增加 SEP 真机稳定性验收结论。
 
+### 独立 HUD 布局预览
+
+HUD 设置新增“预览 HUD 布局”，打开可与设置页同时使用的独立窗口。窗口明确标注示例数据，使用本地两台发动机的固定样本及真实 FlightCalculator 派生值；不连接遥测、不写入飞行记录，也不调用告警语音。字段、发动机编号、字体缩放、列数、配色及宽度跟随当前设置，棋盘背景便于观察 HUD 透明度；真实 HUD 开关和位置不受预览开关影响。模型相关读数没有伪造 FM 数据，可能显示未知。
+
+原生窗口 GUI 测试验证打开、关闭、重新打开、同一窗口实时更新字段及发动机读数、500 dp 宽度更新，真实 HUD 保持关闭。原生截图 `desktop/build/hud-preview/layout-preview-{initial,configured}.png` 已人工检查；使用 Robot 截取独立窗口，避免 Compose 测试截图误捕设置页。截图修正后的定向回归通过（`/tmp/voidmei-hud-layout-preview-native-capture.log`）。
+
+完整回归还发现此前 SEP 状态说明使默认 440×520 dp HUD 的姿态说明底部越界约 2 dp；信息块间距改为 4 dp 后保留全部内容，修正单独提交为 `395dd22`。桌面单元及完整 GUI 回归通过：70 个类、192 项测试，零失败／错误／跳过，45 秒（`/tmp/voidmei-full-gui-layout-preview-after.log`）。
+
+最终离线 Nix 包构建通过（`/tmp/voidmei-hud-layout-preview-nix-after.log`），产物 `/nix/store/3lmn0ksfcd5w9q78jv06wyc66l0nvl39-voidmei-kotlin-2.0.0`。隔离 Xvfb/xcompmgr 验证，不扩大真实游戏及其他平台验收结论。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

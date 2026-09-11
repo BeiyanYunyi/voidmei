@@ -14,6 +14,9 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> Unit) {
+    var preview by remember { mutableStateOf(false) }
+    TextButton(onClick = { preview = true }, modifier = Modifier.testTag("hud-layout-preview")) { Text("预览 HUD 布局") }
+    if (preview) HudLayoutPreviewWindow(settings) { preview = false }
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Switch(settings.hudAutoHideOnFocusLoss, { onChange(settings.copy(hudAutoHideOnFocusLoss = it)) },
             Modifier.testTag("hud-auto-hide-focus"),
