@@ -135,6 +135,12 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                         HudScrollIndicator(scroll, Modifier.matchParentSize())
                         }
                         }
+                        if (LocalHudLayoutInspection.current && scroll.maxValue in 1 until Int.MAX_VALUE) {
+                            Text("内容超出区域", Modifier.align(androidx.compose.ui.Alignment.BottomEnd)
+                                .testTag("hud-region-overflow-${region.id}")
+                                .background(Color(0xFF713E00)).padding(horizontal = 4.dp, vertical = 2.dp),
+                                color = Color.White, style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
+                        }
                     }
                 }
             } } }

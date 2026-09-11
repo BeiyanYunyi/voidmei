@@ -18,6 +18,32 @@ import voidmei.telemetry.*
 class HudRegionScrollGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun previewMarksOverflowUntilLayoutFitsButLiveHudHasNoBadge() {
+        var region by mutableStateOf(HudRegion("engine", HudRegionContent.ENGINE, 0, 0, 400, 100,
+            contentAlpha = 0f))
+        var preview by mutableStateOf(true)
+        compose.setContent { MaterialTheme { Box(Modifier.size(440.dp, 500.dp)) {
+            val settings = AppSettings(hudSceneLayout = HudSceneLayout(440, 500, listOf(region)))
+            if (preview) HudLayoutPreview(settings)
+            else HudPanel(hudPreviewFlight(), settings, emptyList(), null) {}
+        } } }
+        val badge = compose.onNodeWithTag("hud-region-overflow-engine")
+        badge.assertIsDisplayed()
+        compose.runOnIdle { region = region.copy(height = 450) }
+        badge.assertDoesNotExist()
+        compose.runOnIdle { region = region.copy(height = 100) }
+        badge.assertIsDisplayed()
+        compose.runOnIdle { region = region.copy(fields = listOf("rpm"), showEngineInstruments = false) }
+        badge.assertDoesNotExist()
+        compose.runOnIdle { region = region.copy(fields = null); preview = false }
+        badge.assertDoesNotExist()
+        compose.onNodeWithTag("hud-scroll-indicator").assertExists()
+        compose.runOnIdle { preview = true }
+        badge.assertIsDisplayed()
+        compose.runOnIdle { region = region.copy(visible = false) }
+        badge.assertDoesNotExist()
+    }
+
     @Test fun reflowStartsAtTopButTelemetryAndPlacementKeepScrollPosition() {
         var region by mutableStateOf(HudRegion("flight", HudRegionContent.FLIGHT, 0, 0, 400, 180,
             fields = HudField.entries.map { it.id }, showFlightInstruments = false))

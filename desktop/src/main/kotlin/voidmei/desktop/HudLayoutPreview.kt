@@ -18,6 +18,8 @@ import voidmei.config.AppSettings
 import voidmei.telemetry.*
 import voidmei.fm.*
 
+internal val LocalHudLayoutInspection = staticCompositionLocalOf { false }
+
 /** Local illustrative samples; never enter the live telemetry or recording pipeline. */
 internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = false): ConnectionState.Flying {
     if (missing) return ConnectionState.Flying(TelemetryParser.parse("""{"valid":true}""",
@@ -83,6 +85,7 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
                 drawRect(if ((x + y) % 2 == 0) Color(0xFF39434D) else Color(0xFF252D35),
                     Offset(x * step, y * step), Size(step, step))
         }
+        CompositionLocalProvider(LocalHudLayoutInspection provides true) {
         HudPanel(flight, settings, alerts, model, thermal = thermal, sharedMap = map,
             messages = HudMessageState(if (missing) emptyList() else if (denseMessages) (1..20).flatMap { id -> listOf(
                 HudMessage(HudMessageKind.EVENT, id, "示例事件消息 $id"),
@@ -90,6 +93,7 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
                 HudMessage(HudMessageKind.EVENT, 1, "示例事件消息"), HudMessage(HudMessageKind.DAMAGE, 1, "示例损伤消息"))),
             connectionLabel = "示例数据与模型 · 可在设置窗口继续调整") {
             Text("HUD 布局预览")
+        }
         }
         settings.hudSceneLayout?.takeIf { it.enabled && onRegionMove != null }?.let { scene ->
             HudSceneDragOverlay(scene, onRegionMove!!, onRegionResize, dragTargetId)
@@ -148,6 +152,9 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
                                 modifier = Modifier.testTag("hud-preview-edit-regions"))
                     }
                     if (showAllAlerts && !missing) Text("全部告警样例仅用于布局检查，不代表这些告警会同时触发。", Modifier.padding(horizontal = 12.dp))
+                    if (settings.hudSceneLayout?.enabled == true) Text(
+                        "出现“内容超出区域”时，请增大区域、减少字段或缩小字号；运行中的 HUD 鼠标穿透，无法直接滚动。",
+                        Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall)
                     if (editing && settings.hudSceneLayout?.enabled == true) {
                         HudDragTargetSettings(regions, dragTarget) { dragTarget = it }
                         Text("拖动区域以移动，拖动右下角方块调整大小；指定目标可编辑被遮挡区域。修改自动保存。", Modifier.padding(horizontal = 12.dp))
