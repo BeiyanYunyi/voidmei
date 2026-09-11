@@ -18,6 +18,36 @@ import voidmei.config.*
 class ControlStickGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun controlNumbersUseSelectedFontAndShadowCanBeRemovedLive() {
+        val region = HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 400, 260, fields = listOf("aileron"))
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(400, 260, listOf(region)),
+            hudNumberFont = "serif", hudShadeColor = "#00FF00"))
+        compose.setContent { MaterialTheme { Box(Modifier.size(400.dp, 260.dp)) {
+            HudPanel(hudPreviewFlight(), settings, emptyList(), null) {}
+        } } }
+        val text = compose.onNodeWithTag("hud-control-reading-aileron")
+        fun checkFont(expected: androidx.compose.ui.text.font.FontFamily) {
+            val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            text.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(results) }
+            val rendered = results.single().layoutInput.text
+            val span = rendered.spanStyles.single { it.item.fontFamily != null }
+            assertEquals(expected, span.item.fontFamily)
+            assertEquals("0.0%", rendered.text.substring(span.start, span.end))
+        }
+        fun hasGreenShadow(): Boolean {
+            val pixels = text.captureToImage().toPixelMap()
+            return (0 until pixels.height).any { y -> (0 until pixels.width).any { x ->
+                pixels[x, y].let { it.green > .5f && it.red < .3f && it.blue < .3f }
+            } }
+        }
+        checkFont(androidx.compose.ui.text.font.FontFamily.Serif)
+        assertTrue(hasGreenShadow())
+        compose.runOnIdle { settings = settings.copy(hudNumberFont = "monospace", hudShadeColor = null) }
+        checkFont(androidx.compose.ui.text.font.FontFamily.Monospace)
+        assertFalse(hasGreenShadow())
+        text.assertTextEquals("副翼 0.0%")
+    }
+
     @Test fun axisAndStickMarkersFollowLiveHudPaletteTogether() {
         val region = HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 440, 260, showControlStick = true)
         var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(440, 260, listOf(region)),

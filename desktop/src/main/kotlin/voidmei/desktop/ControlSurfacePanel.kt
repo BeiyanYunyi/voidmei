@@ -4,15 +4,18 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import voidmei.telemetry.Telemetry
 import voidmei.telemetry.controlSurfacePercent
 
@@ -43,6 +46,13 @@ internal fun ControlSurfacePanel(telemetry: Telemetry, fields: List<String>? = n
 @Composable
 private fun ControlAxisReadings(selected: List<Triple<String, String, Double?>>) {
     val colors = LocalReadingColors.current
+    val numberFont = LocalReadingNumberFont.current
+    val density = LocalDensity.current
+    val shadeInset = if (colors.shade != null) with(density) { 1.sp.toDp() } else 0.dp
+    val shadow = colors.shade?.let { color ->
+        val offset = with(density) { shadeInset.toPx() }
+        androidx.compose.ui.graphics.Shadow(color, Offset(offset, offset), 0f)
+    }
     val track = colors.label ?: Color(0xFF9EB1C0)
     val marker = colors.value ?: Color(0xFF84DEC6)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -57,8 +67,10 @@ private fun ControlAxisReadings(selected: List<Triple<String, String, Double?>>)
                 append(readingNumber(value, 1))
                 colors.value?.let { addStyle(SpanStyle(color = it), numberStart, length) }
                 append("%")
+                addStyle(SpanStyle(fontFamily = numberFont), numberStart, length)
                 (colors.unit ?: colors.value)?.let { addStyle(SpanStyle(color = it), length - 1, length) }
-            }, Modifier.testTag("hud-control-reading-$id"))
+            }, Modifier.testTag("hud-control-reading-$id").padding(end = shadeInset, bottom = shadeInset),
+                style = LocalTextStyle.current.copy(shadow = shadow))
             Canvas(Modifier.fillMaxWidth().height(24.dp).testTag("hud-control-$id").semantics {
                 contentDescription = if (id == "wing_sweep") "$label，刻度 0% 至 100%" else "$label，刻度 -100% 至 +100%"
                 stateDescription = value?.let { "${readingNumber(it, 1)}%" } ?: "数据不可用"
