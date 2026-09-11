@@ -23,6 +23,16 @@ class FlightPerformanceAnalysisTest {
         assertFalse(csv.contains("climb,300,"))
     }
 
+    @Test fun arrivalTimeIncludesMissingAltitudeAndDescentWithoutInventingIntermediateBins() {
+        val csv = "sample_id,utc_epoch_ms,elapsed_ms,aircraft,altitude_m\n" +
+            "0,,5000,test,150\n1,,6000,test,\n2,,65000,test,100\n3,,75000,test,400\n"
+        val result = FlightPerformanceAnalyzer.analyze(csv)
+        assertEquals(listOf(100, 400), result.climb.map { it.altitudeM })
+        assertEquals(listOf(0L, 70000L), result.climb.map { it.elapsedMs })
+        // The missing interval and descent are part of elapsed recording time, not a measured climb duration.
+        assertTrue(result.climb.all { it.powerHp == null && it.thrustKgf == null && it.sepMps == null })
+    }
+
     @Test fun absentControlsCannotInventManeuverResultsAndReorderedColumnsWork() {
         val result = FlightPerformanceAnalyzer.analyze("aircraft,elapsed_ms,utc_epoch_ms,sample_id,roll_rate_degps,ias_kmh\ntest,100,,0,100,200\n")
         assertTrue(result.roll.isEmpty()); assertTrue(result.turn.isEmpty()); assertTrue(result.climb.isEmpty())

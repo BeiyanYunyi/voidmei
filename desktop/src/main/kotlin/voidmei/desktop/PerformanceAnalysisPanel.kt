@@ -39,7 +39,8 @@ internal fun PerformanceAnalysisPanel(text: String, chooseExport: (String) -> St
     val analysis = result ?: return
     Text("高度档 ${analysis.climb.size} · 滚转速度档 ${analysis.roll.size} · 过载速度档 ${analysis.turn.size}")
     Text("使用当前区间原始样本。只显示实际观测档位，不补零或插值；过载沿用旧版平滑规则，不是飞机极限。", style = MaterialTheme.typography.bodySmall)
-    val labels = listOf("爬升时间", "爬升功率", "爬升推力", "爬升 SEP", "滚转率", "平滑过载", "机动 SEP")
+    Text("到档时间从所选区间首帧起算，包含下降和数据缺失期间；不是连续爬升用时。", style = MaterialTheme.typography.bodySmall)
+    val labels = listOf("到档时间", "爬升功率", "爬升推力", "爬升 SEP", "滚转率", "平滑过载", "机动 SEP")
     FlowRow { labels.forEachIndexed { index, label -> FilterChip(kind == index, { kind = index }, label = { Text(label) }) } }
     val points: List<Pair<Double, Double>> = when (kind) {
         0 -> analysis.climb.map { it.altitudeM.toDouble() to it.elapsedMs / 1000.0 }
