@@ -76,9 +76,9 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
             imported.hudAltitudeMode?.let { Text("HUD 高度来源：${it.label}（雷达单位未判定时使用海拔）") }
             imported.hudNumberFont?.let { Text("HUD 表格数字字体：$it（需在当前系统安装）") }
             if (imported.hudReadingColors.isNotEmpty()) {
-                Text("配色仅应用于 HUD 飞行与发动机表格；旧版其他文字和图形填充尚未迁移。RGBA 末两位为透明度。")
+                Text("配色应用于主窗口与 HUD 飞行、发动机表格；旧版其他文字和图形填充尚未迁移。RGBA 末两位为透明度。")
                 val labels = mapOf("fontLabel" to "标签", "fontNum" to "普通读数", "fontUnit" to "单位", "fontWarn" to "告警读数", "fontShade" to "文字阴影")
-                imported.hudReadingColors.forEach { (key, color) -> Text("HUD ${labels[key]}颜色：$color") }
+                imported.hudReadingColors.forEach { (key, color) -> Text("表格默认及 HUD ${labels[key]}颜色：$color") }
             }
             imported.hiddenLabelChoices.forEach { (id, hidden) ->
                 Text("HUD ${voidmei.telemetry.HudField.entries.first { it.id == id }.label}标签：${if (hidden) "隐藏" else "显示"}（保留数值）")

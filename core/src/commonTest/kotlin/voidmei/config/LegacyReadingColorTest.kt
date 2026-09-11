@@ -16,10 +16,10 @@ class LegacyReadingColorTest {
         val current = AppSettings(hudOpacity = .4f, hudCrosshairImage = "/keep.png")
         val result = imported.applyTo(current)
         assertEquals(current.copy(hudLabelColor = "#12AB3480", hudValueColor = "#FFFFFFFF",
-            hudUnitColor = "#E89332FF", hudWarningColor = "#FF2400FF", hudShadeColor = "#00000080"), result)
+            hudUnitColor = "#E89332FF", hudWarningColor = "#FF2400FF", hudShadeColor = "#00000080", readingColors = mapOf("label" to "#12AB3480", "value" to "#FFFFFFFF", "unit" to "#E89332FF", "warning" to "#FF2400FF", "shade" to "#00000080")), result)
         assertEquals(result, SettingsJson.decode(SettingsJson.encode(result)))
         assertEquals(5, imported.unmigrated.size)
-        assertTrue(imported.unmigrated.all { it.label == "HUD 表格以外的全局配色" })
+        assertTrue(imported.unmigrated.all { it.label == "表格以外的全局配色" })
     }
 
     @Test fun invalidColorPreservesCurrentAndDecimalClampsLikeLegacy() {
@@ -30,7 +30,7 @@ class LegacyReadingColorTest {
             assertEquals(current, imported.applyTo(current))
             assertTrue(imported.unmigrated.single().label.contains("颜色无效"))
         }
-        assertEquals(current.copy(hudShadeColor = "#00FF0080"), read("fontShade", "-1, 300, 0, 128").applyTo(current))
+        assertEquals(current.copy(hudShadeColor = "#00FF0080", readingColors = mapOf("shade" to "#00FF0080")), read("fontShade", "-1, 300, 0, 128").applyTo(current))
         assertFails { LegacySettingsReader.read("""(panel p (item a :type switch :target fontNum :value true))""") }
     }
 }

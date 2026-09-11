@@ -2748,6 +2748,16 @@ FlightRecorder 在两份 CSV 追加并 flush 成功后更新观察器；每个�
 
 新增入口后的既有 RecordExportGuiTest、RecordingSourceSwitchGuiTest、DesktopGuiTest 回归通过（`/tmp/voidmei-performance-analysis-integration.log`）。`nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-performance-analysis-nix.log`）。
 
+### 主窗口表格默认配色与 HUD 继承
+
+新增 readingColors 配置映射，严格限制为标签、普通读数、单位、告警及阴影五种角色和合法十六进制颜色。主窗口“表格默认配色”可编辑和恢复默认；既有 HUD 专用颜色优先，留空时继承表格默认颜色。默认映射为空，保留原内置外观。主窗口通过同一 LocalReadingColors 作用于飞行和发动机表格，不将所有界面文字或图形填充一起改色。
+
+旧 fontLabel/fontNum/fontUnit/fontWarn/fontShade 同时迁移到表格默认及 HUD 专用颜色，保持原有导入后的 HUD 结果，并补齐主窗口表格。无效颜色保留当前配置，合法角色合并而非覆盖其它颜色；导入预览及未迁移说明更新为“表格以外的全局配色”，不再误报主窗口表格仍未支持。
+
+共享 JVM/JS、桌面及 GUI 回归通过（`/tmp/voidmei-table-colors-tests.log`）：严格映射解析、配置往返、旧颜色导入；真实 TextLayoutResult 验证主窗口飞行/发动机读数同步变化、HUD 继承、专用覆盖与清除后重新继承。既有 HUD 标签/数值/告警/单位像素与阴影、编辑器测试继续通过。图形填充及其它旧全局配色仍未全部迁移。
+
+`nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-table-colors-nix.log`）。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

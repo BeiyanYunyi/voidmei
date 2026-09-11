@@ -84,3 +84,10 @@ internal fun FlightReadings(rows: List<Pair<String, String>>, compact: Boolean, 
         }
     }
 }
+
+internal fun readingColors(settings: voidmei.config.AppSettings, hud: Boolean = false): ReadingColors {
+    fun color(key: String, override: String?) = (override?.takeIf { hud } ?: settings.readingColors[key])
+        ?.let { Color(voidmei.config.parseHexColor(it)!!) }
+    return ReadingColors(color("label", settings.hudLabelColor), color("value", settings.hudValueColor),
+        color("warning", settings.hudWarningColor), color("shade", settings.hudShadeColor), color("unit", settings.hudUnitColor))
+}

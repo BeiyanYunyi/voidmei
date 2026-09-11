@@ -21,6 +21,9 @@ data class LegacySettings(val intervalMs: Long?, val hudEnabled: Boolean?, val v
         hudAttitude != null || hudAutoHideOnFocusLoss != null || recordingAutoStart != null || connectionNotifications != null ||
         hudGear != null || hudFlaps != null || hudAirbrake != null || hudAoaBarWarningPercent != null || hudAoaWarningPercent != null || hudFlapBar != null || hudCompassHeadingUp != null || startInTray != null || hiddenLabelChoices.isNotEmpty() || hudCrosshair != null || hudCrosshairSizeDp != null || hudCrosshairImage != null || hudCrosshairStretch != null
     fun applyTo(current: AppSettings) = current.copy(
+        readingColors = current.readingColors + hudReadingColors.mapKeys { (key, _) ->
+            mapOf("fontLabel" to "label", "fontNum" to "value", "fontWarn" to "warning", "fontShade" to "shade", "fontUnit" to "unit").getValue(key)
+        },
         textFont = textFont ?: current.textFont,
         numberFont = numberFont ?: current.numberFont,
         endpoint = httpPort?.let { replaceTelemetryPort(current.endpoint, it) } ?: current.endpoint,
@@ -207,7 +210,7 @@ object LegacySettingsReader {
                 unmigrated += UnmigratedLegacySetting("颜色无效，保留当前配色", target)
                 null
             } else {
-                unmigrated += UnmigratedLegacySetting("HUD 表格以外的全局配色", target)
+                unmigrated += UnmigratedLegacySetting("表格以外的全局配色", target)
                 target to hex
             }
         }.toMap()

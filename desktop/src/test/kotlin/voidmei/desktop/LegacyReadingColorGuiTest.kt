@@ -28,11 +28,11 @@ class LegacyReadingColorGuiTest {
             compose.onNodeWithText("导入旧版设置").performClick()
             compose.onNodeWithText("选择旧版设置文件").performClick()
             compose.onNodeWithText("预览旧设置").performClick()
-            compose.waitUntil(5000) { compose.onAllNodesWithText("HUD 普通读数颜色：#0C223880").fetchSemanticsNodes().isNotEmpty() }
-            compose.onNodeWithText("配色仅应用于 HUD 飞行与发动机表格；旧版其他文字和图形填充尚未迁移。RGBA 末两位为透明度。").assertExists()
+            compose.waitUntil(5000) { compose.onAllNodesWithText("表格默认及 HUD 普通读数颜色：#0C223880").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("配色应用于主窗口与 HUD 飞行、发动机表格；旧版其他文字和图形填充尚未迁移。RGBA 末两位为透明度。").assertExists()
             compose.runOnIdle { assertEquals(initial, current) }
             compose.onNodeWithText("应用预览设置").performScrollTo().performClick()
-            compose.runOnIdle { assertEquals(initial.copy(hudValueColor = "#0C223880"), current) }
+            compose.runOnIdle { assertEquals(initial.copy(hudValueColor = "#0C223880", readingColors = mapOf("value" to "#0C223880")), current) }
             assertEquals(text, Files.readString(path))
         } finally { Files.deleteIfExists(path) }
     }

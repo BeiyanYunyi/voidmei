@@ -36,12 +36,7 @@ internal fun HudPanel(
         LocalReadingNumberFont provides remember(settings.hudNumberFont, settings.numberFont) {
             resolveHudNumberFont(settings.hudNumberFont ?: settings.numberFont).family
         },
-        LocalReadingColors provides ReadingColors(
-            settings.hudLabelColor?.let { Color(voidmei.config.parseHexColor(it)!!) },
-            settings.hudValueColor?.let { Color(voidmei.config.parseHexColor(it)!!) },
-            settings.hudWarningColor?.let { Color(voidmei.config.parseHexColor(it)!!) },
-            settings.hudShadeColor?.let { Color(voidmei.config.parseHexColor(it)!!) },
-            settings.hudUnitColor?.let { Color(voidmei.config.parseHexColor(it)!!) })) {
+        LocalReadingColors provides readingColors(settings, hud = true)) {
         HudPanelContent(connection, settings, alerts, model, onContentHeightChanged, thermal, mapEndpoint, sharedMap, header)
     }
 }

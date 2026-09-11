@@ -50,6 +50,7 @@ data class AppSettings(
     val hudCrosshairImage: String = "",
     val hudCrosshairStretch: Boolean = false,
     val hudCrosshairRight: Boolean = false,
+    val readingColors: Map<String, String> = emptyMap(),
     val hudLabelColor: String? = null,
     val hudValueColor: String? = null,
     val hudWarningColor: String? = null,
@@ -62,6 +63,7 @@ data class AppSettings(
     val hudAltitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL,
 ) {
     init {
+        require(readingColors.keys.all { it in setOf("label", "value", "warning", "shade", "unit") } && readingColors.values.all { parseHexColor(it) != null })
         require(numberFont == null || (numberFont.isNotBlank() && numberFont.length <= 200 && numberFont.none { it.isISOControl() }))
         require(textFont == null || (textFont.isNotBlank() && textFont.length <= 200 && textFont.none { it.isISOControl() }))
         require(hudNumberFont == null || (hudNumberFont.isNotBlank() && hudNumberFont.length <= 200 && hudNumberFont.none { it.isISOControl() }))
@@ -148,6 +150,9 @@ object SettingsJson {
                 require(value.isString)
                 HudAltitudeMode.entries.firstOrNull { it.id == value.content } ?: error("Unknown HUD altitude mode")
             } ?: defaults.hudAltitudeMode,
+            readingColors = root["readingColors"]?.jsonObject?.mapValues { (_, value) ->
+                value.jsonPrimitive.let { require(it.isString); it.content }
+            } ?: defaults.readingColors,
             numberFont = root["numberFont"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
             textFont = root["textFont"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
             hudNumberFont = root["hudNumberFont"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
@@ -234,6 +239,7 @@ object SettingsJson {
         fields["recordingDirectory"] = JsonPrimitive(settings.recordingDirectory)
         fields["recordingPerformanceNotifications"] = JsonPrimitive(settings.recordingPerformanceNotifications)
         fields["connectionNotifications"] = JsonPrimitive(settings.connectionNotifications)
+        fields["readingColors"] = JsonObject(settings.readingColors.mapValues { JsonPrimitive(it.value) })
         fields["startInTray"] = JsonPrimitive(settings.startInTray)
         fields["recordingAutoStart"] = JsonPrimitive(settings.recordingAutoStart)
         fields["hudCompatibilityMode"] = JsonPrimitive(settings.hudCompatibilityMode)

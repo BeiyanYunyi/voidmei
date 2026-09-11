@@ -250,7 +250,8 @@ fun main(args: Array<String>) {
             }
             val renderer = rememberRendererDiagnostics(window)
             var showRenderer by remember { mutableStateOf(false) }
-            CompositionLocalProvider(LocalReadingNumberFont provides remember(settings.numberFont) { resolveHudNumberFont(settings.numberFont).family }) {
+            CompositionLocalProvider(LocalReadingNumberFont provides remember(settings.numberFont) { resolveHudNumberFont(settings.numberFont).family },
+                LocalReadingColors provides readingColors(settings)) {
                 MaterialTheme(typography = typography, colorScheme = darkColorScheme(primary = Color(0xFF84DEC6), background = Color(0xFF111820))) {
                     recordingExitFailure?.let { (saveSettings, reason) ->
                         RecordingExitDialog(reason, onReturn = { recordingExitFailure = null }, onExit = {
@@ -299,6 +300,7 @@ fun main(args: Array<String>) {
                                 TextButton(enabled = !closing, onClick = { closeApp(saveSettings = false) }) { Text("不保存并退出") }
                             }
                             TextFontSettings(settings.textFont) { settings = settings.copy(textFont = it) }
+                            ReadingColorSettings(settings) { settings = it }
                             NumberFontSettings(settings.numberFont) { settings = settings.copy(numberFont = it) }
                             PollingIntervalSettings(settings.pollIntervalMs) { settings = settings.copy(pollIntervalMs = it) }
                             Text("HUD 背景不透明度 ${(settings.hudOpacity * 100).toInt()}%")

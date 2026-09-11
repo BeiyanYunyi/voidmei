@@ -12,13 +12,13 @@ internal fun HudReadingColorSettings(settings: AppSettings, onChange: (AppSettin
     var expanded by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) { Text("HUD 读数颜色") }
     if (expanded) Column {
-        Text("用于 HUD 飞行与发动机表格读数。输入 #RRGGBB 或 #RRGGBBAA（末两位为透明度），留空使用默认颜色。")
+        Text("用于 HUD 飞行与发动机表格读数。输入 #RRGGBB 或 #RRGGBBAA（末两位为透明度），留空继承表格默认颜色。")
         key(resetVersion) {
         ReadingColorInput("标签颜色", settings.hudLabelColor) { onChange(settings.copy(hudLabelColor = it)) }
         ReadingColorInput("普通读数颜色", settings.hudValueColor) { onChange(settings.copy(hudValueColor = it)) }
         ReadingColorInput("单位颜色", settings.hudUnitColor) { onChange(settings.copy(hudUnitColor = it)) }
         ReadingColorInput("文字阴影颜色", settings.hudShadeColor) { onChange(settings.copy(hudShadeColor = it)) }
-        Text("阴影颜色留空时关闭；偏移随 HUD 字体缩放。")
+        Text("阴影颜色留空时继承表格默认阴影；偏移随 HUD 字体缩放。")
         ReadingColorInput("告警读数颜色", settings.hudWarningColor) { onChange(settings.copy(hudWarningColor = it)) }
         }
         TextButton(onClick = { resetVersion++; onChange(settings.copy(hudLabelColor = null, hudValueColor = null, hudWarningColor = null, hudUnitColor = null, hudShadeColor = null)) }) { Text("恢复读数默认颜色") }
@@ -26,7 +26,7 @@ internal fun HudReadingColorSettings(settings: AppSettings, onChange: (AppSettin
 }
 
 @Composable
-private fun ReadingColorInput(label: String, value: String?, onChange: (String?) -> Unit) {
+internal fun ReadingColorInput(label: String, value: String?, onChange: (String?) -> Unit) {
     var input by remember(value) { mutableStateOf(value.orEmpty()) }
     val valid = input.isEmpty() || parseHexColor(input) != null
     OutlinedTextField(input, { text ->
