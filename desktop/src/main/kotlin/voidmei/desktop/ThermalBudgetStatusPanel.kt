@@ -1,7 +1,6 @@
 package voidmei.desktop
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,7 +36,7 @@ internal fun ThermalBudgetStatusPanel(flight: ConnectionState.Flying, model: Air
         }
         else -> ""
     }
-    Text(reason + "热预算区间包含未知初始损耗，按采样温度估算，不是实际剩余寿命。",
+    HudOverlayText(reason + "热预算区间包含未知初始损耗，按采样温度估算，不是实际剩余寿命。",
         Modifier.testTag("hud-thermal-budget-status"), style = MaterialTheme.typography.bodySmall,
         color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
 }

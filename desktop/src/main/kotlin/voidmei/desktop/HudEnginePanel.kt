@@ -35,10 +35,16 @@ internal fun engineReadingWarnings(flight: ConnectionState.Flying, index: Int, m
 internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.selected(HudEngineField.defaults),
     warnings: Map<HudEngineField, String> = emptyMap(), showInstruments: Boolean = true,
     heatBudget: ThermalBudgetRange? = null, powerPercent: PowerPercentReading? = null, tasKmh: Double? = null, hiddenLabels: List<String> = emptyList()) {
+    @Composable fun label(text: String, small: Boolean = false) {
+        val style = if (small) MaterialTheme.typography.bodySmall else androidx.compose.material3.LocalTextStyle.current
+        if (compact) HudOverlayText(text, style = style, color = LocalReadingColors.current.label
+            ?: if (small) androidx.compose.ui.graphics.Color(0xFF9EB1C0) else androidx.compose.material3.LocalContentColor.current)
+        else Text(text, style = style)
+    }
     Column {
-        Text("发动机 #$index")
+        label("发动机 #$index")
         val engine = engines.singleOrNull { it.index == index }
-        if (engine == null) Text("此编号无可用发动机数据")
+        if (engine == null) label("此编号无可用发动机数据")
         else {
             fun Double?.shown(unit: String, digits: Int = 0): String =
                 readingNumber(this, digits) + " $unit"
@@ -51,7 +57,7 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
                 Triple(field.label, if (field == HudEngineField.HEAT_BUDGET) formatThermalBudget(heatBudget)
                     else field.value(engine, tasKmh).shown(field.unit, digits), field.unit)
             }
-            if (fields.isEmpty()) Text("未选择发动机读数")
+            if (fields.isEmpty()) label("未选择发动机读数")
             val rows = readings.map { it.first to it.second }
             val warningRows = fields.mapIndexedNotNull { row, field ->
                 warnings[field]?.takeIf { if (field == HudEngineField.HEAT_BUDGET) heatBudget?.roundForDisplay() != null
@@ -64,8 +70,7 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
             }.toMap())
             fields.distinct().forEach { field ->
                 propulsionUnavailableReason(field, engine, tasKmh)?.let { reason ->
-                    Text("${field.label}：$reason", style = MaterialTheme.typography.bodySmall,
-                        color = LocalReadingColors.current.label ?: androidx.compose.ui.graphics.Color(0xFF9EB1C0))
+                    label("${field.label}：$reason", small = true)
                 }
             }
             if (compact && showInstruments && HudEngineField.THROTTLE in fields)
