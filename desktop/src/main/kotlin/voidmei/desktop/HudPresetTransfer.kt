@@ -1,9 +1,13 @@
 package voidmei.desktop
 
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import kotlinx.coroutines.*
 import voidmei.config.*
 import java.nio.ByteBuffer
@@ -70,31 +74,44 @@ internal fun HudPresetTransfer(settings: AppSettings, onChange: (AppSettings) ->
     if (status.isNotEmpty()) Text(status, Modifier.testTag("hud-presets-file-status"))
     imported?.let { presets ->
         var names by remember(presets) { mutableStateOf<Map<String, String>>(emptyMap()) }
+        var excluded by remember(presets) { mutableStateOf<Set<String>>(emptySet()) }
         val targets = presets.keys.associateWith { (names[it] ?: it).trim() }
-        val invalid = targets.values.any { it.isEmpty() || it.length > 80 || it.any(Char::isISOControl) }
-        val duplicates = targets.values.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+        val selectedTargets = targets.filterKeys { it !in excluded }
+        val invalid = selectedTargets.values.any { it.isEmpty() || it.length > 80 || it.any(Char::isISOControl) }
+        val duplicates = selectedTargets.values.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
         val additions = if (invalid || duplicates.isNotEmpty()) emptyMap() else presets.entries
-            .filter { targets.getValue(it.key) !in settings.hudScenePresets }
+            .filter { it.key !in excluded && targets.getValue(it.key) !in settings.hudScenePresets }
             .associate { targets.getValue(it.key) to it.value }
         val fits = settings.hudScenePresets.size + additions.size <= 16
         Text("文件：$source")
         if (presets.isEmpty()) Text("文件中没有预设。")
         presets.forEach { (name, scene) ->
             val target = targets.getValue(name)
-            Text("$name · ${scene.regions.size} 区域 · ${scene.width} × ${scene.height} dp" +
-                if (target in settings.hudScenePresets) " · 同名，跳过" else " · 待添加")
+            val selected = name !in excluded
+            Row(Modifier.testTag("hud-presets-import-select-$name").toggleable(selected, role = Role.Checkbox,
+                onValueChange = { excluded = if (it) excluded - name else excluded + name }),
+                verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(selected, onCheckedChange = null)
+                Text("$name · ${scene.regions.size} 区域 · ${scene.width} × ${scene.height} dp" + when {
+                    !selected -> " · 未选择"
+                    target in settings.hudScenePresets -> " · 同名，跳过"
+                    else -> " · 待添加"
+                })
+            }
             if (name in names) {
                 OutlinedTextField(names.getValue(name), { names = names + (name to it) }, singleLine = true,
                     label = { Text("导入名称 · $name") },
-                    isError = target.isEmpty() || target.length > 80 || target.any(Char::isISOControl) || target in duplicates,
+                    enabled = selected,
+                    isError = selected && (target.isEmpty() || target.length > 80 || target.any(Char::isISOControl) || target in duplicates),
                     modifier = Modifier.testTag("hud-presets-import-name-$name"))
             } else TextButton({ names = names + (name to name) },
+                enabled = selected,
                 modifier = Modifier.testTag("hud-presets-import-rename-$name")) { Text("修改导入名称") }
         }
-        Text("仅添加不同名预设；可修改导入名称以保留同名布局。保留当前布局与全局设置。")
+        Text("仅添加勾选且不同名的预设；可修改导入名称以保留同名布局。保留当前布局与全局设置。")
         if (invalid) Text("导入名称须为 1–80 个字符，不能含控制字符。")
         if (duplicates.isNotEmpty()) Text("文件内的导入名称重复，请分别命名。")
-        if (!fits) Text("添加后超过 16 套，请先移除部分已保存预设。")
+        if (!fits) Text("添加后超过 16 套，请减少勾选或先移除部分已保存预设。")
         Button({
             onChange(settings.copy(hudScenePresets = settings.hudScenePresets + additions))
             imported = null

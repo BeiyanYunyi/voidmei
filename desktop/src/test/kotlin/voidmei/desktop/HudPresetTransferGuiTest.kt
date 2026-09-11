@@ -16,6 +16,39 @@ import voidmei.config.*
 class HudPresetTransferGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun selectingSubsetFitsRemainingCapacityAndIgnoresExcludedInvalidName() {
+        val root = Files.createTempDirectory("voidmei-preset-subset-")
+        try {
+            val scene = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
+            val input = root.resolve("input.json")
+            writeHudPresets(input, mapOf("巡航" to scene, "作战" to scene.copy(enabled = false)))
+            val original = AppSettings(hudSceneLayout = scene,
+                hudScenePresets = (1..15).associate { "已有$it" to scene })
+            var settings by mutableStateOf(original)
+            compose.setContent { MaterialTheme { Column(Modifier.size(800.dp, 900.dp)) {
+                HudPresetTransfer(settings, { settings = it }, { input.toString() }, { null })
+            } } }
+            compose.onNodeWithTag("hud-presets-import").performClick()
+            compose.waitUntil(5000) { compose.onAllNodesWithTag("hud-presets-import-apply").fetchSemanticsNodes().isNotEmpty() }
+            val apply = compose.onNodeWithTag("hud-presets-import-apply")
+            apply.assertIsNotEnabled()
+            compose.onNodeWithTag("hud-presets-import-rename-作战").performClick()
+            compose.onNodeWithTag("hud-presets-import-name-作战").performTextReplacement("")
+            compose.onNodeWithTag("hud-presets-import-select-作战").performClick().assertIsOff()
+            compose.onNodeWithTag("hud-presets-import-name-作战").assertIsNotEnabled()
+            apply.assertIsEnabled()
+            compose.onNodeWithTag("hud-presets-import-select-巡航").performClick().assertIsOff()
+            apply.assertIsNotEnabled()
+            compose.onNodeWithTag("hud-presets-import-select-巡航").performClick().assertIsOn()
+            compose.onNodeWithTag("hud-presets-import-select-作战").performClick().assertIsOn()
+            apply.assertIsNotEnabled() // The retained invalid draft matters again when reselected.
+            compose.onNodeWithTag("hud-presets-import-select-作战").performClick()
+            compose.runOnIdle { assertEquals(original, settings) }
+            apply.performClick()
+            compose.runOnIdle { assertEquals(original.copy(hudScenePresets = original.hudScenePresets + ("巡航" to scene)), settings) }
+        } finally { root.toFile().deleteRecursively() }
+    }
+
     @Test fun renameDuringImportPreservesBothLayoutsAndRejectsDuplicateTargets() {
         val root = Files.createTempDirectory("voidmei-preset-rename-")
         try {
