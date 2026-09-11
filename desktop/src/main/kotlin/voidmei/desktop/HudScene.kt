@@ -39,12 +39,15 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                     HudRegionContent.ENGINE -> settings.hudEngineFields
                     HudRegionContent.MECHANIZATION -> HudMechanizationField.inherited(settings)
                     HudRegionContent.MESSAGES -> HudMessageKind.entries.map { it.name.lowercase() }
+                    HudRegionContent.ALERTS -> AlertSeverity.entries.map { it.name.lowercase() }
                     else -> settings.hudFields
                 }
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields) {
                     rememberScrollState()
                 }
-                if (region.visible && (flight == null || region.content != HudRegionContent.ALERTS || alerts.isNotEmpty())) {
+                val regionAlerts = if (region.content == HudRegionContent.ALERTS)
+                    alerts.filter { it.severity.name.lowercase() in fields } else alerts
+                if (region.visible && (flight == null || region.content != HudRegionContent.ALERTS || regionAlerts.isNotEmpty())) {
                     Box(Modifier.offset(region.x.dp, region.y.dp).size(region.width.dp, region.height.dp)
                         .clipToBounds().testTag("hud-region-${region.id}")
                         .background(Color(0xFF111820).copy(alpha = region.backgroundAlpha))) {
@@ -55,7 +58,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                             else ImageCrosshair(settings.hudCrosshairImage, size, Modifier.fillMaxSize(), settings.hudCrosshairStretch, shared = crosshairImage)
                             if (region.title.isNotBlank()) Text(region.title, Modifier.align(androidx.compose.ui.Alignment.TopCenter))
                         } else if (flight != null && region.content == HudRegionContent.ALERTS) {
-                            HudAlertRegion(region.title, alerts)
+                            HudAlertRegion(region.title, regionAlerts)
                         } else if (flight != null && region.content == HudRegionContent.MAP) {
                             HudMapObjects(mapEndpoint, sharedMap, region.title)
                         } else if (flight != null && region.content == HudRegionContent.ATTITUDE) {

@@ -10,6 +10,20 @@ import voidmei.telemetry.*
 
 @Composable
 internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, onChange: (HudRegion) -> Unit) {
+    if (region.content == HudRegionContent.ALERTS) {
+        val selected = region.fields ?: AlertSeverity.entries.map { it.name.lowercase() }
+        Text("告警类别（无匹配告警时隐藏区域）")
+        FlowRow {
+            AlertSeverity.entries.forEach { severity ->
+                val id = severity.name.lowercase()
+                FilterChip(id in selected, { onChange(region.copy(fields =
+                    if (id in selected) selected.filterNot { it == id } else selected + id)) },
+                    label = { Text(if (severity == AlertSeverity.WARNING) "警告" else "提示") },
+                    modifier = Modifier.testTag("hud-region-alert-${region.id}-$id"))
+            }
+        }
+        return
+    }
     if (region.content == HudRegionContent.MESSAGES) {
         val selected = region.fields ?: HudMessageKind.entries.map { it.name.lowercase() }
         Text("消息类别（筛选后显示最近 5 条）")
