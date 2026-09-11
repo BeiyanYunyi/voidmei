@@ -17,6 +17,27 @@ import kotlin.test.*
 class HudMapRegionGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun narrowRegionKeepsPlayerAndScaleVisibleWithLargerFonts() {
+        val scene = HudSceneLayout(240, 400, listOf(HudRegion("map", HudRegionContent.MAP, 0, 0, 240, 400)))
+        var fontScale by mutableStateOf(1f)
+        val map = MutableStateFlow<MapConnection>(MapConnection.Available(hudPreviewMap()))
+        compose.setContent { MaterialTheme { Box(Modifier.size(240.dp, 400.dp)) {
+            HudPanel(hudPreviewFlight(), AppSettings(hudSceneLayout = scene, hudFontScale = fontScale),
+                emptyList(), null, sharedMap = map) {}
+        } } }
+        for (scale in listOf(1f, 1.5f, 2f)) {
+            compose.runOnIdle { fontScale = scale }
+            val region = compose.onNodeWithTag("hud-region-map").getUnclippedBoundsInRoot()
+            for (node in listOf(compose.onNodeWithText("玩家位置 0.500, 0.500"),
+                compose.onNodeWithTag("map-distance-scale"), compose.onNodeWithTag("map-objects-plot"))) {
+                node.assertIsDisplayed()
+                val bounds = node.getUnclippedBoundsInRoot()
+                assertTrue(bounds.bottom <= region.bottom, "content below region at font scale $scale")
+                assertTrue(bounds.left >= region.left && bounds.right <= region.right)
+            }
+        }
+    }
+
     @Test fun regionsShareMapAndClearObjectsOnErrorsDelaysAndHiding() {
         val region = HudRegion("map", HudRegionContent.MAP, 0, 0, 360, 550)
         val scene = HudSceneLayout(760, 600, listOf(region, region.copy(id = "second", x = 380)))
@@ -28,7 +49,7 @@ class HudMapRegionGuiTest {
         } } }
         compose.onAllNodesWithTag("map-objects-plot").assertCountEquals(2)
         compose.onAllNodesWithText("玩家位置 0.500, 0.500").assertCountEquals(2)
-        compose.onAllNodesWithText("地图对象示意 · 3 个对象 · 每秒更新").assertCountEquals(2)
+        compose.onAllNodesWithText("地图对象 · 3 · 无底图").assertCountEquals(2)
         compose.onAllNodesWithTag("map-objects-plot")[0].performTouchInput { click(center) }
         compose.onAllNodesWithText("点击时对象：", substring = true).assertCountEquals(0)
         compose.runOnIdle { map.value = MapConnection.Unavailable("test") }

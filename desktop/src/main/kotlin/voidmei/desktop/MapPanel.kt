@@ -68,14 +68,16 @@ private data class MapSelection(val obj: MapObject, val distanceM: Double?)
 
 @Composable
 internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = null,
-    interactive: Boolean = true, side: androidx.compose.ui.unit.Dp = 320.dp) {
+    interactive: Boolean = true, side: androidx.compose.ui.unit.Dp = 320.dp, compact: Boolean = false) {
     val distanceScale = MapScale.fromBounds(snapshot.bounds)
     var selection by remember(snapshot.bounds) { mutableStateOf<MapSelection?>(null) }
     val currentSnapshot by rememberUpdatedState(snapshot)
     var plotSize by remember { mutableStateOf(IntSize.Zero) }
-    Text("地图对象示意 · ${snapshot.objects.size} 个对象 · 每秒更新" + if (interactive) " · 点击点状对象查看详情" else "")
+    Text(if (compact) "地图对象 · ${snapshot.objects.size} · ${if (background == null) "无底图" else "含底图"}"
+        else "地图对象示意 · ${snapshot.objects.size} 个对象 · 每秒更新" + if (interactive) " · 点击点状对象查看详情" else "")
     val gridLines = remember(snapshot.bounds) { MapGrid.lines(snapshot.bounds) }
     Text("玩家格号：${MapGrid.playerCell(snapshot) ?: "—"}", style = MaterialTheme.typography.bodySmall)
+    if (compact) MapPlayerPosition(snapshot)
     if (gridLines == null) Text("地图网格不可用", style = MaterialTheme.typography.bodySmall)
     val grid = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
     Canvas(Modifier.size(side).onSizeChanged { plotSize = it }.clipToBounds().pointerInput(snapshot.bounds, interactive) {
@@ -146,7 +148,14 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
             drawLine(Color.White, Offset(x + length, y - 4.dp.toPx()), Offset(x + length, y + 4.dp.toPx()), 2.dp.toPx())
         }
     }
-    Text((if (background == null) "归一化坐标示意，不含地图底图。" else "底图与对象按归一化坐标叠加。") + "按地图宽高等比例显示；短线表示方向，范围外点状对象不绘制，线状对象裁剪到地图边界。", style = MaterialTheme.typography.bodySmall)
+    if (!compact) {
+        Text((if (background == null) "归一化坐标示意，不含地图底图。" else "底图与对象按归一化坐标叠加。") + "按地图宽高等比例显示；短线表示方向，范围外点状对象不绘制，线状对象裁剪到地图边界。", style = MaterialTheme.typography.bodySmall)
+        MapPlayerPosition(snapshot)
+    }
+}
+
+@Composable
+private fun MapPlayerPosition(snapshot: MapSnapshot) {
     snapshot.player?.position?.let { Text("玩家位置 ${"%.3f".format(java.util.Locale.ROOT, it.x)}, ${"%.3f".format(java.util.Locale.ROOT, it.y)}") }
         ?: Text("玩家位置未知")
 }

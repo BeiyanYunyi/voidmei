@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
 import voidmei.telemetry.MapConnection
@@ -21,9 +22,9 @@ internal fun HudMapObjects(endpoint: String?, shared: StateFlow<MapConnection>?,
             MapConnection.Waiting -> Text("等待有效飞行地图")
             is MapConnection.Unavailable -> Text("地图不可用：${current.reason}")
             is MapConnection.Available -> BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val side = minOf(maxWidth, (height - 160).coerceAtLeast(80).dp)
+                val side = minOf(maxWidth, (height - 160 * LocalDensity.current.fontScale).coerceAtLeast(40f).dp)
                 Column {
-                    MapObjectPlot(current.snapshot, interactive = false, side = side)
+                    MapObjectPlot(current.snapshot, interactive = false, side = side, compact = true)
                 }
             }
         }
