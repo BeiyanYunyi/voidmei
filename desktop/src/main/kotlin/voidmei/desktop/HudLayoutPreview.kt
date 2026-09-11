@@ -37,7 +37,7 @@ internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = fals
         "water temp 2, C":90,"oil temp 2, C":75,
         "RPM throttle 2, %":70,"mixture 2, %":90,"radiator 2, %":50,"oil radiator 2, %":40,
         "compressor stage 2":2
-    }""", """{"valid":true,"type":"preview","aviahorizon_pitch":-5,"aviahorizon_roll":15,"compass":45}""")!!
+    }""", """{"valid":true,"type":"preview","aviahorizon_pitch":-5,"aviahorizon_roll":15,"compass":45,"wing_sweep_indicator":0.35}""")!!
     val next = if (warnings) telemetry.copy(iasKmh = 510.0, tasKmh = 550.0, mach = .95,
         angleOfAttackDeg = 16.0, fuelKg = 30.0, engines = telemetry.engines.map {
             it.copy(rpm = 3200.0, waterTemperatureC = 110.0, oilTemperatureC = 95.0)

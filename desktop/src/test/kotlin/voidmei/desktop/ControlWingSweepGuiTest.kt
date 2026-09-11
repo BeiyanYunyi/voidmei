@@ -17,6 +17,24 @@ import voidmei.config.*
 class ControlWingSweepGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun layoutPreviewShowsSweepAndClearsItsMissingSample() {
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(400, 300, listOf(
+            HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 400, 300, fields = listOf("wing_sweep")))))
+        var missing by mutableStateOf(false)
+        var warnings by mutableStateOf(false)
+        compose.setContent { MaterialTheme { Box(Modifier.size(400.dp, 300.dp)) {
+            HudLayoutPreview(settings, warnings = warnings, missing = missing)
+        } } }
+        compose.onNodeWithText("后掠 35.0%").assertIsDisplayed()
+        compose.runOnIdle { warnings = true }
+        compose.onNodeWithText("后掠 35.0%").assertIsDisplayed()
+        compose.runOnIdle { missing = true }
+        compose.onNodeWithText("后掠 35.0%").assertDoesNotExist()
+        compose.onNodeWithText("后掠 —%").assertIsDisplayed()
+        compose.runOnIdle { missing = false }
+        compose.onNodeWithText("后掠 35.0%").assertIsDisplayed()
+    }
+
     @Test fun selectingSweepUsesUnsignedScaleAndClearsInvalidSamples() {
         var region by mutableStateOf(HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 400, 400,
             fields = emptyList()))
