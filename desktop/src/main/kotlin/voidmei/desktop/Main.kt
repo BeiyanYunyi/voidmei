@@ -531,7 +531,7 @@ private fun FlightAnalysisPanel(metrics: FlightMetrics) {
 }
 
 @Composable
-internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = false, fields: List<HudField> = HudField.selected(HudField.defaults), mechanization: Boolean = true, model: AircraftAlertModel? = null, thermal: EngineThermalObservation? = null, showGear: Boolean = true, showFlaps: Boolean = true, showAirbrake: Boolean = true, aoaBarWarningPercent: Double = 25.0, aoaWarningPercent: Double = 20.0, readingAlerts: List<FlightAlert> = emptyList(), showFlapBar: Boolean = true, compassHeadingUp: Boolean = false, hiddenLabels: List<String> = emptyList(), altitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL) {
+internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = false, fields: List<HudField> = HudField.selected(HudField.defaults), mechanization: Boolean = true, model: AircraftAlertModel? = null, thermal: EngineThermalObservation? = null, showGear: Boolean = true, showFlaps: Boolean = true, showAirbrake: Boolean = true, aoaBarWarningPercent: Double = 25.0, aoaWarningPercent: Double = 20.0, readingAlerts: List<FlightAlert> = emptyList(), showFlapBar: Boolean = true, compassHeadingUp: Boolean = false, hiddenLabels: List<String> = emptyList(), altitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL, pollingIntervalMs: Long? = null) {
     val t = flight.telemetry
     val altitude = if (compact) altitudeMode.reading(flight) else HudAltitudeMode.SEA_LEVEL.reading(flight)
     fun readingUnit(field: HudField) = if (field == HudField.ALTITUDE) altitude.unit else field.unitFor(t, flight.metrics, model)
@@ -582,6 +582,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         key(t.aircraft, if (compact) altitudeMode else null) {
             FlightReadings(rows, compact, warnings, if (compact) fields.indices.filter { fields[it].id in hiddenLabels }.toSet() else emptySet(), unitRanges)
         }
+        if (compact && HudField.SEP in fields) SepStatusPanel(flight, pollingIntervalMs)
         if (compact && HudField.HEADING in fields) CompassPanel(t.headingDeg, compassHeadingUp)
         if (compact && HudField.AOA in fields) AoaMarginPanel(t, model, aoaBarWarningPercent)
         if (compact && HudField.ENGINE1_THROTTLE in fields) ThrottleBar(flight)

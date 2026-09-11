@@ -38,9 +38,9 @@ class FlightCalculator {
         previous = current to timeMs
         val speed = current.tasKmh?.takeIf { it.isFinite() && it >= 0 }?.div(3.6)
         val energy = if (speed != null && current.altitudeM != null) current.altitudeM + speed * speed / (2 * G) else null
-        val dt = prior?.takeIf { timeMs > it.second && timeMs - it.second in 1..2000 }
+        val dt = prior?.takeIf { timeMs > it.second && timeMs - it.second in 1..MAXIMUM_SAMPLE_GAP_MS }
             ?.let { (timeMs - it.second) / 1000.0 }
-        val sameFlight = prior != null && prior.first.aircraft == current.aircraft && dt != null && dt > 0 && dt <= 2
+        val sameFlight = prior != null && prior.first.aircraft == current.aircraft && dt != null && dt > 0
         if (!sameFlight || prior?.first?.fuelCapacityKg != current.fuelCapacityKg) fuelEstimator.reset()
         if (!sameFlight || speed == null) speedTrend.reset()
         val trend = speed?.let { speedTrend.update(it, timeMs) }
@@ -80,5 +80,8 @@ class FlightCalculator {
 
     private fun Double?.finite() = this?.takeIf { it.isFinite() }
 
-    companion object { const val G = 9.80665 }
+    companion object {
+        const val G = 9.80665
+        const val MAXIMUM_SAMPLE_GAP_MS = 2000L
+    }
 }
