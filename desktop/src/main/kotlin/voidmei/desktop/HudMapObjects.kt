@@ -42,11 +42,10 @@ internal fun HudMapObjects(endpoint: String?, shared: StateFlow<MapConnection>?,
                         delay(5000)
                     } while (isActive)
                 }
-                if (endpoint != null && background == null) Text(
-                    error?.let { "底图不可用：$it" } ?: "正在加载地图底图…",
-                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                val backgroundStatus = if (endpoint != null && background == null)
+                    error?.let { "底图不可用：$it" } ?: "底图加载中…" else null
                 MapObjectPlot(current.snapshot, background, interactive = false, compact = true,
-                    plotModifier = Modifier.fillMaxWidth().weight(1f))
+                    plotModifier = Modifier.fillMaxWidth().weight(1f), backgroundStatus = backgroundStatus)
             }
         }
     }

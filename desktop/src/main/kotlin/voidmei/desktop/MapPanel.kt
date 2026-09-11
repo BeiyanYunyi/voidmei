@@ -69,9 +69,10 @@ private data class MapSelection(val obj: MapObject, val distanceM: Double?)
 @Composable
 internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = null,
     interactive: Boolean = true, side: androidx.compose.ui.unit.Dp = 320.dp, compact: Boolean = false,
-    plotModifier: Modifier? = null) {
-    @Composable fun label(text: String, style: androidx.compose.ui.text.TextStyle = LocalTextStyle.current) {
-        if (compact) HudOverlayText(text, color = LocalReadingColors.current.label ?: LocalContentColor.current, style = style)
+    plotModifier: Modifier? = null, backgroundStatus: String? = null) {
+    @Composable fun label(text: String, style: androidx.compose.ui.text.TextStyle = LocalTextStyle.current, maxLines: Int = Int.MAX_VALUE) {
+        if (compact) HudOverlayText(text, color = LocalReadingColors.current.label ?: LocalContentColor.current, style = style,
+            maxLines = maxLines, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         else Text(text, style = style)
     }
     val scaleColor = if (compact) LocalReadingColors.current.label ?: Color.White else Color.White
@@ -79,8 +80,9 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
     var selection by remember(snapshot.bounds) { mutableStateOf<MapSelection?>(null) }
     val currentSnapshot by rememberUpdatedState(snapshot)
     var plotSize by remember { mutableStateOf(IntSize.Zero) }
-    label(if (compact) "地图对象 · ${snapshot.objects.size} · ${if (background == null) "无底图" else "含底图"}"
-        else "地图对象示意 · ${snapshot.objects.size} 个对象 · 每秒更新" + if (interactive) " · 点击点状对象查看详情" else "")
+    label(if (compact) "地图对象 · ${snapshot.objects.size} · ${backgroundStatus ?: if (background == null) "无底图" else "含底图"}"
+        else "地图对象示意 · ${snapshot.objects.size} 个对象 · 每秒更新" + if (interactive) " · 点击点状对象查看详情" else "",
+        maxLines = if (compact) 1 else Int.MAX_VALUE)
     val gridLines = remember(snapshot.bounds) { MapGrid.lines(snapshot.bounds) }
     label("玩家格号：${MapGrid.playerCell(snapshot) ?: "—"}", style = MaterialTheme.typography.bodySmall)
     if (compact) MapPlayerPosition(snapshot, true)

@@ -124,8 +124,12 @@ class HudMapBackgroundGuiTest {
                 compose.onAllNodesWithContentDescription("地图底图与对象位置方向").fetchSemanticsNodes().size == (if (second) 2 else 1)
             }
             waitForFailure()
+            val failedBounds = compose.onNodeWithTag("map-objects-plot").getUnclippedBoundsInRoot()
+            val failedScale = compose.onNodeWithTag("map-distance-scale").getUnclippedBoundsInRoot()
             broken.set(false)
             waitForImage()
+            assertEquals(failedBounds, compose.onNodeWithTag("map-objects-plot").getUnclippedBoundsInRoot())
+            assertEquals(failedScale, compose.onNodeWithTag("map-distance-scale").getUnclippedBoundsInRoot())
             assertEquals(2, images.get())
             compose.runOnIdle { second = true }
             waitForImage()
