@@ -11,7 +11,8 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
     MANIFOLD("manifold", "进气压力", "atm", 2), PITCH("pitch", "桨叶角", "°", 1),
     EFFICIENCY("efficiency", "效率", "%"),
     MANIFOLD_INHG("manifold_inhg", "进气压力（inHg）", "inHg", 1),
-    BOOST_PSI("boost_psi", "增压（相对1atm）", "psi", 1);
+    BOOST_PSI("boost_psi", "增压（相对1atm）", "psi", 1),
+    HEAT_BUDGET("heat_budget", "热预算估计", "s", 1);
 
     fun value(engine: Engine): Double? = when (this) {
         THROTTLE -> engine.throttlePercent?.takeIf { it >= 0 }
@@ -31,10 +32,11 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
         BOOST_PSI -> ManifoldPressureUnit.BOOST_PSI.fromAtm(engine.manifoldPressureAtm)
         PITCH -> engine.propellerPitchDeg
         EFFICIENCY -> engine.efficiencyPercent
+        HEAT_BUDGET -> null // Supplied as an uncertainty interval from the matching thermal observation.
     }?.takeIf { it.isFinite() }
 
     companion object {
-        val defaults = entries.filterNot { it == MANIFOLD_INHG || it == BOOST_PSI }.map { it.id }
+        val defaults = entries.filterNot { it == MANIFOLD_INHG || it == BOOST_PSI || it == HEAT_BUDGET }.map { it.id }
         fun selected(ids: List<String>) = ids.distinct().mapNotNull { id -> entries.find { it.id == id } }
     }
 }

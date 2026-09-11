@@ -5,6 +5,18 @@ import voidmei.fm.*
 import voidmei.config.*
 
 class ThermalHudTest {
+    @Test fun budgetsFollowSelectedEngineAndDoNotFallbackToEngineOne() {
+        val second = parameters.engineThermals.single().copy(telemetryIndex = 2,
+            bands = parameters.engineThermals.single().bands.map { it.copy(workSeconds = 400.0) })
+        val bothModel = model.copy(parameters = parameters.copy(engineThermals = parameters.engineThermals + second))
+        val both = flight(t.copy(engines = t.engines + t.engines.single().copy(index = 2)))
+        val observation = EngineThermalMonitor().update(both, bothModel, 0)!!
+        assertEquals(ThermalBudgetRange(0.0, 10.0), observation.hudBudget(both, bothModel, 1))
+        assertEquals(ThermalBudgetRange(0.0, 400.0), observation.hudBudget(both, bothModel, 2))
+        assertNull(observation.hudBudget(both, bothModel, 3))
+        assertNull(observation.hudBudget(both, bothModel.copy(aircraft = "other"), 2))
+    }
+
     @Test fun displayedIntervalContainsTheUnroundedBudget() {
         assertEquals(ThermalBudgetRange(0.0, 0.1), ThermalBudgetRange(0.0, 0.04).roundForDisplay())
         assertEquals(ThermalBudgetRange(1.2, 6.1), ThermalBudgetRange(1.26, 6.04).roundForDisplay())

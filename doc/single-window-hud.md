@@ -715,3 +715,9 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 在 c44cf2b 状态重建 Kotlin 离线包成功（`/tmp/voidmei-engine-opengl-build.log`）。隔离 Xvfb/xcompmgr 中使用 Mesa 软件驱动请求 OpenGL，实际兼容 HUD 后端为 OPENGL；主窗口仍报无法创建 Linux GL 上下文并回退 SOFTWARE_FAST，不能将此结果表述为主窗口 OpenGL 验收通过。
 
 十区域、80 ms 刷新及一次遥测延迟场景通过（`/tmp/voidmei-engine-opengl-run.log`）。产物 `/tmp/voidmei-package-smoke-ehs_bhlp/`：83 对记录，34 次保持同一 900×600 HUD 窗口，混合比仪表 496 个颜色像素，配置保存和正常退出通过；截图已检查。此场景实际绘制混合比、姿态、罗盘等已有区域，增压器模型图形的行为由专门 GUI 测试覆盖。未新增物理 NVIDIA GPU 或真实游戏验收。
+
+## 按发动机编号选择热预算
+
+发动机字段增加可选 `heat_budget`（热预算估计），默认字段保持不变。分区与纵向 HUD 按所选发动机编号读取匹配当前遥测和模型的热预算区间，沿用向外取整及不确定性说明；全局过热告警激活时，仅对存在有效预算且该发动机满足热告警条件的读数高亮。原有飞行字段仍默认读取 1 号发动机。
+
+共享 JVM／JS、桌面单元及三类 GUI 回归通过（`/tmp/voidmei-engine-heat-budget.log`），覆盖两个发动机的 0–10 秒与 0–400 秒独立区间、缺少指定编号、机型不匹配、仅第一台过热高亮，以及既有热预算和字段选择。本轮未重建 Nix 包，未新增真实游戏验收。

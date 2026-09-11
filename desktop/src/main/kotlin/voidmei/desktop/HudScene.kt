@@ -107,7 +107,8 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     HudEnginePanel(flight.telemetry.engines, region.engineIndex,
                                     fields = HudEngineField.selected(region.fields ?: settings.hudEngineFields),
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal),
-                                    showInstruments = region.showEngineInstruments)
+                                    showInstruments = region.showEngineInstruments,
+                                    heatBudget = thermal?.hudBudget(flight, model, region.engineIndex))
                                     if (region.showEngineInstruments) CompressorStageBar(flight, region.engineIndex, model, fields)
                                     HudCompressorAdvice(flight, region.engineIndex, model, fields)
                                 }

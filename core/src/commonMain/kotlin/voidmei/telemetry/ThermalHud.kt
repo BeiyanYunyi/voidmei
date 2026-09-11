@@ -1,9 +1,9 @@
 package voidmei.telemetry
 
-/** Minimum active budget across engine one's modelled channels, preserving uncertainty. */
-fun EngineThermalObservation.hudBudget(state: ConnectionState, model: AircraftAlertModel?): ThermalBudgetRange? {
-    val budget = budgetsFor(state, model).singleOrNull { it.telemetryIndex == 1 } ?: return null
-    val thermal = parameters.singleOrNull { it.telemetryIndex == 1 } ?: return null
+/** Minimum active budget across the selected engine's modelled channels, preserving uncertainty. */
+fun EngineThermalObservation.hudBudget(state: ConnectionState, model: AircraftAlertModel?, engineIndex: Int = 1): ThermalBudgetRange? {
+    val budget = budgetsFor(state, model).singleOrNull { it.telemetryIndex == engineIndex } ?: return null
+    val thermal = parameters.singleOrNull { it.telemetryIndex == engineIndex } ?: return null
     val channels = mutableListOf<ThermalChannelBudget>()
     if (thermal.bands.any { it.waterTemperatureC != null && (it.workSeconds ?: 0.0) > 0 }) {
         channels += budget.water ?: return null

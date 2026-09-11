@@ -105,7 +105,8 @@ private fun HudPanelContent(
                 }
                 settings.hudEngineIndex?.let { index -> key(it.telemetry.aircraft, index) {
                     HudEnginePanel(it.telemetry.engines, index, fields = HudEngineField.selected(settings.hudEngineFields),
-                        warnings = engineReadingWarnings(it, index, model, alerts, thermal))
+                        warnings = engineReadingWarnings(it, index, model, alerts, thermal),
+                        heatBudget = thermal?.hudBudget(it, model, index))
                     CompressorStageBar(it, index, model, settings.hudEngineFields)
                     HudCompressorAdvice(it, index, model, settings.hudEngineFields)
                 } }

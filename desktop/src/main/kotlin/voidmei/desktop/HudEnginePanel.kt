@@ -24,12 +24,16 @@ internal fun engineReadingWarnings(flight: ConnectionState.Flying, index: Int, m
         if (FlightAlert.COMPRESSOR_STAGE in alerts && CompressorAdvice.recommendations(telemetry,
                 parameters?.engineCompressors.orEmpty()).any { it.engineIndex == index })
             put(HudEngineField.COMPRESSOR, FlightAlert.COMPRESSOR_STAGE.label)
+        if (FlightAlert.ENGINE_OVERHEAT in alerts && thermal?.hudBudget(flight, model, index) != null &&
+            index in thermal.warningEngines(flight, model))
+            put(HudEngineField.HEAT_BUDGET, FlightAlert.ENGINE_OVERHEAT.label)
     }
 }
 
 @Composable
 internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.selected(HudEngineField.defaults),
-    warnings: Map<HudEngineField, String> = emptyMap(), showInstruments: Boolean = true) {
+    warnings: Map<HudEngineField, String> = emptyMap(), showInstruments: Boolean = true,
+    heatBudget: ThermalBudgetRange? = null) {
     Column {
         Text("发动机 #$index")
         val engine = engines.singleOrNull { it.index == index }
@@ -39,12 +43,14 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
                 readingNumber(this, digits) + " $unit"
             val readings = fields.map { field ->
                 val digits = if (!compact && field == HudEngineField.THROTTLE) 1 else field.decimals
-                Triple(field.label, field.value(engine).shown(field.unit, digits), field.unit)
+                Triple(field.label, if (field == HudEngineField.HEAT_BUDGET) formatThermalBudget(heatBudget)
+                    else field.value(engine).shown(field.unit, digits), field.unit)
             }
             if (fields.isEmpty()) Text("未选择发动机读数")
             val rows = readings.map { it.first to it.second }
             val warningRows = fields.mapIndexedNotNull { row, field ->
-                warnings[field]?.takeIf { field.value(engine) != null }?.let { row to it }
+                warnings[field]?.takeIf { if (field == HudEngineField.HEAT_BUDGET) heatBudget?.roundForDisplay() != null
+                    else field.value(engine) != null }?.let { row to it }
             }.toMap()
             FlightReadings(rows, compact = compact, warningRows = warningRows, unitRanges = readings.mapIndexedNotNull { index, reading ->
                 val unit = reading.third
@@ -53,6 +59,10 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
             if (compact && showInstruments && HudEngineField.THROTTLE in fields)
                 ThrottleBar(HudEngineField.THROTTLE.value(engine), index, "hud-engine-throttle-$index")
             if (compact && showInstruments) EngineControlBars(engine, fields)
+            if (HudEngineField.HEAT_BUDGET in fields)
+                Text("热预算区间包含未知初始损耗，按采样温度估算，不是实际剩余寿命。",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color = LocalReadingColors.current.label ?: androidx.compose.material3.LocalContentColor.current)
         }
     }
 }
