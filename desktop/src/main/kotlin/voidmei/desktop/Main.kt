@@ -43,7 +43,6 @@ fun main(args: Array<String>) {
             catch (e: CancellationException) { throw e }
             catch (e: Exception) { voiceError = "语音停止失败：${e.message}" }
         }
-        var modelForAlerts by remember(settings.fmDataRoot) { mutableStateOf<AircraftAlertModel?>(null) }
         DisposableEffect(voicePlayer) { onDispose {
             try { voicePlayer.close() }
             catch (e: Exception) { println("[VoidMei voice] 释放失败：${e.message}") }
@@ -174,6 +173,9 @@ fun main(args: Array<String>) {
             remember { mapStates(activeEndpoint).shareMap(mapScope) }
         }
 
+        val flightModel = rememberFlightModelSession(
+            (connection as? ConnectionState.Flying)?.telemetry?.aircraft, settings.fmDataRoot)
+        val modelForAlerts = flightModel.alertModel
         val currentAlertModel by rememberUpdatedState(modelForAlerts)
         LaunchedEffect(activeEndpoint, generation) {
             val arrivalCue = FlightArrivalCue()
@@ -382,9 +384,7 @@ fun main(args: Array<String>) {
                             voiceError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                             SectionHeading(MainSection.MODEL, anchors)
                             TextButton(enabled = !closing, onClick = { offlineModels = true }) { Text("打开离线模型查看") }
-                            FlightModelPanel(flight?.telemetry, settings.fmDataRoot, onModel = { name, model ->
-                                modelForAlerts = if (name != null && model != null) AircraftAlertModel(name, model) else null
-                            }, onDataRoot = {
+                            FlightModelPanel(flight?.telemetry, settings.fmDataRoot, onModel = { _, _ -> }, session = flightModel, onDataRoot = {
                                 settings = settings.copy(fmDataRoot = it)
                             })
                             SectionHeading(MainSection.RECORDS, anchors)

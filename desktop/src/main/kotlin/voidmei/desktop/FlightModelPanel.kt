@@ -24,48 +24,18 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
     onModel: (String?, voidmei.fm.FlightModelParameters?) -> Unit, onDataRoot: (String) -> Unit,
     parameterExtractor: (voidmei.fm.BlkBlock, voidmei.fm.FuelModification?) -> voidmei.fm.FlightModelParameters = FlightModelExtractor::extract,
     aircraftOverride: String? = null, showDirectoryControls: Boolean = true,
-    onSnapshot: (NamedModel?) -> Unit = {}) {
-    val aircraft = aircraftOverride ?: telemetry?.aircraft
+    onSnapshot: (NamedModel?) -> Unit = {}, session: FlightModelSession? = null) {
+    val modelSession = session ?: rememberFlightModelSession(aircraftOverride ?: telemetry?.aircraft, dataRoot, parameterExtractor)
     var draft by remember(dataRoot) { mutableStateOf(dataRoot) }
-    var reload by remember { mutableStateOf(0) }
-    val repository = remember(dataRoot, reload) { runCatching { FlightModelRepository(Path.of(dataRoot)) } }
-    var state by remember(aircraft, dataRoot, reload) {
-        mutableStateOf<FlightModelState>(aircraft?.let { FlightModelState.Loading(it) } ?: FlightModelState.Unresolved)
-    }
     var filter by remember { mutableStateOf("") }
+    val state = modelSession.state
     val ready = state as? FlightModelState.Ready
-    var detailResult by remember(ready) { mutableStateOf<Result<FlightModelDetails>?>(null) }
-    LaunchedEffect(ready) {
-        if (ready != null) detailResult = withContext(Dispatchers.Default) {
-            try { Result.success(FlightModelDetails.prepare(ready)) }
-            catch (e: CancellationException) { throw e }
-            catch (e: Exception) { Result.failure(e) }
-        }
-    }
+    val detailResult = modelSession.detailResult
+    val parameterResult = modelSession.parameterResult
     val details = detailResult?.getOrNull()
     val fuels = details?.fuels
-    var fuelId by remember(state) { mutableStateOf<String?>(null) }
+    val fuelId = modelSession.fuelId
     val fuel = fuels?.options?.firstOrNull { it.id == fuelId }
-    var parameterResult by remember(ready, details, fuel) {
-        mutableStateOf<Result<FlightModelCalculation>?>(null)
-    }
-    LaunchedEffect(ready, details, fuel) {
-        if (ready != null && details != null) parameterResult = withContext(Dispatchers.Default) {
-            try {
-                val parameters = parameterExtractor(ready.document, fuel).copy(
-                    enginePeaks = voidmei.fm.EnginePeakExtractor.extract(ready.document, fuel) { ensureActive() })
-                val models = details.pistons.engines.map { engine ->
-                    ensureActive()
-                    try { Result.success(voidmei.fm.PistonModelBuilder.build(engine, fuel = fuel)) }
-                    catch (e: CancellationException) { throw e }
-                    catch (e: Exception) { Result.failure(e) }
-                }
-                Result.success(FlightModelCalculation(parameters, models))
-            }
-            catch (e: CancellationException) { throw e }
-            catch (e: Exception) { Result.failure(e) }
-        }
-    }
     val calculation = parameterResult?.getOrNull()
     val selectedParameters = calculation?.parameters
     LaunchedEffect(ready, selectedParameters, details) {
@@ -75,31 +45,20 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
                 ready.dataDirectory?.let { Path.of(it).resolve(ready.source).toString() } ?: ready.source,
                 java.time.Instant.now()) else null)
     }
-    LaunchedEffect(aircraft, dataRoot, reload) {
-        if (aircraft != null) {
-            state = try {
-                withContext(Dispatchers.IO) {
-                    val context = currentCoroutineContext()
-                    repository.getOrThrow().load(aircraft) { context.ensureActive() }
-                }
-            } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { FlightModelState.Invalid(aircraft, e.message ?: "Cannot load FM") }
-        }
-    }
     Text("气动模型文件", style = MaterialTheme.typography.titleLarge)
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         if (showDirectoryControls) {
         OutlinedTextField(draft, { draft = it }, Modifier.weight(1f), label = { Text("解包数据或 flightmodels 目录") }, singleLine = true)
         Button(enabled = draft.isNotBlank(), onClick = { onDataRoot(draft) }) { Text("应用") }
         }
-        TextButton(onClick = { reload++ }) { Text("重新加载") }
+        TextButton(onClick = modelSession.reload) { Text("重新加载") }
     }
     if (!fuels?.options.isNullOrEmpty()) {
         Text("燃油估算方案（用于功率曲线和增压器提示，需与游戏实际选择核对）")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(fuelId == null, { fuelId = null }, label = { Text("不追加修正") })
+            FilterChip(fuelId == null, { modelSession.selectFuel(null) }, label = { Text("不追加修正") })
             fuels?.options?.forEach { option ->
-                FilterChip(fuelId == option.id, { fuelId = option.id }, label = { Text(fuelName(option.id)) })
+                FilterChip(fuelId == option.id, { modelSession.selectFuel(option.id) }, label = { Text(fuelName(option.id)) })
             }
         }
     }

@@ -78,7 +78,7 @@ jobs:
         run: |
           export VOIDMEI_TEST_ISOLATED_X11=1
           export TMPDIR="$RUNNER_TEMP/voidmei-package-smoke"
-          python script/test_hud_compositing.py python script/test_tray_session.py python script/smoke_kmp_recording.py desktop/build/compose/binaries/main/deb/*.deb --timeout 90 --renderer SOFTWARE_FAST --compatible-hud --check-ui --graceful-exit --tray-background
+          python script/test_hud_compositing.py python script/test_tray_session.py python script/smoke_kmp_recording.py desktop/build/compose/binaries/main/deb/*.deb --timeout 90 --renderer SOFTWARE_FAST --compatible-hud --check-ui --graceful-exit --tray-background --wep --wep-dropout --poll-interval-ms 80
       - name: Test HUD alpha compositing
         if: runner.os == 'Linux'
         shell: bash

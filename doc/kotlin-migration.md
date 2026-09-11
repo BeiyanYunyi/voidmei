@@ -2686,6 +2686,20 @@ F-14 同时提供真实的未支持字段证据：升降舵有效速度 `[1801, 
 
 `nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-recording-notifications-nix.log`），包括此前的后台录制失败窗口恢复。
 
+### 后台启动时独立加载飞行模型
+
+对 `f887d21` 的 Nix 包补做运行回归：主窗口显示时，兼容 HUD、80 ms 轮询、WEP 油门缺失恢复及正常退出通过，保存 103 组配对 CSV 样本，其中 96 条 WEP 估算、3 条油门缺失。日志 `/tmp/voidmei-notifications-package-smoke.log`，制品副本 `/tmp/voidmei-notifications-package-artifacts/`。
+
+同包使用真实 stalonetray 后台启动时，界面心跳与 CSV 采样继续，但 WEP 估算始终为空，最终未满足就绪条件。失败日志 `/tmp/voidmei-notifications-background-smoke.log`，制品副本 `/tmp/voidmei-background-model-before/`。根因是 FM 加载与计算在 FlightModelPanel 内，隐藏设置窗口会暂停其组合更新，依赖模型的 HUD、告警和录制无法获得当前参数。
+
+提取 rememberFlightModelSession，由 Main 在应用层持有；设置面板共享加载结果、燃油选择和重新加载操作，离线模型面板仍持有独立会话。遥测断开、换机、模型目录变化或加载失败时不继续发布旧模型；已有异步取消与错误处理保持在共享会话中。
+
+桌面单元与相关 GUI 回归通过（`/tmp/voidmei-background-model-tests.log`）。5 项 GUI 测试零失败、零跳过，覆盖不创建模型面板的后台加载、换机、断开、重新加载及目录失效，以及燃油计算失败恢复、取消后的迟到结果、离线查看与后掠载荷面板。Linux CI 的打包后台测试加入 `--wep --wep-dropout --poll-interval-ms 80`，使缺模型的后台采样不再被视作通过；actionlint 通过。
+
+修复后 `nix build path:.#kotlin-offline` 通过（`/tmp/voidmei-background-model-nix.log`），产物 `/nix/store/nfq2njyglppnjjcla4ymgza6jkar7nyj-voidmei-kotlin-2.0.0`。相同后台场景复测通过（`/tmp/voidmei-background-model-package-smoke.log`，制品副本 `/tmp/voidmei-background-model-after/`）：主窗口隐藏且真实托盘图标存在，101 组配对样本、96 条 WEP 估算、3 条油门缺失，WEP 消耗与缺失后的重置恢复均符合检查，五次 AWT 心跳延迟均为 0 ms，正常窗口关闭退出码为 0。
+
+该运行证据来自隔离 Xvfb/xcompmgr/stalonetray 和软件驱动，主窗口 SOFTWARE_FAST、兼容 HUD OPENGL；验证的是打包后的后台模型计算和录制生命周期，不是物理 GPU 加速、系统通知气泡呈现或真实游戏精度验收。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
