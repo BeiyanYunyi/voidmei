@@ -97,6 +97,11 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                 region("attitude", "ATTITUDE", 300, 380, 280, 220),
                 region("map", "MAP", 600, 0, 300, 500),
                 region("alerts", "ALERTS", 600, 500, 300, 100, .5, ["advisory"])])
+            detail = json.loads(json.dumps(settings["hudSceneLayout"]))
+            detail["enabled"] = False
+            detail["regions"][0].update(title="能量与速度", fontScale=1.5, readingColumns=1,
+                                        fields=["ias", "sep", "future_field"])
+            settings["hudScenePresets"] = {"巡航": settings["hudSceneLayout"], "详细": detail}
             (root / "require-single-hud").touch()
         if tray_background:
             settings["startInTray"] = True
@@ -181,6 +186,18 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                 raise RuntimeError("Packaged scene lost independent selection: " + name)
         if "[VoidMei exit test] single HUD stable" not in (root / "startup.log").read_text():
             raise RuntimeError("Packaged scene did not retain one stable HUD window")
+        presets = saved.get("hudScenePresets", {})
+        if set(presets) != {"巡航", "详细"} or presets["巡航"] != saved["hudSceneLayout"]:
+            raise RuntimeError("Packaged runtime did not retain named scene presets")
+        detail = presets["详细"]
+        first = detail["regions"][0]
+        if (detail.get("enabled") is not False or first.get("fontScale") != 1.5 or
+                first.get("readingColumns") != 1 or first.get("title") != "能量与速度" or
+                first.get("fields") != ["ias", "sep", "future_field"]):
+            raise RuntimeError("Packaged runtime changed inactive preset properties")
+        # Added defaults prove typed decoding/encoding, not preservation as an unknown JSON key.
+        if any("fontScale" not in region or "title" not in region for region in presets["巡航"]["regions"]):
+            raise RuntimeError("Preset layouts were not decoded by the packaged runtime")
     files = list((root / "userdata/voidmei/records").glob("*.csv"))
     flight_file = next(path for path in files if not path.name.endswith("-engines.csv"))
     engine_file = flight_file.with_name(flight_file.stem + "-engines.csv")

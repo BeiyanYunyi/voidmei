@@ -429,3 +429,9 @@ AppSettings 新增 hudScenePresets，旧配置默认空集合。共享 JVM／JS�
 新增文件级测试发现，16 套各含 32 个区域、全部飞行字段和长标题的合法配置，会因格式化缩进超过 1 MiB 而保存失败（`/tmp/voidmei-preset-storage-before.log`）。SettingsStore 现在先生成可读格式，超出上限时使用共享编码器生成紧凑 JSON；紧凑后仍超限则继续拒绝写入。保持未知键、外部修改检测及原子文件替换，小型配置仍使用可读格式。
 
 共享 JVM／JS 和完整桌面单元测试通过（`/tmp/voidmei-preset-storage-final.log`），实际临时文件验证完整预设保存、重启读取、后续修改、未知键保留，以及已有超限／无效编码／外部修改保护。新增共享紧凑编码往返在 JVM／JS 上通过（`/tmp/voidmei-preset-compact-shared.log`）。本轮未重建 Nix 包，未新增 GUI 或真实游戏验收。
+
+## 离线包预设持久化验证
+
+九区域整包测试增加两套命名预设，其中未启用预设包含独立字段、未知字段 ID、标题、列数和文字缩放。正常退出后验证两套配置及当前布局一致性，并检查编码器补出的默认字段，区分真实预设解析与未知 JSON 原样保留。
+
+最新离线 Nix 包构建通过（`/tmp/voidmei-presets-package-build.log`）。隔离 Xvfb/xcompmgr、SOFTWARE_FAST 兼容 HUD、80 ms 轮询、1.5 秒模拟延迟及正常退出测试通过（`/tmp/voidmei-presets-package-run.log`）。产物 `/tmp/voidmei-package-smoke-ir9rwny3/`：86 对记录样本，34 次检查保持同一 900×600 HUD 窗口，姿态天空／地面和罗盘指针像素检查通过。两套预设解析和保存检查通过；这不是 GUI 菜单点击测试。脚本语法与四项 Python 回归通过。本轮未新增真实游戏验收。
