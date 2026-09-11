@@ -592,6 +592,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         }
         if (compact && HudField.SEP in fields) SepStatusPanel(flight, pollingIntervalMs)
         if (compact) FuelEstimateStatusPanel(flight, fields)
+        if (compact) WepFuelStatusPanel(flight, fields, model)
         if (compact && HudField.FUEL_PRESSURE_RAW in fields) Text(
             "燃油压力来自未编号座舱仪表，单位及发动机归属未确定。",
             style = MaterialTheme.typography.bodySmall, color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
