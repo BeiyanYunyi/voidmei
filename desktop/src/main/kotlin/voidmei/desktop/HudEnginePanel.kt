@@ -33,7 +33,7 @@ internal fun engineReadingWarnings(flight: ConnectionState.Flying, index: Int, m
 @Composable
 internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.selected(HudEngineField.defaults),
     warnings: Map<HudEngineField, String> = emptyMap(), showInstruments: Boolean = true,
-    heatBudget: ThermalBudgetRange? = null) {
+    heatBudget: ThermalBudgetRange? = null, powerPercent: PowerPercentReading? = null) {
     Column {
         Text("发动机 #$index")
         val engine = engines.singleOrNull { it.index == index }
@@ -43,6 +43,10 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
                 readingNumber(this, digits) + " $unit"
             val readings = fields.map { field ->
                 val digits = if (!compact && field == HudEngineField.THROTTLE) 1 else field.decimals
+                if (field == HudEngineField.FM_POWER_PERCENT) {
+                    val unit = powerPercent?.let { "% · ${it.source}" } ?: "%"
+                    return@map Triple(field.label, powerPercent?.percent.shown(unit, digits), unit)
+                }
                 Triple(field.label, if (field == HudEngineField.HEAT_BUDGET) formatThermalBudget(heatBudget)
                     else field.value(engine).shown(field.unit, digits), field.unit)
             }

@@ -29,6 +29,20 @@ fun Telemetry.powerPercent(parameters: FlightModelParameters): Double? {
 
 data class PowerPercentReading(val percent: Double, val source: String)
 
+/** Per-engine FM reference only; the observed whole-aircraft peak cannot be reused here. */
+fun ConnectionState.Flying.enginePowerPercentReading(index: Int, model: AircraftAlertModel?): PowerPercentReading? {
+    val parameters = model?.parametersFor(telemetry.aircraft) ?: return null
+    val engine = telemetry.engines.singleOrNull { it.index == index } ?: return null
+    if (parameters.engineBindings.singleOrNull { it.telemetryIndex == index } == null) return null
+    val peak = parameters.enginePeaks.singleOrNull { it.telemetryIndex == index }
+        ?.takeIf { it.peak.isFinite() && it.peak > 0 } ?: return null
+    val value = (if (peak.kind == EnginePeakKind.SHAFT_POWER_HP) engine.powerHp else engine.thrustKgf)
+        ?.takeIf { it.isFinite() && it >= 0 } ?: return null
+    val ratio = (value / peak.peak).takeIf { it.isFinite() } ?: return null
+    return PowerPercentReading(ratio.coerceIn(0.0, 1.0) * 100,
+        if (peak.kind == EnginePeakKind.SHAFT_POWER_HP) "FM 功率峰值" else "FM 推力峰值")
+}
+
 fun ConnectionState.Flying.powerPercentReading(model: AircraftAlertModel?): PowerPercentReading? {
     val parameters = model?.parametersFor(telemetry.aircraft)
     parameters?.let { telemetry.powerPercent(it) }?.let { return PowerPercentReading(it, "FM 峰值") }

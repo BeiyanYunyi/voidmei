@@ -5,6 +5,26 @@ import voidmei.fm.*
 import voidmei.config.*
 
 class PowerPercentTest {
+    @Test fun engineReferencesStayIndependentAndNeverUseAircraftHistory() {
+        val model = AircraftAlertModel("test", parameters)
+        val flight = ConnectionState.Flying(t, FlightMetrics(observedEnginePeak = ObservedEnginePeak(EnginePeakKind.THRUST_KGF, 75.0)))
+        assertEquals(PowerPercentReading(50.0, "FM 推力峰值"), flight.enginePowerPercentReading(4, model))
+        val single = flight.copy(telemetry = t.copy(engines = t.engines.filter { it.index == 4 }))
+        assertEquals(50.0, single.enginePowerPercentReading(4, model)?.percent)
+        assertNull(single.enginePowerPercentReading(1, model))
+        assertNull(flight.enginePowerPercentReading(4, model.copy(aircraft = "other")))
+        assertNull(flight.enginePowerPercentReading(4, null))
+        assertNull(flight.copy(telemetry = t.copy(engines = t.engines + t.engines.last())).enginePowerPercentReading(4, model))
+        for (value in listOf(null, -1.0, Double.NaN, Double.POSITIVE_INFINITY))
+            assertNull(single.copy(telemetry = single.telemetry.copy(engines = single.telemetry.engines.map {
+                it.copy(thrustKgf = value)
+            })).enginePowerPercentReading(4, model))
+        for ((value, expected) in listOf(0.0 to 0.0, 9000.0 to 100.0))
+            assertEquals(expected, single.copy(telemetry = single.telemetry.copy(engines = single.telemetry.engines.map {
+                it.copy(thrustKgf = value)
+            })).enginePowerPercentReading(4, model)?.percent)
+    }
+
     private val document = BlkParser.parse("""
         EngineType0 { Main { Type:t=Jet; AfterburnerBoost:r=2 }
             ThrustMax { ThrustMax0:r=1000; Altitude_0:r=0; Velocity_0:r=0; ThrustMaxCoeff_0_0:r=1 } }

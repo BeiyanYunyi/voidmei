@@ -737,3 +737,9 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 离线包构建成功（`/tmp/voidmei-engine-budget-package-build.log`），十区域冒烟发动机字段增加 `heat_budget` 并校验保存结果。初次运行通过，但截图中自动单列令缺失原因落到滚动区域下方；将冒烟样例发动机区调整为 280×200、双列后复验通过，截图中预算“— s”、缺少 1 号模型的原因和混合比仪表同时可见。这只调整测试场景，不改变应用默认布局。
 
 最终日志 `/tmp/voidmei-engine-budget-package-final.log`，产物 `/tmp/voidmei-package-smoke-x9tobrx4/`：87 对记录、十区域单窗口、80 ms 刷新、延迟恢复、配置保存和正常退出通过。Python 四项脚本回归亦通过。此为隔离 X11 SOFTWARE_FAST 兼容 HUD 验证；有效多发动机热预算和高亮由先前 GUI 测试覆盖，未新增真实游戏验收。
+
+## 独立发动机 FM 动力量
+
+发动机字段增加可选 `fm_power_percent`，默认字段不变。使用匹配机型、唯一发动机绑定与峰值参考，按该参考类型读取功率或推力，显示限定在 0–100% 的动力量并注明“FM 功率峰值”或“FM 推力峰值”。未匹配模型、缺少指定编号、歧义或无效输入时显示未知；其他发动机缺失不影响当前发动机。整机历史全油门峰值不参与该字段，原有整机动力量算法保持不变。
+
+共享 JVM／JS、桌面单元及相关 GUI 回归通过（`/tmp/voidmei-engine-power-percent.log`），补充整机历史参考输入后的共享回归亦通过（`/tmp/voidmei-engine-power-reference-final.log`）。覆盖独立功率／推力参考、缺失与重复编号、非法数值、零与封顶、模型失配，以及不误用整机历史峰值。本轮未重建 Nix 包，未新增真实游戏验收。
