@@ -96,7 +96,7 @@ private fun HudPanelContent(
                 }
                 settings.hudEngineIndex?.let { index -> key(it.telemetry.aircraft, index) {
                     HudEnginePanel(it.telemetry.engines, index, fields = HudEngineField.selected(settings.hudEngineFields),
-                        warnings = engineReadingWarnings(it.telemetry, index, model, alerts))
+                        warnings = engineReadingWarnings(it, index, model, alerts, thermal))
                 } }
                 if (settings.hudAttitude) AttitudePanel(it.telemetry, compact = true, model = model, earthFixed = settings.hudAttitudeEarthFixed, showAoaLimits = settings.hudAttitudeAoaLimits)
             }

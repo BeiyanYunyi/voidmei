@@ -549,7 +549,10 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         val aoaMargin = if (compact && HudField.AOA in fields) PositiveAoaMargin.fromTelemetry(t, model) else null
         val warnAoa = aoaMargin != null && (aoaMargin.degrees <= 0 || aoaMargin.fraction < aoaWarningPercent / 100)
         val warnings = mutableMapOf<Int, String>()
-        val engineWarnings = if (compact) engineReadingWarnings(t, 1, model, readingAlerts) else emptyMap()
+        val engineWarnings = if (compact) engineReadingWarnings(flight, 1, model, readingAlerts, thermal) else emptyMap()
+        if (compact && HudField.HEAT_TOLERANCE in fields && FlightAlert.ENGINE_OVERHEAT in readingAlerts &&
+            thermal?.hudBudget(flight, model) != null && 1 in thermal.warningEngines(flight, model))
+            warnings[fields.indexOf(HudField.HEAT_TOLERANCE)] = FlightAlert.ENGINE_OVERHEAT.label
         if (warnAoa) warnings[fields.indexOf(HudField.AOA)] = "模型迎角余量预警"
         if (compact) fields.forEachIndexed { index, field ->
             val engineField = when (field) {

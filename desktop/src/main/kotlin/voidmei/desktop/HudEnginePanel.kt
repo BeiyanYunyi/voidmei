@@ -6,10 +6,15 @@ import androidx.compose.runtime.Composable
 import voidmei.telemetry.*
 
 /** A global engine alert must also match the engine represented by this reading. */
-internal fun engineReadingWarnings(telemetry: Telemetry, index: Int, model: AircraftAlertModel?,
-    alerts: List<FlightAlert>): Map<HudEngineField, String> {
+internal fun engineReadingWarnings(flight: ConnectionState.Flying, index: Int, model: AircraftAlertModel?,
+    alerts: List<FlightAlert>, thermal: EngineThermalObservation? = null): Map<HudEngineField, String> {
+    val telemetry = flight.telemetry
     val parameters = model?.parametersFor(telemetry.aircraft)
     return buildMap {
+        if (FlightAlert.ENGINE_OVERHEAT in alerts) thermal?.warningChannels(flight, model)?.filter { it.telemetryIndex == index }?.forEach {
+            put(if (it.channel == EngineTemperatureChannel.WATER) HudEngineField.WATER_TEMPERATURE else HudEngineField.OIL_TEMPERATURE,
+                FlightAlert.ENGINE_OVERHEAT.label)
+        }
         if (FlightAlert.LOW_RPM in alerts && index in EngineWarnings.lowRpm(telemetry, parameters?.engineRpmReferences.orEmpty()))
             put(HudEngineField.RPM, FlightAlert.LOW_RPM.label)
         if (FlightAlert.HIGH_RPM in alerts && index in EngineWarnings.highRpm(telemetry, parameters?.engineRpmLimits.orEmpty()))

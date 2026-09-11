@@ -2,6 +2,9 @@ package voidmei.telemetry
 
 import voidmei.fm.EngineThermalParameters
 
+enum class EngineTemperatureChannel { WATER, OIL }
+data class EngineThermalWarning(val telemetryIndex: Int, val channel: EngineTemperatureChannel)
+
 /** A sampled estimate must not be displayed with another aircraft, model or telemetry frame. */
 data class EngineThermalObservation(
     val telemetry: Telemetry,
@@ -10,12 +13,18 @@ data class EngineThermalObservation(
 ) {
     /** Even the upper budget estimate is below the legacy five-minute warning threshold. */
     fun warningEngines(state: ConnectionState, model: AircraftAlertModel?): Set<Int> =
-        budgetsFor(state, model).filter { engine ->
-            listOfNotNull(engine.water?.activeRemaining, engine.oil?.activeRemaining).any {
-                it.minimumSeconds.isFinite() && it.maximumSeconds.isFinite() &&
-                    it.minimumSeconds >= 0 && it.maximumSeconds >= it.minimumSeconds && it.maximumSeconds < 300
+        warningChannels(state, model).map { it.telemetryIndex }.toSet()
+
+    fun warningChannels(state: ConnectionState, model: AircraftAlertModel?): Set<EngineThermalWarning> = buildSet {
+        budgetsFor(state, model).forEach { engine ->
+            listOf(EngineTemperatureChannel.WATER to engine.water, EngineTemperatureChannel.OIL to engine.oil).forEach { (channel, budget) ->
+                val range = budget?.activeRemaining
+                if (range != null && range.minimumSeconds.isFinite() && range.maximumSeconds.isFinite() &&
+                    range.minimumSeconds >= 0 && range.maximumSeconds >= range.minimumSeconds && range.maximumSeconds < 300)
+                    add(EngineThermalWarning(engine.telemetryIndex, channel))
             }
-        }.map { it.telemetryIndex }.toSet()
+        }
+    }
 
     fun budgetsFor(state: ConnectionState, model: AircraftAlertModel?): List<EngineThermalBudget> =
         if (state is ConnectionState.Flying && state.telemetry == telemetry &&
