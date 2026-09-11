@@ -41,6 +41,31 @@ class HudScenePresetsGuiTest {
         compose.runOnIdle { assertEquals(second.copy(enabled = false), settings.hudSceneLayout) }
     }
 
+    @Test fun deletingLastPresetInVerticalModeKeepsUndoAndSaveAvailable() {
+        val preset = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
+        var settings by mutableStateOf(AppSettings(hudScenePresets = mapOf("战斗" to preset)))
+        compose.setContent { MaterialTheme { Column(Modifier.size(600.dp, 700.dp)) {
+            HudSceneSettings(settings) { settings = it }
+        } } }
+        compose.onNodeWithTag("hud-presets-toggle").performClick()
+        compose.onNodeWithTag("hud-preset-load-战斗").performClick()
+        compose.onNodeWithTag("hud-scene-toggle").performClick()
+        compose.onNodeWithTag("hud-preset-delete-战斗").performClick()
+        compose.onNodeWithTag("hud-preset-name").performTextReplacement("备用")
+        compose.onNodeWithTag("hud-preset-save").assertIsEnabled().performClick()
+        compose.runOnIdle {
+            assertEquals(preset.copy(enabled = false), settings.hudScenePresets["备用"])
+        }
+        compose.onNodeWithTag("hud-preset-delete-备用").performClick()
+        compose.onNodeWithTag("hud-preset-undo-load").assertIsDisplayed().performClick()
+        compose.runOnIdle {
+            assertNull(settings.hudSceneLayout)
+            assertTrue(settings.hudScenePresets.isEmpty())
+        }
+        compose.onNodeWithTag("hud-presets-toggle").assertIsDisplayed()
+        compose.onNodeWithTag("hud-preset-save").assertIsNotEnabled()
+    }
+
     @Test fun savedPresetCanBeLoadedDirectlyFromVerticalMode() {
         val preset = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
         var settings by mutableStateOf(AppSettings(hudScenePresets = mapOf("战斗" to preset), hudEnabled = false,

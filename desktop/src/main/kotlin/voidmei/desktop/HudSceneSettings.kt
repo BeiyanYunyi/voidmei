@@ -19,8 +19,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
         Modifier.testTag("hud-scene-toggle"), enabled = canUseScene) {
         Text(if (scene == null) "使用单窗口分区布局（试验性）" else "返回纵向 HUD 布局")
     }
-    if (scene != null || settings.hudScenePresets.isNotEmpty())
-        HudScenePresetSettings(settings, canUseScene, onLoad = { removed = null; editorRevision++ }, onChange = onChange)
+    HudScenePresetSettings(settings, canUseScene, onLoad = { removed = null; editorRevision++ }, onChange = onChange)
     if (scene == null) return
     Text("分区布局自动穿透鼠标。在此调整区域；预览同步显示。画布 ${scene.width} × ${scene.height} dp，空间不足时整体缩小。")
     var expanded by remember { mutableStateOf(false) }

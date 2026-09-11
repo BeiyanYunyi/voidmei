@@ -477,3 +477,9 @@ AppSettings 新增 hudScenePresets，旧配置默认空集合。共享 JVM／JS�
 实际启动测试扩展到当前十种区域：缩小地图，为独立操纵面区域留出空间，选择升降舵并注入 +67% 遥测。截图在预期正向刻度位置检查绿色位置点；退出保存同时检查操纵面选择，以及未启用预设中的 showFlightInstruments=false。
 
 离线包构建通过（`/tmp/voidmei-ten-regions-build.log`）。隔离 X11、SOFTWARE_FAST 兼容 HUD、80 ms 刷新及一次 1.5 秒响应延迟的整包测试通过（`/tmp/voidmei-ten-regions-package.log`），产生 86 对记录行；34 次采样保持同一个 900×600 HUD 窗口。升降舵位置点 36 像素，天空 26600、大地 9549、罗盘 137 像素；AWT 心跳延迟 5／0／0／7／0 ms，正常退出。人工查看截图确认操纵面区域与其他区域共同绘制。产物位于 `/tmp/voidmei-package-smoke-gke1aaep/`。Python 语法检查及四项脚本单元测试通过。本验证不代替真实游戏、物理多显示器或 GPU 后端验收。
+
+## 空预设列表保留编辑与撤销入口
+
+HUD 设置始终保留布局预设组件，避免“载入预设 → 返回纵向布局 → 删除最后一个预设”移除整个组件并丢失载入撤销记录。纵向模式下仍可保存保留的停用分区布局；当前没有布局时保存按钮禁用。
+
+完整设置页回归先复现名称输入框消失（`/tmp/voidmei-empty-presets-before.log`），修复后验证删除最后一个预设、另存停用布局、再次删除及撤销回到 null 布局。桌面单元和预设／草稿／区域恢复 GUI 回归通过（`/tmp/voidmei-empty-presets-after.log`）。本轮未重建 Nix 包或新增真实游戏验收。
