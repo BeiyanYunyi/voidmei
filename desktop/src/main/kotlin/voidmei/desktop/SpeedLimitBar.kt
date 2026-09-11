@@ -16,7 +16,21 @@ import java.util.Locale
 
 @Composable
 internal fun SpeedLimitBar(flight: ConnectionState.Flying, model: AircraftAlertModel?) {
-    val scale = SpeedLimitScale.fromFlight(flight, model) ?: return
+    val scale = SpeedLimitScale.fromFlight(flight, model)
+    if (scale == null) {
+        val t = flight.telemetry
+        val limits = model?.parametersFor(t.aircraft)?.limits(t.wingSweepRatio, t.flapsPercent)
+        val reason = when {
+            limits?.vneKmh?.let { it.isFinite() && it > 0 } != true ||
+                limits.maxMach?.let { it.isFinite() && it > 0 } != true -> "缺少有效速度限制模型或当前机翼构型数据。"
+            t.iasKmh?.let { it.isFinite() && it >= 0 } != true ||
+                t.mach?.let { it.isFinite() && it >= 0 } != true -> "缺少有效 IAS 或 Mach 数据。"
+            else -> "速度限制比例计算结果不可用。"
+        }
+        Text(reason, Modifier.testTag("speed-limit-status"), style = MaterialTheme.typography.bodySmall,
+            color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
+        return
+    }
     val markers = listOf(
         Triple("基础质量失速", scale.stallRatio, Color(0xFFFF6577)),
         Triple("副翼舵效衰减", scale.aileronRatio, Color(0xFFFFD580)),
@@ -31,6 +45,9 @@ internal fun SpeedLimitBar(flight: ConnectionState.Flying, model: AircraftAlertM
         }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(if (scale.limitingMach) "Mach 限制主导" else "IAS 限制主导", style = MaterialTheme.typography.bodySmall)
+        Text("取 IAS/VNE 与 Mach/MNE 的较大值；满刻度 100%，超出时保留实际比例读数。",
+            Modifier.testTag("speed-limit-status"), style = MaterialTheme.typography.bodySmall,
+            color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
         Canvas(Modifier.fillMaxWidth().height(24.dp).testTag("speed-limit-bar").semantics {
             contentDescription = description
             progressBarRangeInfo = ProgressBarRangeInfo(scale.ratio.coerceIn(0.0, 1.0).toFloat(), 0f..1f)
