@@ -16,28 +16,35 @@ class HudEngineThrustPowerGuiTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun independentEnginesClearMissingThrustAndShareCurrentTas() {
-        val telemetry = TelemetryParser.parse("""{"valid":true,"TAS, km/h":360,"thrust 1, kgs":100,"thrust 2, kgs":200}""",
+        val telemetry = TelemetryParser.parse("""{"valid":true,"TAS, km/h":360,"thrust 1, kgs":100,"thrust 2, kgs":200,"power 1, hp":200,"power 2, hp":800}""",
             """{"valid":true,"type":"test"}""")!!
         var flight by mutableStateOf(ConnectionState.Flying(telemetry, FlightMetrics()))
-        val region = HudRegion("one", HudRegionContent.ENGINE, 0, 0, 400, 200, fields = listOf("thrust_power"))
+        val region = HudRegion("one", HudRegionContent.ENGINE, 0, 0, 400, 200, fields = listOf("thrust_power", "propulsive_efficiency"))
         var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(800, 200,
             listOf(region, region.copy(id = "two", x = 400, engineIndex = 2))),
             hudFields = emptyList(), hudAttitude = false, hudMechanization = false,
-            hudEngineIndex = 2, hudEngineFields = listOf("thrust_power")))
+            hudEngineIndex = 2, hudEngineFields = listOf("thrust_power", "propulsive_efficiency")))
         compose.setContent { MaterialTheme { Box(Modifier.size(800.dp, 400.dp)) {
             HudPanel(flight, settings, emptyList(), null) {}
         } } }
         compose.onNodeWithText("98.1 kW").assertIsDisplayed()
+        compose.onNodeWithText("66.7 %").assertIsDisplayed()
+        compose.onNodeWithText("33.4 %").assertIsDisplayed()
         compose.onNodeWithText("196.1 kW").assertIsDisplayed()
         compose.runOnIdle { flight = flight.copy(telemetry = telemetry.copy(engines = telemetry.engines.map {
             if (it.index == 1) it.copy(thrustKgf = null) else it
         })) }
         compose.onNodeWithText("98.1 kW").assertDoesNotExist()
+        compose.onNodeWithText("66.7 %").assertDoesNotExist()
+        compose.onNodeWithText("— %").assertIsDisplayed()
+        compose.onNodeWithText("33.4 %").assertIsDisplayed()
         compose.onNodeWithText("— kW").assertIsDisplayed()
         compose.onNodeWithText("196.1 kW").assertIsDisplayed()
         compose.runOnIdle { flight = flight.copy(telemetry = telemetry.copy(tasKmh = null)) }
         compose.onAllNodesWithText("— kW").assertCountEquals(2)
+        compose.onAllNodesWithText("— %").assertCountEquals(2)
         compose.runOnIdle { flight = flight.copy(telemetry = telemetry); settings = settings.copy(hudSceneLayout = null) }
         compose.onNodeWithText("196.1 kW").assertIsDisplayed()
+        compose.onNodeWithText("33.4 %").assertIsDisplayed()
     }
 }

@@ -3,6 +3,21 @@ package voidmei.telemetry
 import kotlin.test.*
 
 class HudEngineValidityTest {
+    @Test fun propulsionEstimatePreservesRawEfficiencyAndRequiresPositiveShaftPower() {
+        val engine = TelemetryParser.parse("""{"valid":true,"thrust 2, kgs":100,"power 2, hp":200}""",
+            """{"valid":true}""")!!.engines.single().copy(efficiencyPercent = 85.0)
+        val field = HudEngineField.PROPULSIVE_EFFICIENCY
+        assertEquals(66.71190476, field.value(engine, 360.0)!!, .000001)
+        assertEquals(85.0, HudEngineField.EFFICIENCY.value(engine, 360.0))
+        assertEquals(0.0, field.value(engine, 0.0))
+        for (power in listOf(null, -1.0, 0.0, Double.NaN, Double.POSITIVE_INFINITY))
+            assertNull(field.value(engine.copy(powerHp = power), 360.0))
+        assertNull(field.value(engine.copy(thrustKgf = null), 360.0))
+        assertNull(field.value(engine, null))
+        assertTrue(field.value(engine.copy(powerHp = 100.0), 360.0)!! > 100.0)
+        assertFalse(field.id in HudEngineField.defaults)
+    }
+
     @Test fun thrustPowerUsesOnlySelectedEngineAndValidTrueAirspeed() {
         val engine = TelemetryParser.parse("""{"valid":true,"thrust 2, kgs":100}""",
             """{"valid":true}""")!!.engines.single()
