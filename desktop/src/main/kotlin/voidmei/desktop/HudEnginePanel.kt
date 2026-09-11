@@ -3,11 +3,25 @@ package voidmei.desktop
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import voidmei.telemetry.Engine
-import voidmei.telemetry.HudEngineField
+import voidmei.telemetry.*
+
+/** A global engine alert must also match the engine represented by this reading. */
+internal fun engineReadingWarnings(telemetry: Telemetry, index: Int, model: AircraftAlertModel?,
+    alerts: List<FlightAlert>): Map<HudEngineField, String> {
+    val parameters = model?.parametersFor(telemetry.aircraft)
+    return buildMap {
+        if (FlightAlert.LOW_RPM in alerts && index in EngineWarnings.lowRpm(telemetry, parameters?.engineRpmReferences.orEmpty()))
+            put(HudEngineField.RPM, FlightAlert.LOW_RPM.label)
+        if (FlightAlert.HIGH_RPM in alerts && index in EngineWarnings.highRpm(telemetry, parameters?.engineRpmLimits.orEmpty()))
+            put(HudEngineField.RPM, FlightAlert.HIGH_RPM.label)
+        if (FlightAlert.NEGATIVE_LOAD_LOW_THRUST in alerts && index in EngineWarnings.lowThrustUnderNegativeLoad(telemetry))
+            put(HudEngineField.THRUST, FlightAlert.NEGATIVE_LOAD_LOW_THRUST.label)
+    }
+}
 
 @Composable
-internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.entries) {
+internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.entries,
+    warnings: Map<HudEngineField, String> = emptyMap()) {
     Column {
         Text("发动机 #$index")
         val engine = engines.singleOrNull { it.index == index }
@@ -21,7 +35,10 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
             }
             if (fields.isEmpty()) Text("未选择发动机读数")
             val rows = readings.map { it.first to it.second }
-            FlightReadings(rows, compact = compact, unitRanges = readings.mapIndexedNotNull { index, reading ->
+            val warningRows = fields.mapIndexedNotNull { row, field ->
+                warnings[field]?.takeIf { field.value(engine) != null }?.let { row to it }
+            }.toMap()
+            FlightReadings(rows, compact = compact, warningRows = warningRows, unitRanges = readings.mapIndexedNotNull { index, reading ->
                 val unit = reading.third
                 if (unit.isEmpty()) null else index to (rows[index].second.length - unit.length until rows[index].second.length)
             }.toMap())

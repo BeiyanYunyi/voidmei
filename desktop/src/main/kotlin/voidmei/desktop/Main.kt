@@ -549,8 +549,15 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         val aoaMargin = if (compact && HudField.AOA in fields) PositiveAoaMargin.fromTelemetry(t, model) else null
         val warnAoa = aoaMargin != null && (aoaMargin.degrees <= 0 || aoaMargin.fraction < aoaWarningPercent / 100)
         val warnings = mutableMapOf<Int, String>()
+        val engineWarnings = if (compact) engineReadingWarnings(t, 1, model, readingAlerts) else emptyMap()
         if (warnAoa) warnings[fields.indexOf(HudField.AOA)] = "模型迎角余量预警"
         if (compact) fields.forEachIndexed { index, field ->
+            val engineField = when (field) {
+                HudField.ENGINE1_RPM -> HudEngineField.RPM
+                HudField.ENGINE1_THRUST -> HudEngineField.THRUST
+                else -> null
+            }
+            engineWarnings[engineField]?.takeIf { field.value(flight, model) != null }?.let { warnings[index] = it }
             val alert = when (field) {
                 HudField.IAS -> FlightAlert.IAS_LIMIT
                 HudField.MACH -> FlightAlert.MACH_LIMIT
