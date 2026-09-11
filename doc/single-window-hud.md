@@ -731,3 +731,9 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 ## 多发动机热预算完整 GUI 回归
 
 在 ca9404c 状态完成完整隔离 `:desktop:guiTest`：122 类、282 项，零失败／错误／跳过，51 秒完成（`/tmp/voidmei-engine-budget-full-gui.log`）。覆盖近期多发动机热预算、增压器图形与预览，并复跑字段选择、颜色、短窗口滚动、分区布局和预设交互。本轮未修改运行逻辑、重建 Nix 包或新增真实游戏验收。
+
+## 独立热预算字段离线包验证
+
+离线包构建成功（`/tmp/voidmei-engine-budget-package-build.log`），十区域冒烟发动机字段增加 `heat_budget` 并校验保存结果。初次运行通过，但截图中自动单列令缺失原因落到滚动区域下方；将冒烟样例发动机区调整为 280×200、双列后复验通过，截图中预算“— s”、缺少 1 号模型的原因和混合比仪表同时可见。这只调整测试场景，不改变应用默认布局。
+
+最终日志 `/tmp/voidmei-engine-budget-package-final.log`，产物 `/tmp/voidmei-package-smoke-x9tobrx4/`：87 对记录、十区域单窗口、80 ms 刷新、延迟恢复、配置保存和正常退出通过。Python 四项脚本回归亦通过。此为隔离 X11 SOFTWARE_FAST 兼容 HUD 验证；有效多发动机热预算和高亮由先前 GUI 测试覆盖，未新增真实游戏验收。

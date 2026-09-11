@@ -89,7 +89,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                             backgroundAlpha=alpha, contentAlpha=1, engineIndex=1, fields=fields, visible=True)
             settings["hudSceneLayout"] = dict(width=900, height=600, enabled=True, regions=[
                 region("flight", "FLIGHT", 0, 0, 280, 180, .25, ["ias", "altitude"]),
-                region("engine", "ENGINE", 0, 200, 280, 180, .75, ["rpm", "water_temperature", "mixture"]),
+                region("engine", "ENGINE", 0, 200, 280, 200, .75, ["rpm", "water_temperature", "mixture", "heat_budget"]),
                 region("mechanization", "MECHANIZATION", 0, 400, 280, 180, .5, ["gear", "airbrake"]),
                 region("messages", "MESSAGES", 300, 0, 280, 160, .5, ["event"]),
                 region("compass", "COMPASS", 300, 180, 160, 180),
@@ -98,6 +98,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                 region("map", "MAP", 600, 0, 300, 300),
                 region("controls", "CONTROLS", 600, 300, 300, 200, .5, ["elevator"]),
                 region("alerts", "ALERTS", 600, 500, 300, 100, .5, ["advisory"])])
+            settings["hudSceneLayout"]["regions"][1]["readingColumns"] = 2
             detail = json.loads(json.dumps(settings["hudSceneLayout"]))
             detail["enabled"] = False
             detail["regions"][1]["showEngineInstruments"] = False
@@ -184,7 +185,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
         regions = {region["id"]: region for region in saved["hudSceneLayout"]["regions"]}
         for name, fields in (("messages", ["event"]), ("alerts", ["advisory"]),
                              ("mechanization", ["gear", "airbrake"]), ("controls", ["elevator"]),
-                             ("engine", ["rpm", "water_temperature", "mixture"])):
+                             ("engine", ["rpm", "water_temperature", "mixture", "heat_budget"])):
             if regions.get(name, {}).get("fields") != fields:
                 raise RuntimeError("Packaged scene lost independent selection: " + name)
         if "[VoidMei exit test] single HUD stable" not in (root / "startup.log").read_text():
