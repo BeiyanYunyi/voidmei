@@ -20,6 +20,12 @@ nix run path:. -- --no-hud
 
 `--no-hud` 先显示主窗口，便于调整配置；即使保存了“下次启动进入托盘”，也能使用这个入口恢复。主窗口的“渲染信息”显示当前渲染后端。开启 HUD 后若出现卡顿，可重新以 `--no-hud` 启动，在主窗口启用“HUD 兼容显示”再打开 HUD。
 
+## Linux 数据与旧版并存
+
+Kotlin 配置默认存于 `${XDG_CONFIG_HOME:-$HOME/.config}/voidmei/settings-kmp.json`，可用 `VOIDMEI_CONFIG_HOME` 指定配置目录。它不会直接使用或覆盖旧版 `ui_layout.cfg`；需要在设置中预览并导入旧配置。
+
+新配置的 FM、录制及自定义语音目录默认位于 `${XDG_DATA_HOME:-$HOME/.local/share}/voidmei` 下的 `data/`、`records/`、`voice/`。`VOIDMEI_HOME` 只改变新配置的这些默认数据路径，不改变 Kotlin 配置文件位置，也不覆盖已保存的路径。已有配置请在界面中修改路径。FM 数据需自行提供，安装包不包含游戏 FM 数据。
+
 ## 连接与查看读数
 
 主窗口“遥测服务器”默认是 `http://127.0.0.1:8111`。修改地址后点击“连接”。等待飞行和连接中断会分别显示状态；缺失读数显示“—”，不要当作零值。
