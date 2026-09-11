@@ -47,6 +47,8 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
                 val unit = reading.third
                 if (unit.isEmpty()) null else index to (rows[index].second.length - unit.length until rows[index].second.length)
             }.toMap())
+            if (compact && HudEngineField.THROTTLE in fields)
+                ThrottleBar(HudEngineField.THROTTLE.value(engine), index, "hud-engine-throttle-$index")
         }
     }
 }
