@@ -2878,6 +2878,16 @@ Linux Kotlin CI 在同次构建的 Deb 上执行该脚本，沿用既有制品�
 
 既有 FlightReadingsGuiTest、HudFontScaleGuiTest 与 HudReadingColorGuiTest 回归通过（`/tmp/voidmei-hud-columns-regression.log`）。默认 Nix 包构建通过（`/tmp/voidmei-hud-columns-nix.log`），产物 `/nix/store/94fm27c3qlnay07pv44j0ica1amj11gg-voidmei-kotlin-2.0.0`。实机布局效果仍需用户按自己的字段与窗口宽度检查。
 
+### HUD 信息展示：发动机字段可选择
+
+将固定 15 项的发动机表格改为可独立选择，HUD 设置中启用发动机后显示字段选择按钮。稳定字段 ID、标签、单位、精度及取值映射移至共享 HudEngineField，hudEngineFields 保存所选顺序；旧配置缺少此键时保留全部 15 项。重新启用的项目追加末尾，恢复 HUD 默认时恢复全部字段。主窗口发动机表格仍显示原有完整项目。
+
+字段仅从指定编号取值；不存在时提示编号无数据，不借用其他发动机。空选择明确提示，缺失与非有限值显示 —，有效零值保留。既有单位配色、字体和 HUD 列数选择继续生效。
+
+共享 JVM/JS、桌面单元及新发动机字段/既有 HUD 配色 GUI 回归通过（`/tmp/voidmei-hud-engine-fields.log`，10 秒）。覆盖默认、顺序与未知 ID 保留、非法 JSON 拒绝、缺失/非有限/零值、隐藏项目不渲染、空选择和发动机消失后的提示。首轮测试构造参数缺失已修正；生产模型未因此更改。
+
+默认 `nix build path:.` 构建通过（`/tmp/voidmei-hud-engine-fields-nix.log`），产物 `/nix/store/nmmi2jyiq2ix03lsdd07cl3w9mwzkrry-voidmei-kotlin-2.0.0`，包含发动机字段筛选与此前固定列数布局。本轮未执行实机游戏测试。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

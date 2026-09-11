@@ -89,7 +89,7 @@ private fun HudPanelContent(
                 if (HudField.HEADING in fields && mapEndpoint != null) key(it.telemetry.aircraft) {
                     HudMapGrid(mapEndpoint, sharedMap)
                 }
-                settings.hudEngineIndex?.let { index -> key(it.telemetry.aircraft, index) { HudEnginePanel(it.telemetry.engines, index) } }
+                settings.hudEngineIndex?.let { index -> key(it.telemetry.aircraft, index) { HudEnginePanel(it.telemetry.engines, index, fields = HudEngineField.selected(settings.hudEngineFields)) } }
                 if (settings.hudAttitude) AttitudePanel(it.telemetry, compact = true, model = model, earthFixed = settings.hudAttitudeEarthFixed, showAoaLimits = settings.hudAttitudeAoaLimits)
             }
         }

@@ -35,6 +35,7 @@ data class AppSettings(
     val alertVoices: Map<String, VoiceChoice> = emptyMap(),
     val hudFontScale: Float = 1f,
     val hudEngineIndex: Int? = null,
+    val hudEngineFields: List<String> = voidmei.telemetry.HudEngineField.defaults,
     val hudWidthDp: Int = 440,
     val hudReadingColumns: Int = 0,
     val recordingAutoStart: Boolean = false,
@@ -187,6 +188,9 @@ object SettingsJson {
             hudHiddenLabels = root["hudHiddenLabels"]?.jsonArray?.map { value ->
                 value.jsonPrimitive.let { require(it.isString); it.content }
             }?.distinct() ?: defaults.hudHiddenLabels,
+            hudEngineFields = root["hudEngineFields"]?.jsonArray?.map { value ->
+                value.jsonPrimitive.let { require(it.isString); it.content }
+            }?.distinct() ?: defaults.hudEngineFields,
             hudFields = root["hudFields"]?.jsonArray?.map { value ->
                 value.jsonPrimitive.let { require(it.isString); it.content }
             }?.distinct() ?: defaults.hudFields,
@@ -260,6 +264,7 @@ object SettingsJson {
             buildJsonObject { put("enabled", choice.enabled); put("pack", choice.pack?.let(::JsonPrimitive) ?: JsonNull) }
         })
         fields["hudHiddenLabels"] = JsonArray(settings.hudHiddenLabels.map(::JsonPrimitive))
+        fields["hudEngineFields"] = JsonArray(settings.hudEngineFields.map(::JsonPrimitive))
         fields["hudFields"] = JsonArray(settings.hudFields.map(::JsonPrimitive))
         fields["hudCompassHeadingUp"] = JsonPrimitive(settings.hudCompassHeadingUp)
         fields["hudAltitudeMode"] = JsonPrimitive(settings.hudAltitudeMode.id)
