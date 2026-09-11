@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.*
@@ -11,6 +12,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import voidmei.config.*
 import voidmei.fm.*
 import voidmei.telemetry.*
@@ -63,6 +66,25 @@ class HudCompressorAdviceGuiTest {
         compose.onNodeWithTag("hud-compressor-advice-2").assertDoesNotExist()
         compose.onNodeWithTag("hud-compressor-stage-1").assertRangeInfoEquals(ProgressBarRangeInfo(1f, 1f..2f))
         compose.onNodeWithTag("hud-compressor-stage-2").assertRangeInfoEquals(ProgressBarRangeInfo(2f, 1f..2f))
+        compose.onNodeWithTag("hud-compressor-stage-1").assert(SemanticsMatcher.expectValue(
+            SemanticsProperties.StateDescription, "模型建议 2 档；圆点为当前档位，长线为建议档位"))
+        compose.onNodeWithTag("hud-compressor-stage-2").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
+        val recommendedPixels = compose.onNodeWithTag("hud-compressor-stage-1").captureToImage().toPixelMap()
+        compose.onNodeWithText("1 号增压器 · 1 / 2 档 · 建议 2 档（长线）").assertIsDisplayed()
+        compose.runOnIdle { connection = flight.copy(telemetry = telemetry.copy(tasKmh = null)) }
+        compose.onNodeWithTag("hud-compressor-stage-1").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
+        compose.onNodeWithTag("hud-compressor-stage-1").assertRangeInfoEquals(ProgressBarRangeInfo(1f, 1f..2f))
+        val missingPixels = compose.onNodeWithTag("hud-compressor-stage-1").captureToImage().toPixelMap()
+        compose.onNodeWithText("1 号增压器 · 1 / 2 档").assertIsDisplayed()
+        assertEquals(recommendedPixels.width, missingPixels.width)
+        assertEquals(recommendedPixels.height, missingPixels.height)
+        var changed = 0
+        for (y in 0 until recommendedPixels.height) for (x in 0 until recommendedPixels.width) {
+            if (x < recommendedPixels.width / 2) assertEquals(recommendedPixels[x, y], missingPixels[x, y])
+            else if (recommendedPixels[x, y] != missingPixels[x, y]) changed++
+        }
+        assertTrue(changed > 10, "The recommendation line must actually disappear from the second-stage position")
+        compose.runOnIdle { connection = flight }
         compose.runOnIdle { settings = settings.copy(hudSceneLayout = settings.hudSceneLayout!!.copy(
             regions = settings.hudSceneLayout!!.regions.map { if (it.id == "one") it.copy(showEngineInstruments = false) else it })) }
         compose.onNodeWithTag("hud-compressor-stage-1").assertDoesNotExist()
