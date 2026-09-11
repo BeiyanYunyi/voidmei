@@ -23,7 +23,7 @@ public final class CloseWindowAgent {
                 if (count == 1 && current.isVisible()) {
                     // The scene applies its configured size after the native window is created.
                     if (firstHud == null) {
-                        if (current.getWidth() != 900 || current.getHeight() != 600) return;
+                        if (current.getWidth() != 1040 || current.getHeight() != 600) return;
                         firstHud = current; hudBounds = current.getBounds();
                     }
                     else if (current != firstHud || !current.getBounds().equals(hudBounds)) hudChanged = true;
@@ -62,7 +62,7 @@ public final class CloseWindowAgent {
                                             var image = new java.awt.Robot().createScreenCapture(hudBounds);
                                             javax.imageio.ImageIO.write(image, "png", root.resolve("hud-scene.png").toFile());
                                             int yellow = 0;
-                                            int sky = 0, ground = 0, compass = 0, elevator = 0, engineControl = 0;
+                                            int sky = 0, ground = 0, compass = 0, elevator = 0, engineControl = 0, controlStick = 0;
                                             for (int y = 0; y < image.getHeight(); y++) for (int x = 0; x < image.getWidth(); x++) {
                                                 int rgb = image.getRGB(x, y);
                                                 if (((rgb >> 16) & 255) > 200 && ((rgb >> 8) & 255) > 180 && (rgb & 255) < 80) yellow++;
@@ -72,10 +72,13 @@ public final class CloseWindowAgent {
                                                     if (color == 0x1e526f) sky++;
                                                     if (color == 0x644e3c) ground++;
                                                 }
-                                                if (x >= 825 && x < 860 && y >= 300 && y < 500 && color == 0x84dec6) elevator++;
+                                                if (x >= 970 && x < 995 && y >= 300 && y < 560 && color == 0x84dec6) elevator++;
+                                                if (x >= 612 && x < 752 && y >= 340 && y < 550 && color == 0x84dec6) controlStick++;
                                                 if (x >= 300 && x < 460 && y >= 180 && y < 360 && color == 0xffd580) compass++;
                                             }
                                             if (elevator < 20) throw new AssertionError("HUD elevator position marker not visible at +67%: " + elevator);
+                                            if (controlStick < 30) throw new AssertionError("HUD two-axis control marker not visible: " + controlStick);
+                                            System.out.println("[VoidMei exit test] HUD control stick pixels=" + controlStick);
                                             if (engineControl < 150) throw new AssertionError("HUD engine control gauge not visible: " + engineControl);
                                             System.out.println("[VoidMei exit test] HUD engine control pixels=" + engineControl);
                                             if (yellow < 30) throw new AssertionError("HUD map/crosshair pixels not visible");

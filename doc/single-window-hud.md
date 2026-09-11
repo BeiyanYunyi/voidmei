@@ -839,3 +839,11 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 修复单轴图固定颜色与二维图配置颜色不一致的问题：三条单轴图的轨道与中线使用 HUD 标签颜色，位置圆点使用数值颜色，与二维图一致；未配置时保留原默认色。
 
 桌面单元通过，最终两类共 8 项 GUI 回归通过（`/tmp/voidmei-controls-palette-final.log`，2 秒）。像素验证实际 HUD 中二维图和三条单轴图随标签／数值颜色的实时修改同步更新，既有方向、缺失清除与读数颜色回归保持。首次像素断言要求 1 dp 细线出现精确纯色，因抗锯齿失败；改为允许与背景混合但仍严格区分目标颜色通道后通过。本轮未重建离线包或新增真机验收。
+
+## 二维操纵面的离线包验收
+
+完整隔离 GUI 回归通过（`/tmp/voidmei-controls-full-gui.log`）：126 类、294 项，零失败／错误／跳过，53 秒。实际包冒烟夹具扩为 1040×600 画布，保留十类区域，将操纵面设为 440×260 并开启二维图，输入副翼 −50%、升降舵 +67%；新增二维标记像素检查及开关持久化断言。原有姿态、罗盘、混合比图形和单窗口检查保留，Python 冒烟辅助 4 项测试通过。
+
+`nix build path:.#kotlin-offline` 成功（`/tmp/voidmei-controls-package-build.log`），产物 `/nix/store/5ky29jghknfag8lnjl6hlv2k6nqazrib-voidmei-kotlin-2.0.0`。实际兼容 HUD、SOFTWARE_FAST、80 ms 轮询及延迟样本场景通过（`/tmp/voidmei-controls-package-run.log`）：34 次检查保持同一窗口，86 对 CSV 行，正常退出和配置保存通过。已查看 `/tmp/voidmei-package-smoke-zkj93n2c/hud-scene.png`，二维十字位于对应左下象限且与单轴读数并排可见。真机数据文件未改动。
+
+这是隔离 Xvfb/xcompmgr 与合成遥测的验收，不扩大真实游戏、物理 GPU 或其他平台结论。新包包含预设改名／选择导入，但该包级脚本不操作这些入口，其交互证据来自完整 GUI 回归。
