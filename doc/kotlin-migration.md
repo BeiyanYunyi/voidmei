@@ -3054,6 +3054,14 @@ HUD 设置新增“预览 HUD 布局”，打开可与设置页同时使用的�
 
 共享 JVM／JS 和桌面单元测试通过（`/tmp/voidmei-delayed-voice-history.log`，8 秒），覆盖延迟恢复／静音切换不重播、首次请求延迟后仍提示到达、真实会话转换、低燃油冷却保留及到期再播、舵效告警不重复，以及短暂延迟后不推断跨缺口的襟翼动作或地形接近速度。本轮未重建 Nix 包，未作实际音频播放验收。
 
+### 短暂遥测延迟不拆分飞行记录
+
+FlightRecorder 对 Delayed 只跳过写入，保留当前 CSV 文件对和时间原点，不补造数据行；真正断线、等待飞行和换机仍结束或切换分段。桌面测试通过（`/tmp/voidmei-delayed-recording.log`，4 秒），验证重复延迟后仍只有一对文件、两行真实样本保留 1500 ms 间隔，以及延迟后真正断线／退出飞行仍分段。
+
+整包冒烟增加 `--delayed-sample`：第 20 次 `/state` 和 `/indicators` 请求各延迟 1.5 秒，要求后续样本继续写入同一对 CSV，并保留至少 1 秒的时间间隔。与 WEP 历史测试作为独立场景运行。现有 Linux CI 基础记录冒烟已启用该选项和 80 ms 轮询；修改的 Kotlin 工作流 actionlint 通过，未触发远程 CI。
+
+离线 Nix 构建通过（`/tmp/voidmei-delayed-recording-nix.log`）；当前主机隔离 Xvfb/xcompmgr 中的兼容 HUD 整包测试通过（`/tmp/voidmei-delayed-recording-package.log`）：85 对 HTTP 请求、84 对有效记录样本、单一 CSV 文件对、最大样本间隔 1583 ms；5 次 AWT 心跳延迟为 0、0、8、2、0 ms，正常退出码 0。产物和报告副本 `/tmp/voidmei-delayed-recording-artifacts/`。不扩大真实游戏、物理 UI 操作或其他平台验收结论。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

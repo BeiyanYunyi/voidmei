@@ -98,6 +98,8 @@ class FlightRecorder(
                         }
                         is Command.Sample -> {
                             val target = directory ?: continue
+                            // A pending request provides no sample and does not end the flight segment.
+                            if (command.state == ConnectionState.Delayed) continue
                             val flight = command.state as? ConnectionState.Flying
                             if (flight == null) {
                                 closeSegment()

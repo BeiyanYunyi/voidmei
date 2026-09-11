@@ -157,6 +157,45 @@ class FlightRecorderTest {
         } finally { recorder.close(); delete(directory) }
     }
 
+    @Test fun delayKeepsOneFilePairAndElapsedTimeWithoutInventingRows(): Unit = runBlocking {
+        val directory = Files.createTempDirectory("voidmei-delayed-record")
+        val recorder = FlightRecorder(this)
+        try {
+            recorder.start(directory)
+            recorder.record(ConnectionState.Delayed, 900, 0) // No file before the first real sample.
+            recorder.record(flight(), 1000, 100)
+            recorder.record(ConnectionState.Delayed, 2000, 1100)
+            recorder.record(ConnectionState.Delayed, 2200, 1300)
+            recorder.record(flight(), 2500, 1600)
+            recorder.stop()
+            val pair = assertNotNull(recorder.lastRecording.value)
+            Files.list(directory).use { assertEquals(2, it.count()) }
+            val rows = Files.readAllLines(pair.flight)
+            assertEquals(3, rows.size)
+            assertEquals(3, Files.readAllLines(pair.engines).size)
+            val columns = rows.first().split(',')
+            val elapsed = columns.indexOf("elapsed_ms")
+            assertTrue(elapsed >= 0)
+            assertEquals(listOf("0", "1500"), rows.drop(1).map { it.split(',')[elapsed] })
+        } finally { recorder.close(); delete(directory) }
+    }
+
+    @Test fun realTransitionsAfterDelayStillSeparateFiles(): Unit = runBlocking {
+        for (boundary in listOf(ConnectionState.Disconnected("timeout"), ConnectionState.WaitingForFlight)) {
+            val directory = Files.createTempDirectory("voidmei-delay-boundary")
+            val recorder = FlightRecorder(this)
+            try {
+                recorder.start(directory)
+                recorder.record(flight(), 1000, 0)
+                recorder.record(ConnectionState.Delayed, 2000, 1000)
+                recorder.record(boundary, 3500, 2500)
+                recorder.record(flight(), 4000, 3000)
+                recorder.stop()
+                Files.list(directory).use { assertEquals(4, it.count()) }
+            } finally { recorder.close(); delete(directory) }
+        }
+    }
+
     @Test fun invalidDirectoryReportsFailureAndCanRestart(): Unit = runBlocking {
         val directory = Files.createTempDirectory("voidmei-record-failure")
         val file = Files.writeString(directory.resolve("not-a-directory"), "existing")

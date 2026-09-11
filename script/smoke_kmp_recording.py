@@ -11,7 +11,9 @@ import time
 from smoke_kmp_deb import smoke
 
 
-def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False, hud_renderer=None, poll_interval_ms=100):
+def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False, hud_renderer=None, poll_interval_ms=100, delayed_sample=False):
+    if delayed_sample and wep:
+        raise ValueError("Delayed samples and WEP history use separate smoke scenarios")
     if not isinstance(poll_interval_ms, int) or isinstance(poll_interval_ms, bool) or not 10 <= poll_interval_ms <= 5000:
         raise ValueError("poll interval must be an integer between 10 and 5000 ms")
     flying = threading.Event()
@@ -24,6 +26,8 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 
         def do_GET(self):
             requests[self.path] = requests.get(self.path, 0) + 1
+            if delayed_sample and self.path in ("/state", "/indicators") and requests[self.path] == 20:
+                time.sleep(1.5)
             data = {"valid": False}
             if flying.is_set():
                 if self.path == "/state":
@@ -95,6 +99,8 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 
     def ready(root):
         nonlocal stopped_at
+        if delayed_sample and any(requests.get(path, 0) <= 20 for path in ("/state", "/indicators")):
+            return False
         files = list((root / "userdata/voidmei/records").glob("*.csv"))
         if len(files) != 2 or any(len(rows(path)) < 5 for path in files):
             return False
@@ -136,6 +142,10 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
     flight_file = next(path for path in files if not path.name.endswith("-engines.csv"))
     engine_file = flight_file.with_name(flight_file.stem + "-engines.csv")
     flight, engines = rows(flight_file), rows(engine_file)
+    if delayed_sample:
+        elapsed = [int(row["elapsed_ms"]) for row in flight]
+        if not any(b - a >= 1000 for a, b in zip(elapsed, elapsed[1:])):
+            raise RuntimeError("Delayed HTTP sample did not leave an elapsed-time gap in the same recording")
     if len(flight) < 5 or len(flight) != len(engines):
         raise RuntimeError("Expected at least five matching single-engine samples")
     wep_values = []
@@ -216,6 +226,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
     if saved.get("pollIntervalMs") != poll_interval_ms:
         raise RuntimeError("Configured poll interval was not preserved")
     report = {"poll_interval_ms_checked": poll_interval_ms, "samples": len(flight), "flight_csv": str(flight_file), "engine_csv": str(engine_file),
+              "delayed_sample_checked": delayed_sample,
               "graceful_exit_checked": graceful_exit,
               "tray_recovery_checked": tray_recovery,
               "tray_background_checked": tray_background,
@@ -237,6 +248,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path)
+    parser.add_argument("--delayed-sample", action="store_true", help="Delay the twentieth HTTP sample by 1.5 seconds; require one continuous recording pair")
     parser.add_argument("--poll-interval-ms", type=int, default=100, help="Configured polling delay, 10–5000 ms")
     parser.add_argument("--timeout", type=float, default=60)
     parser.add_argument("--renderer", choices=("OPENGL", "SOFTWARE_FAST"), default="OPENGL")
@@ -259,6 +271,8 @@ if __name__ == "__main__":
         parser.error("--wep-dropout requires --wep")
     if args.wep and args.jet:
         parser.error("--wep and --jet select separate synthetic engine scenarios")
+    if args.delayed_sample and args.wep:
+        parser.error("--delayed-sample and --wep select separate history scenarios")
     if not 1 <= args.timeout <= 300:
         parser.error("timeout must be between 1 and 300 seconds")
     if args.compatible_hud and args.no_hud:
@@ -269,4 +283,4 @@ if __name__ == "__main__":
         parser.error("--tray-recovery requires --no-hud and --graceful-exit")
     if args.tray_background and (not args.graceful_exit or args.no_hud or args.tray_recovery):
         parser.error("--tray-background requires --graceful-exit and cannot use --no-hud or --tray-recovery")
-    recording_smoke(args.package.resolve(), args.timeout, args.renderer, not args.no_hud, args.check_ui, args.compatible_hud, args.graceful_exit, args.display_scale, args.jet, args.wep, args.wep_dropout, args.tray_recovery, args.tray_background, args.hud_renderer, args.poll_interval_ms)
+    recording_smoke(args.package.resolve(), args.timeout, args.renderer, not args.no_hud, args.check_ui, args.compatible_hud, args.graceful_exit, args.display_scale, args.jet, args.wep, args.wep_dropout, args.tray_recovery, args.tray_background, args.hud_renderer, args.poll_interval_ms, args.delayed_sample)
