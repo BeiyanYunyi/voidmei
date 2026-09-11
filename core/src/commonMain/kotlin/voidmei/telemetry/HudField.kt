@@ -38,7 +38,7 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
     ENGINE1_MANIFOLD_AUTO("engine1_manifold_auto", "1 号进气压力（自动推断）", "", 2),
     PROPULSIVE_EFFICIENCY("propulsive_efficiency", "推进效率估计", "%", 1),
     POWER_PERCENT("power_percent", "动力量", "%", 0),
-    HEAT_TOLERANCE("heat_tolerance", "1 号热预算估计", "s", 1),
+    HEAT_TOLERANCE("heat_tolerance", "1 号耐热时估计", "s", 1),
     ENGINE_RESPONSE("engine_response", "动力量响应", "%/s", 1),
     BOOSTER_FUEL("booster_fuel", "助推燃料（通道 1）", "kg", 1),
     BOOSTER_FUEL_PERCENT("booster_fuel_percent", "助推燃料余量", "%", 0),

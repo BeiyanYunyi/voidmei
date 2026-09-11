@@ -941,3 +941,14 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 首次运行的像素与配置检查通过，截图发现阴影额外占位使 250 dp 高发动机区域出现滚动溢出。因此仅将外部测试场景的发动机区域增至 270 dp，机械化区域移至 y=480、高 100 dp，再用同一应用包复跑。最终截图确认标签隐藏后数值与单位保留，长消息两行省略且下一条可见，发动机底部说明完整并无滚动条。87 对 CSV、固定单一 HUD 窗口、原有仪表像素、消息阴影像素、配置和预设保存及正常退出均通过。
 
 构建日志 `/tmp/voidmei-label-shadow-build.log`，最终运行日志 `/tmp/voidmei-label-shadow-final.log`，截图和报告 `/tmp/voidmei-package-smoke-tfvo9e5_`。环境为隔离 Xvfb/xcompmgr、SOFTWARE_FAST、80 ms 轮询及延迟样本；不新增真实游戏、物理 GPU 或多屏验收结论。
+
+
+## HUD 地图底图与耐热时入口修复
+
+用户实战反馈设置面板能显示底图而 HUD 一直显示“无底图”。根因是 HudMapObjects 调用 MapObjectPlot 时未加载或传入背景图片。现 HUD 使用与设置面板相同的 loadMapBackground：请求 /map.img 前后验证地图元数据，解码后传入 HUD 绘图；按端点和地图边界／代号重置图片，失败时显示原因并每 5 秒自动重试，缺少地图代号时等待有效元数据。等待或无地图状态会移除旧图片。只有存在真实端点的 HUD 请求底图，示例预览不访问网络。
+
+真实本地 HTTP GUI 回归覆盖首次图片无效后的自动恢复、地图代号切换时清除旧图、再次失败恢复和退出有效地图。共享 JVM／JS、桌面单元及地图／热预算相关 GUI 检查通过（/tmp/voidmei-map-heat-fixes.log，后续名称调整回归 /tmp/voidmei-map-heat-final-tests.log）。包级场景增加地图图片响应及请求断言；初次包级截图已确认“含底图”及底图与玩家对象同时绘制（/tmp/voidmei-package-smoke-huaka8rn）。
+
+旧版 Service.getHeatTolerance 返回 curLoadMinWorkTime 的秒数；KMP 已有对应逐发动机热预算范围，默认未选。为便于发现，发动机字段显示名改为“耐热时估计”，飞行字段为“1 号耐热时估计”，持久化 ID heat_budget／heat_tolerance 保持不变。更详细的含义仍在预算状态说明和快速入门中，避免长名称挤占窄 HUD 区域。此变更不将模型区间宣称为实际损坏倒计时。
+
+最终简短名称版本离线包 `/nix/store/qqwf1cijfj7cg2wwh590c1w5yhkw9zla-voidmei-kotlin-2.0.0` 构建及兼容 HUD 冒烟通过：87 对 CSV、地图图片请求、单窗口稳定性、配置保存与正常退出通过。已检查最终截图；日志 `/tmp/voidmei-map-heat-final-package.log`，制品 `/tmp/voidmei-package-smoke-zimmr15x`。以上是隔离 X11 软件渲染验证，等待用户新版 HUD 底图的实战反馈。

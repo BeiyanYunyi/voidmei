@@ -12,7 +12,7 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
     EFFICIENCY("efficiency", "效率", "%"),
     MANIFOLD_INHG("manifold_inhg", "进气压力（inHg）", "inHg", 1),
     BOOST_PSI("boost_psi", "增压（相对1atm）", "psi", 1),
-    HEAT_BUDGET("heat_budget", "热预算估计", "s", 1),
+    HEAT_BUDGET("heat_budget", "耐热时估计", "s", 1),
     FM_POWER_PERCENT("fm_power_percent", "动力量（FM峰值）", "%", 1),
     THRUST_POWER("thrust_power", "推进功率", "kW", 1),
     PROPULSIVE_EFFICIENCY("propulsive_efficiency", "推进效率估计", "%", 1);

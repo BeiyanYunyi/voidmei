@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Verify packaged auto recording against isolated synthetic HTTP telemetry, with a display."""
 import argparse
+import base64
 import csv
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -21,6 +22,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
     flying = threading.Event()
     flying.set()
     requests = {}
+    map_image = base64.b64decode(json.loads((Path(__file__).parent / "mock_scenarios/snapshots/map_wide.json").read_text())["/map.img"]["base64"]) if hud_scene else None
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -28,6 +30,13 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 
         def do_GET(self):
             requests[self.path] = requests.get(self.path, 0) + 1
+            if hud_scene and self.path == "/map.img":
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(map_image)))
+                self.end_headers()
+                self.wfile.write(map_image)
+                return
             if delayed_sample and self.path in ("/state", "/indicators") and requests[self.path] == 20:
                 time.sleep(1.5)
             data = {"valid": False}
@@ -185,6 +194,8 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
         if saved.get("hudCompatibilityMode") is not True or "Presentation: SwingGraphics; full HUD" not in (root / "startup.log").read_text():
             raise RuntimeError("Persisted compatibility setting did not activate the full HUD")
     if hud_scene:
+        if requests.get("/map.img", 0) < 1:
+            raise RuntimeError("Packaged HUD did not request the map background")
         saved = json.loads((root / "config/settings-kmp.json").read_text())
         if len(saved.get("hudSceneLayout", {}).get("regions", [])) != 10 or not saved["hudSceneLayout"].get("enabled"):
             raise RuntimeError("Packaged scene configuration was not retained")
