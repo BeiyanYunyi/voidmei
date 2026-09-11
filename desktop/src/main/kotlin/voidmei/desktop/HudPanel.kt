@@ -89,7 +89,7 @@ private fun HudPanelContent(
         Box(Modifier.weight(1f, fill = false).fillMaxWidth()) {
         Column(Modifier.fillMaxWidth().padding(end = 8.dp).verticalScroll(bodyScroll)
             .testTag("hud-body").onSizeChanged { bodyHeight = it.height },
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(statusText(connection), color = Color.White)
             flight?.let {
                 FlightPanel(it, compact = true, fields = fields,
