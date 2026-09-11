@@ -767,3 +767,11 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 新增原生窗口交互回归：同时打开当前布局的可编辑预览和已保存布局的只读预览，将只读预览从高度预设切换为燃油预设。验证窗口身份复用、标题与内容更新、旧高度读数清除，当前 IAS 预览及唯一编辑入口保持不变；关闭只读窗口不影响可编辑窗口，全程设置保持原值。
 
 两项预设预览 GUI 测试通过（`/tmp/voidmei-preset-preview-switching.log`）。本轮未修改运行逻辑或重建 Nix 包，未新增真实游戏验收。
+
+## 当前源码的离线包兼容 HUD 回归
+
+以 `a90be63` 源码执行 `nix build path:.#kotlin-offline` 成功（`/tmp/voidmei-current-hud-package-build.log`），产物为 `/nix/store/f872a76hhvs82j44jv1ilzncxsyylk0s-voidmei-kotlin-2.0.0`，包含逐发动机 FM 动力量图形及预设只读预览的近期变更。
+
+实际包在隔离 Xvfb/xcompmgr 下以兼容 HUD、SOFTWARE_FAST、80 ms 轮询及延迟样本运行通过（`/tmp/voidmei-current-hud-package-run.log`）。十区域布局在 34 次检查中保持同一个 900×600 HUD 窗口，记录 85 对飞行／发动机 CSV 行，正常退出、配置持久化和数据来源检查通过。已查看 `/tmp/voidmei-package-smoke-2k5cu936/hud-scene.png`：混合比半量程图形、热预算未知值及缺失模型原因、姿态与罗盘均可见；原始真机数据文件未修改。
+
+本次包级用例未选择 FM 动力量字段，也未操作预设预览；这两项仍以此前专用 GUI 测试为证据。此次不新增真实游戏、物理 GPU、多屏或原生 Wayland 的验收结论。
