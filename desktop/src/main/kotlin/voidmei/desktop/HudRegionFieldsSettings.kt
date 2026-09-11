@@ -11,8 +11,8 @@ import voidmei.telemetry.*
 @Composable
 internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, onChange: (HudRegion) -> Unit) {
     if (region.content == HudRegionContent.CONTROLS) {
-        val axes = listOf(HudField.AILERON, HudField.ELEVATOR, HudField.RUDDER)
-        val selected = region.fields ?: axes.map { it.id }
+        val axes = listOf(HudField.AILERON, HudField.ELEVATOR, HudField.RUDDER, HudField.WING_SWEEP)
+        val selected = region.fields ?: axes.take(3).map { it.id }
         Text("显示的操纵面")
         FlowRow {
             axes.forEach { field ->

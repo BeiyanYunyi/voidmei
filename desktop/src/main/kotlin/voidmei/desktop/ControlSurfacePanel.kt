@@ -17,8 +17,9 @@ import voidmei.telemetry.controlSurfacePercent
 @Composable
 internal fun ControlSurfacePanel(telemetry: Telemetry, fields: List<String>? = null, showStick: Boolean = false) {
     val axes = listOf(Triple("aileron", "副翼", telemetry.aileronPercent), Triple("elevator", "升降舵", telemetry.elevatorPercent),
-        Triple("rudder", "方向舵", telemetry.rudderPercent))
-    val selected = fields?.distinct()?.mapNotNull { id -> axes.find { it.first == id } } ?: axes
+        Triple("rudder", "方向舵", telemetry.rudderPercent),
+        Triple("wing_sweep", "后掠", telemetry.wingSweepRatio?.takeIf { it in 0.0..1.0 }?.times(100)))
+    val selected = fields?.distinct()?.mapNotNull { id -> axes.find { it.first == id } } ?: axes.take(3)
     val stick = showStick && selected.any { it.first == "aileron" } && selected.any { it.first == "elevator" }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (selected.isEmpty()) Text("未选择操纵面")
@@ -31,7 +32,9 @@ internal fun ControlSurfacePanel(telemetry: Telemetry, fields: List<String>? = n
                 ControlAxisReadings(selected)
             }
         }
-        if (selected.isNotEmpty()) Text("刻度 −100% / 0 / +100%；百分比不代表实际偏转角。", style = MaterialTheme.typography.bodySmall)
+        if (selected.isNotEmpty()) Text(if (selected.any { it.first == "wing_sweep" })
+            "舵面刻度 −100% 至 +100%；后掠刻度 0% 至 100%。百分比不代表实际角度。"
+            else "刻度 −100% / 0 / +100%；百分比不代表实际偏转角。", style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -41,10 +44,11 @@ private fun ControlAxisReadings(selected: List<Triple<String, String, Double?>>)
     val marker = LocalReadingColors.current.value ?: Color(0xFF84DEC6)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         selected.forEach { (id, label, raw) ->
-            val value = controlSurfacePercent(raw)
+            val minimum = if (id == "wing_sweep") 0 else -100
+            val value = if (id == "wing_sweep") raw?.takeIf { it in 0.0..100.0 } else controlSurfacePercent(raw)
             Text("$label ${readingNumber(value, 1)}%")
             Canvas(Modifier.fillMaxWidth().height(24.dp).testTag("hud-control-$id").semantics {
-                contentDescription = "$label，刻度 -100% 至 +100%"
+                contentDescription = if (id == "wing_sweep") "$label，刻度 0% 至 100%" else "$label，刻度 -100% 至 +100%"
                 stateDescription = value?.let { "${readingNumber(it, 1)}%" } ?: "数据不可用"
             }) {
                 val inset = minOf(6.dp.toPx(), size.width / 2)
@@ -52,7 +56,7 @@ private fun ControlAxisReadings(selected: List<Triple<String, String, Double?>>)
                 drawLine(track, Offset(inset, y), Offset(size.width - inset, y), 1.dp.toPx())
                 drawLine(track, Offset(size.width / 2, y - 6.dp.toPx()), Offset(size.width / 2, y + 6.dp.toPx()), 1.dp.toPx())
                 value?.let {
-                    val x = inset + ((it + 100) / 200).toFloat() * (size.width - 2 * inset)
+                    val x = inset + ((it - minimum) / (100 - minimum)).toFloat() * (size.width - 2 * inset)
                     drawCircle(marker, 4.dp.toPx().coerceAtMost(size.minDimension / 2), Offset(x, y))
                 }
             }

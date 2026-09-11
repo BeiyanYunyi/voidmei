@@ -853,3 +853,9 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 同一离线产物 `/nix/store/5ky29jghknfag8lnjl6hlv2k6nqazrib-voidmei-kotlin-2.0.0` 在隔离 Xvfb/xcompmgr 中请求 OpenGL，使用 Mesa 软件驱动运行十区域兼容 HUD（`/tmp/voidmei-controls-package-opengl.log`）。运行日志确认 HUD 实际后端为 OPENGL；主窗口创建 Linux GL 上下文失败后回退 SOFTWARE_FAST，不据此宣称主窗口 OpenGL 或物理 GPU 通过。
 
 80 ms 轮询及延迟样本场景通过：34 次检查保持同一个 1040×600 HUD 窗口，84 对 CSV 行，正常退出与配置保存通过。二维操纵面标记、升降舵条形图、混合比、姿态及罗盘像素检查通过；已查看 `/tmp/voidmei-package-smoke-sj06tmmo/hud-scene.png`，图形与软件路径一致可见。本轮未修改运行源码或重建产物，未新增真实游戏验收。
+
+## 操纵面区域的后掠读数
+
+补齐旧版 ControlSurfacesOverlay 中的后掠百分比展示。操纵面字段清单新增可选 wing_sweep，原有默认三轴保持，沿用字段顺序及持久化。读取合法 0–1 后掠比例并转换为 0–100%，图形采用独立的非负刻度；舵面仍使用 −100% 至 +100%。说明与无障碍描述区分两种刻度，不将百分比解释为实际角度。无效、缺失后掠数据保留轨道、清除标记并显示未知。
+
+桌面单元及两类共 4 项 GUI 测试通过（`/tmp/voidmei-controls-wing-sweep.log`，6 秒）。实际设置字段选择到 HUD 绘制的回归覆盖 0／50／100% 的左／中／右像素位置、缺失／负值／超范围／NaN 清除、有效值恢复、配置往返和取消选择；二维图布局、方向和配色回归继续通过。本轮未重建离线包或新增真机验收。
