@@ -144,6 +144,12 @@ fun main(args: Array<String>) {
             mainVisible = !shouldStartInTray(settings.startInTray, trayAvailable, "--no-hud" in args, loaded.error != null)
             onDispose { desktopTray = null; tray?.close() }
         }
+        LaunchedEffect(recorder) {
+            recorder.performance.collect { observation ->
+                if (settings.recordingPerformanceNotifications && trayAvailable)
+                    desktopTray?.showMessage("飞行采样记录", performanceMessage(observation))
+            }
+        }
         RecordingNotificationEffect(recording, lastRecording) { notice ->
             if (trayAvailable) desktopTray?.showMessage(notice.title, notice.message)
         }
@@ -418,6 +424,11 @@ fun main(args: Array<String>) {
                                         } finally { recordingBusy = false }
                                     }
                                 }) { Text(if (recording is RecordingState.Active) "停止记录" else "开始记录") }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Switch(settings.recordingPerformanceNotifications,
+                                    { settings = settings.copy(recordingPerformanceNotifications = it) }, enabled = !closing)
+                                Text("通知高度档及机动采样结果（需要托盘）")
                             }
                             RecordingDirectorySave(settings.recordingDirectory, recordingPath,
                                 enabled = recording !is RecordingState.Active && !recordingBusy && !closing) { path ->

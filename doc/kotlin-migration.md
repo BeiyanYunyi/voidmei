@@ -2724,6 +2724,18 @@ F-14 同时提供真实的未支持字段证据：升降舵有效速度 `[1801, 
 
 日志 `/tmp/voidmei-full-gui-after-background-model.log`；JUnit XML 和 HTML 报告已复制至 `/tmp/voidmei-full-gui-after-background-model-results/`，避免后续定向测试覆盖证据。使用隔离 Xvfb/xcompmgr，SOFTWARE_FAST；不包含独立 native HUD 指针、全局热键、原生托盘任务，也不作为真实游戏、物理 GPU 或 Windows/macOS 验收。本轮没有修改生产代码，无需重建包。
 
+### 录制中的高度档及机动采样通知
+
+进一步核对 FlightLog.analyzeData、FlightAnalyzer.analyze/updateEMChart：旧 enableAltInformation 并非按固定时间周期通知，而是在连续上升到下一 100 m 档、速度档内滚转记录增幅超过 40 °/s，或过载观察增幅超过 3 G 时提示。旧分析入口还受高度变化门槛限制。
+
+新增共享 FlightPerformanceMonitor，按成功录制的样本更新；100 m 高度档使用实际初始高度与单调经过时间计算平均爬升，不沿用旧实现的绝对时间分母。允许一次跨过多个高度档后继续观察，下降再返回旧高度不重复提示；缺失/非法高度重建爬升基线。10 km/h 速度档沿用滚转率/操纵面筛选及过载/SEP 的旧平滑规则，但严格检查有限值、速度档范围与控制面范围；缺失 SEP 不参与过载观察。过载通知明确标为“平滑过载”，不称为最大过载或损伤极限。
+
+FlightRecorder 在两份 CSV 追加并 flush 成功后更新观察器；每个新文件段（含换机）使用新实例。通知使用不重放、容量有限的 SharedFlow，慢消费者可以丢弃通知而不丢弃 CSV 样本。主应用持续消费，默认关闭的 recordingPerformanceNotifications 开关控制托盘投递，并支持旧 enableAltInformation 导入和预览。
+
+共享 JVM/JS 与桌面测试通过（`/tmp/voidmei-performance-notifications-tests.log`），包括跳过高度档、下降/回升、缺失高度、重复时间、速度分箱、滚转控制门槛、SEP 缺失、过载平滑、严格配置与旧开关导入。真实 FlightRecorder 回归验证换机分段重新计时、保存的 CSV 行数、成功样本的提示，以及 flush 失败不发布该样本的观察结果。原生气泡显示及实机性能精度尚未验证，旧分析图表导出不因新增通知视作完成。
+
+`nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-performance-notifications-nix.log`）。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

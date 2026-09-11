@@ -8,6 +8,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import voidmei.telemetry.ConnectionState
 import voidmei.recording.FlightCsv
+import voidmei.recording.FlightPerformanceMonitor
+import voidmei.recording.PerformanceObservation
+import kotlinx.coroutines.channels.BufferOverflow
 import java.io.BufferedWriter
 import java.nio.file.*
 import java.time.Instant
@@ -39,6 +42,9 @@ class FlightRecorder(
     val state: StateFlow<RecordingState> = mutableState.asStateFlow()
     private val mutableLastRecording = MutableStateFlow<RecordedFiles?>(null)
     val lastRecording: StateFlow<RecordedFiles?> = mutableLastRecording.asStateFlow()
+    private val mutablePerformance = MutableSharedFlow<PerformanceObservation>(extraBufferCapacity = 16,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val performance: SharedFlow<PerformanceObservation> = mutablePerformance.asSharedFlow()
     @Volatile private var accepting = false
     @Volatile private var closed = false
     private val lifecycle = Mutex()
@@ -51,6 +57,7 @@ class FlightRecorder(
         var affectedFiles: RecordedFiles? = null
         var sampleId = 0L
         var origin = 0L
+        var performanceMonitor = FlightPerformanceMonitor()
         fun closeSegment() {
             val flight = flightWriter
             val engines = engineWriter
@@ -109,11 +116,13 @@ class FlightRecorder(
                                 engineWriter!!.appendLine(FlightCsv.engineHeader)
                                 aircraft = flight.telemetry.aircraft
                                 origin = command.monotonicMs
+                                performanceMonitor = FlightPerformanceMonitor()
                                 sampleId = 0
                             }
                             flightWriter!!.appendLine(FlightCsv.flightRow(sampleId, command.epochMs, command.monotonicMs - origin, flight))
                             FlightCsv.engineRows(sampleId, command.epochMs, flight.telemetry.engines).forEach { engineWriter!!.appendLine(it) }
                             flightWriter!!.flush(); engineWriter!!.flush()
+                            performanceMonitor.update(flight, command.monotonicMs - origin).forEach { mutablePerformance.tryEmit(it) }
                             sampleId++
                             mutableState.value = RecordingState.Active(target.toString(), file.toString(), sampleId)
                         }
