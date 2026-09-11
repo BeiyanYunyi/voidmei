@@ -59,10 +59,6 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
             if (compact && showInstruments && HudEngineField.THROTTLE in fields)
                 ThrottleBar(HudEngineField.THROTTLE.value(engine), index, "hud-engine-throttle-$index")
             if (compact && showInstruments) EngineControlBars(engine, fields)
-            if (HudEngineField.HEAT_BUDGET in fields)
-                Text("热预算区间包含未知初始损耗，按采样温度估算，不是实际剩余寿命。",
-                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color = LocalReadingColors.current.label ?: androidx.compose.material3.LocalContentColor.current)
         }
     }
 }

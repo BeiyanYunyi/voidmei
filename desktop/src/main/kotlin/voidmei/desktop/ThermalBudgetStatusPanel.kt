@@ -9,11 +9,12 @@ import androidx.compose.ui.platform.testTag
 import voidmei.telemetry.*
 
 @Composable
-internal fun ThermalBudgetStatusPanel(flight: ConnectionState.Flying, model: AircraftAlertModel?, thermal: EngineThermalObservation?) {
+internal fun ThermalBudgetStatusPanel(flight: ConnectionState.Flying, model: AircraftAlertModel?, thermal: EngineThermalObservation?,
+    engineIndex: Int = 1) {
     val reason = when {
-        model?.parametersFor(flight.telemetry.aircraft)?.engineThermals?.singleOrNull { it.telemetryIndex == 1 } == null ->
-            "缺少 1 号发动机温度模型。"
-        thermal?.hudBudget(flight, model) == null -> "当前无可用的 1 号发动机计时预算。"
+        model?.parametersFor(flight.telemetry.aircraft)?.engineThermals?.singleOrNull { it.telemetryIndex == engineIndex } == null ->
+            "缺少 $engineIndex 号发动机温度模型。"
+        thermal?.hudBudget(flight, model, engineIndex) == null -> "当前无可用的 $engineIndex 号发动机计时预算。"
         else -> ""
     }
     Text(reason + "热预算区间包含未知初始损耗，按采样温度估算，不是实际剩余寿命。",

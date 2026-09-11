@@ -22,22 +22,30 @@ class HudEngineBudgetGuiTest {
             Engine0 { Main { Type:t=Inline } Temperature { Load1 { WaterTemperature:r=100; WorkTime:r=10; RecoverTime:r=5 } } }
             Engine1 { Main { Type:t=Inline } Temperature { Load1 { WaterTemperature:r=100; WorkTime:r=400; RecoverTime:r=5 } } }
         """))))
-        val telemetry = TelemetryParser.parse("""{"valid":true,"water temp 1, C":110,"water temp 2, C":110}""",
-            """{"valid":true,"type":"test"}""")!!
-        val flight = ConnectionState.Flying(telemetry, FlightMetrics())
+        var telemetry by mutableStateOf(TelemetryParser.parse("""{"valid":true,"water temp 1, C":110,"water temp 2, C":110}""",
+            """{"valid":true,"type":"test"}""")!!)
         val region = HudRegion("one", HudRegionContent.ENGINE, 0, 0, 400, 300, fields = listOf("heat_budget"))
         val settings = AppSettings(hudSceneLayout = HudSceneLayout(800, 300,
             listOf(region, region.copy(id = "two", x = 400, engineIndex = 2))))
         compose.setContent { MaterialTheme { Box(Modifier.size(800.dp, 300.dp)) {
+            val flight = ConnectionState.Flying(telemetry, FlightMetrics())
             val thermal = EngineThermalMonitor().update(flight, model, 0)
             HudPanel(flight, settings, listOf(FlightAlert.ENGINE_OVERHEAT), model, thermal = thermal) {}
         } } }
         compose.onNodeWithText("0.0–10.0 s").assert(SemanticsMatcher.expectValue(
             SemanticsProperties.StateDescription, FlightAlert.ENGINE_OVERHEAT.label))
         compose.onNodeWithText("0.0–400.0 s").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
+        compose.runOnIdle { telemetry = telemetry.copy(engines = telemetry.engines.map {
+            if (it.index == 2) it.copy(waterTemperatureC = null) else it
+        }) }
+        compose.onNodeWithText("当前无可用的 2 号发动机计时预算。", substring = true).assertExists()
+        compose.onNodeWithText("当前无可用的 1 号发动机计时预算。", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("0.0–10.0 s").assertExists()
         compose.runOnIdle { model = model.copy(aircraft = "other") }
         compose.onNodeWithText("0.0–10.0 s").assertDoesNotExist()
         compose.onNodeWithText("0.0–400.0 s").assertDoesNotExist()
         compose.onAllNodesWithText("— s").assertCountEquals(2)
+        compose.onNodeWithText("缺少 1 号发动机温度模型。", substring = true).assertExists()
+        compose.onNodeWithText("缺少 2 号发动机温度模型。", substring = true).assertExists()
     }
 }
