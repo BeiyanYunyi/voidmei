@@ -17,6 +17,30 @@ import voidmei.telemetry.*
 class HudMessageFilterGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun messageRegionUsesConfiguredLabelValueAndWarningColors() {
+        var settings by mutableStateOf(AppSettings(hudLabelColor = "#00FF00", hudValueColor = "#0000FF",
+            hudWarningColor = "#FF0000", hudSceneLayout = HudSceneLayout(500, 400,
+                listOf(HudRegion("messages", HudRegionContent.MESSAGES, 0, 0, 500, 400)))))
+        var messages by mutableStateOf(HudMessageState(listOf(HudMessage(HudMessageKind.EVENT, 1, "已有消息")), error = "timeout"))
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp, 400.dp)) {
+            HudPanel(hudPreviewFlight(), settings, emptyList(), null, messages = messages) {}
+        } } }
+        fun color(text: String): androidx.compose.ui.graphics.Color {
+            val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            compose.onNodeWithText(text).performSemanticsAction(
+                androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(results) }
+            return results.single().layoutInput.style.color
+        }
+        assertEquals(androidx.compose.ui.graphics.Color.Green, color("最近接收的游戏消息 · 最多 5 条"))
+        assertEquals(androidx.compose.ui.graphics.Color.Blue, color("事件 #1 · 已有消息"))
+        assertEquals(androidx.compose.ui.graphics.Color.Red, color("消息更新失败（保留已有记录）"))
+        compose.runOnIdle { settings = settings.copy(hudLabelColor = "#FF0000", hudValueColor = "#00FF00") }
+        assertEquals(androidx.compose.ui.graphics.Color.Green, color("事件 #1 · 已有消息"))
+        compose.runOnIdle { messages = HudMessageState(emptyList()) }
+        assertEquals(androidx.compose.ui.graphics.Color.Red, color("尚无游戏消息"))
+        compose.onNodeWithText("消息更新失败（保留已有记录）").assertDoesNotExist()
+    }
+
     @Test fun lineLimitEllipsizesLongMessagesWithoutDiscardingOriginalText() {
         val text = "长消息内容".repeat(150)
         val state = HudMessageState(listOf(HudMessage(HudMessageKind.EVENT, 1, "较早消息"),
