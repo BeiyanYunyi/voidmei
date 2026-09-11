@@ -8,7 +8,7 @@ import androidx.compose.ui.platform.testTag
 import voidmei.config.AppSettings
 
 @Composable
-internal fun HudScenePresetSettings(settings: AppSettings, onChange: (AppSettings) -> Unit) {
+internal fun HudScenePresetSettings(settings: AppSettings, canLoad: Boolean = true, onChange: (AppSettings) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     TextButton({ expanded = !expanded }, Modifier.testTag("hud-presets-toggle")) { Text(if (expanded) "收起布局预设" else "管理布局预设") }
     if (!expanded) return
@@ -28,8 +28,8 @@ internal fun HudScenePresetSettings(settings: AppSettings, onChange: (AppSetting
     settings.hudScenePresets.forEach { (key, scene) ->
         Text("$key · ${scene.regions.size} 区域 · ${scene.width} × ${scene.height} dp")
         FlowRow {
-            TextButton({ onChange(settings.copy(hudSceneLayout = scene.copy(enabled = true))) },
-                Modifier.testTag("hud-preset-load-$key")) { Text("载入") }
+            TextButton({ onChange(settings.copy(hudSceneLayout = scene.copy(enabled = true))) }, enabled = canLoad,
+                modifier = Modifier.testTag("hud-preset-load-$key")) { Text("载入") }
             TextButton({ onChange(settings.copy(hudScenePresets = settings.hudScenePresets - key)) },
                 Modifier.testTag("hud-preset-delete-$key")) { Text("删除预设") }
         }
