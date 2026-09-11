@@ -45,7 +45,9 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                     HudRegionContent.ALERTS -> AlertSeverity.entries.map { it.name.lowercase() }
                     else -> settings.hudFields
                 }
-                val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields, region.messageLimit) {
+                val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields, region.messageLimit,
+                    region.readingColumns ?: settings.hudReadingColumns, region.fontScale ?: settings.hudFontScale,
+                    region.width, region.height, region.showFlightInstruments, region.showFlightStatus) {
                     rememberScrollState()
                 }
                 val regionAlerts = if (region.content == HudRegionContent.ALERTS)

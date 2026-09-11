@@ -555,3 +555,9 @@ HUD 设置始终保留布局预设组件，避免“载入预设 → 返回纵�
 当前离线包构建通过（`/tmp/voidmei-opengl-scene-build.log`）。最初要求主窗口及 HUD 均为 OPENGL 的测试失败：主窗口无法创建 Linux GL context，回退 SOFTWARE_FAST（`/tmp/voidmei-opengl-scene-run.log`）；显式选择 Mesa 后仍同样失败（`/tmp/voidmei-opengl-mesa-scene-run.log`）。独立 glxinfo 在隔离显示可使用 Mesa llvmpipe（`/tmp/voidmei-isolated-glx-diagnostic.log`），不能把该问题归为整个环境不支持 GLX。
 
 按已知隔离环境行为分别校验主窗口 SOFTWARE_FAST、兼容 HUD OPENGL 后，十区域实际进程测试通过（`/tmp/voidmei-opengl-hud-scene-run.log`）。80 ms 刷新、一次 1.5 秒延迟、86 对记录行，34 次采样保持一个 900×600 HUD；升降舵 36、天空 26623、大地 9572、罗盘 127 像素，AWT 心跳 11／0／0／0／18 ms，正常退出及配置保存通过。产物 `/tmp/voidmei-package-smoke-zk44apn2/`。这仅证明该环境的 OpenGL 兼容 HUD 路径可用，主窗口 OpenGL 仍未通过，且不证明 NVIDIA 硬件加速或真实游戏行为。
+
+## 分区重新排版后回到顶部
+
+分区滚动状态增加有效列数、有效字体缩放、区域尺寸及飞行标题／图形开关作为重置条件。配置改变导致重新排版时从顶部查看内容；普通遥测更新、区域位置与透明度改变保留滚动位置。实时穿透 HUD 仍不接受鼠标滚动，此行为主要改善可交互预览中的布局调整。
+
+桌面单元及分区滚动、纵向滚动提示 GUI 回归通过（`/tmp/voidmei-region-reflow-scroll.log`、`/tmp/voidmei-region-reflow-scroll-final.log`）。最终同时保留并通过原有发动机切换和字段重排测试。实际执行滚动后逐项修改排版选项，验证进度回零；同步更新遥测、位置和背景透明度时进度保持。本轮未重建 Nix 包，未新增真实游戏验收。
