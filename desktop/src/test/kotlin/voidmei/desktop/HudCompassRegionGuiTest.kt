@@ -27,6 +27,7 @@ class HudCompassRegionGuiTest {
             HudPanel(connection, settings.copy(hudSceneLayout = scene), emptyList(), null) {}
         } } }
         compose.onNodeWithContentDescription("固定北向罗盘，航向 90°").assertIsDisplayed()
+        compose.onNodeWithText("航向 090°").assertIsDisplayed()
         val first = compose.onNodeWithTag("hud-compass").getUnclippedBoundsInRoot()
         assertTrue(first.left >= 312.dp)
         compose.runOnIdle { scene = scene.resizeRegion("compass", 280, 350); settings = settings.copy(hudCompassHeadingUp = true) }
@@ -34,7 +35,11 @@ class HudCompassRegionGuiTest {
         val resized = compose.onNodeWithTag("hud-compass").getUnclippedBoundsInRoot()
         assertTrue(resized.bottom - resized.top > first.bottom - first.top)
         assertTrue(resized.right <= 580.dp && resized.bottom <= 350.dp)
+        compose.runOnIdle { connection = original.copy(telemetry = original.telemetry.copy(headingDeg = 359.6)) }
+        compose.onNodeWithText("航向 000°").assertIsDisplayed()
+        compose.onNodeWithContentDescription("航向朝上罗盘，航向 0°").assertIsDisplayed()
         compose.runOnIdle { connection = original.copy(telemetry = original.telemetry.copy(headingDeg = null)) }
+        compose.onNodeWithText("航向 000°").assertDoesNotExist()
         compose.onNodeWithTag("hud-compass").assertDoesNotExist()
         compose.onNodeWithText("航向未知").assertIsDisplayed()
         compose.runOnIdle { connection = ConnectionState.Delayed }

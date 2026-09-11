@@ -80,7 +80,10 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                 val heading = AttitudeGeometry.heading(flight.telemetry.headingDeg)
                                 if (heading == null) Text("航向未知")
-                                else CompassPanel(heading, settings.hudCompassHeadingUp, Modifier.fillMaxWidth().weight(1f))
+                                else {
+                                    Text("航向 ${(kotlin.math.round(heading).toInt() % 360).toString().padStart(3, '0')}°")
+                                    CompassPanel(heading, settings.hudCompassHeadingUp, Modifier.fillMaxWidth().weight(1f))
+                                }
                             }
                         } else {
                         Column(Modifier.fillMaxSize().padding(end = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(4.dp)) {
