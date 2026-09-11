@@ -15,6 +15,33 @@ import voidmei.config.*
 class HudScenePresetsGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun deletedPresetRestoresOriginalContentAndOrderWithoutOverwritingNames() {
+        val original = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
+        val current = original.resizeCanvas(600, 400)
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = current,
+            hudScenePresets = mapOf("一" to original, "二" to current)))
+        compose.setContent { MaterialTheme { Column(Modifier.size(800.dp, 900.dp)) {
+            HudScenePresetSettings(settings) { settings = it }
+        } } }
+        compose.onNodeWithTag("hud-presets-toggle").performClick()
+        compose.onNodeWithTag("hud-preset-delete-一").performClick()
+        compose.onNodeWithTag("hud-presets-toggle").performClick()
+        compose.runOnIdle { settings = settings.copy(voiceVolume = 25, hudScenePresets = settings.hudScenePresets + ("一" to current)) }
+        compose.onNodeWithTag("hud-preset-restore-deleted").assertIsNotEnabled()
+        compose.runOnIdle { settings = settings.copy(hudScenePresets = (1..16).associate { "其他$it" to current }) }
+        compose.onNodeWithTag("hud-preset-restore-deleted").assertIsNotEnabled()
+        compose.runOnIdle { settings = settings.copy(hudScenePresets = mapOf("二" to current)) }
+        compose.onNodeWithTag("hud-preset-restore-deleted").performClick()
+        compose.runOnIdle {
+            assertEquals(listOf("一", "二"), settings.hudScenePresets.keys.toList())
+            assertEquals(original, settings.hudScenePresets["一"])
+            assertEquals(current, settings.hudSceneLayout)
+            assertEquals(25, settings.voiceVolume)
+            assertEquals(settings, SettingsJson.decode(SettingsJson.encode(settings)))
+        }
+        compose.onNodeWithTag("hud-preset-restore-deleted").assertDoesNotExist()
+    }
+
     @Test fun renamingPresetKeepsSavedContentOrderAndCurrentLayout() {
         val original = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240,
             fields = listOf("ias", "future"), showFlightInstruments = false)))

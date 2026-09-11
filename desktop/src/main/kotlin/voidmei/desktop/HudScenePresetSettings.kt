@@ -8,11 +8,14 @@ import androidx.compose.ui.platform.testTag
 import voidmei.config.AppSettings
 import voidmei.config.HudSceneLayout
 
+private data class DeletedHudPreset(val name: String, val scene: HudSceneLayout, val index: Int)
+
 private data class PreviousHudLayout(val scene: HudSceneLayout?)
 
 @Composable
 internal fun HudScenePresetSettings(settings: AppSettings, canLoad: Boolean = true, onLoad: () -> Unit = {}, onChange: (AppSettings) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
+    var deleted by remember { mutableStateOf<DeletedHudPreset?>(null) }
     var previous by remember { mutableStateOf<PreviousHudLayout?>(null) }
     TextButton({ expanded = !expanded }, Modifier.testTag("hud-presets-toggle")) { Text(if (expanded) "收起布局预设" else "管理布局预设") }
     previous?.let { saved ->
@@ -24,6 +27,23 @@ internal fun HudScenePresetSettings(settings: AppSettings, canLoad: Boolean = tr
             Text("撤销上次载入")
         }
         Text("恢复载入前布局；仅保留本次页面的最近一次载入记录。")
+    }
+    deleted?.let { saved ->
+        val conflict = saved.name in settings.hudScenePresets
+        val full = settings.hudScenePresets.size >= 16
+        TextButton({
+            val entries = settings.hudScenePresets.entries.map { it.key to it.value }.toMutableList()
+            entries.add(saved.index.coerceIn(0, entries.size), saved.name to saved.scene)
+            onChange(settings.copy(hudScenePresets = entries.toMap()))
+            deleted = null
+        }, enabled = !conflict && !full, modifier = Modifier.testTag("hud-preset-restore-deleted")) {
+            Text("恢复上次删除的预设 · ${saved.name}")
+        }
+        Text(when {
+            conflict -> "已有同名预设，恢复不会覆盖它；可先将同名预设重命名。"
+            full -> "已达 16 套预设，暂不能恢复。"
+            else -> "仅保留本次页面最近一次删除；再次删除会替换恢复记录。"
+        })
     }
     if (!expanded) return
     var name by remember { mutableStateOf("") }
@@ -56,7 +76,10 @@ internal fun HudScenePresetSettings(settings: AppSettings, canLoad: Boolean = tr
             }, enabled = valid && !exists, modifier = Modifier.testTag("hud-preset-rename-$key")) {
                 Text("重命名为输入名称")
             }
-            TextButton({ onChange(settings.copy(hudScenePresets = settings.hudScenePresets - key)) },
+            TextButton({
+                deleted = DeletedHudPreset(key, scene, settings.hudScenePresets.keys.indexOf(key))
+                onChange(settings.copy(hudScenePresets = settings.hudScenePresets - key))
+            },
                 Modifier.testTag("hud-preset-delete-$key")) { Text("删除预设") }
         }
     }
