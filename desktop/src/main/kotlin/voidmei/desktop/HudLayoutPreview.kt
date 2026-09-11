@@ -32,8 +32,12 @@ internal fun hudPreviewFlight(warnings: Boolean = false): ConnectionState.Flying
             it.copy(rpm = 3200.0, waterTemperatureC = 110.0, oilTemperatureC = 95.0)
         }) else telemetry.copy(tasKmh = 363.6)
     val calculator = FlightCalculator()
-    calculator.update(next.copy(tasKmh = next.tasKmh!! - 3.6), 0)
-    return ConnectionState.Flying(next, calculator.update(next, 1000))
+    var metrics = FlightMetrics()
+    // Supply the same ten-second warm-up as live fuel estimates, without waiting or running a poller.
+    for (second in 0..10) metrics = calculator.update(next.copy(
+        tasKmh = next.tasKmh!! - (10 - second) * 3.6,
+        fuelKg = next.fuelKg!! + (10 - second)), second * 1000L)
+    return ConnectionState.Flying(next, metrics)
 }
 
 /** Deliberately synthetic limits for checking presentation, never loaded into the live model session. */

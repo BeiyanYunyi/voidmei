@@ -583,6 +583,9 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
             FlightReadings(rows, compact, warnings, if (compact) fields.indices.filter { fields[it].id in hiddenLabels }.toSet() else emptySet(), unitRanges)
         }
         if (compact && HudField.SEP in fields) SepStatusPanel(flight, pollingIntervalMs)
+        if (compact && HudField.FUEL_LOSS_RATE in fields) Text(
+            "最近 30 秒燃油变化，至少采样 10 秒；包含泄漏和抛弃油箱。",
+            style = MaterialTheme.typography.bodySmall, color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
         if (compact && HudField.HEADING in fields) CompassPanel(t.headingDeg, compassHeadingUp)
         if (compact && HudField.AOA in fields) AoaMarginPanel(t, model, aoaBarWarningPercent)
         if (compact && HudField.ENGINE1_THROTTLE in fields) ThrottleBar(flight)
