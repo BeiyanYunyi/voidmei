@@ -16,6 +16,28 @@ import voidmei.config.*
 class HudControlsGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun orderingMovesVisibleAxesWhileKeepingUnknownFields() {
+        var region by mutableStateOf(HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 400, 260,
+            fields = listOf("aileron", "future", "elevator", "rudder")))
+        compose.setContent { MaterialTheme { Column(Modifier.size(600.dp, 700.dp)) {
+            HudRegionFieldsSettings(region, AppSettings()) { region = it }
+            ControlSurfacePanel(hudPreviewFlight().telemetry, region.fields)
+        } } }
+        compose.onNodeWithTag("hud-region-control-order-controls").performClick()
+        compose.onNodeWithTag("hud-region-control-up-controls-aileron").assertIsNotEnabled()
+        compose.onNodeWithTag("hud-region-control-down-controls-rudder").assertIsNotEnabled()
+        compose.onNodeWithTag("hud-region-control-up-controls-elevator").performClick()
+        compose.runOnIdle { assertEquals(listOf("elevator", "future", "aileron", "rudder"), region.fields) }
+        assertTrue(compose.onNodeWithTag("hud-control-elevator").fetchSemanticsNode().boundsInRoot.top <
+            compose.onNodeWithTag("hud-control-aileron").fetchSemanticsNode().boundsInRoot.top)
+        compose.onNodeWithTag("hud-region-control-down-controls-elevator").performClick()
+        compose.runOnIdle {
+            assertEquals(listOf("aileron", "future", "elevator", "rudder"), region.fields)
+            val settings = AppSettings(hudSceneLayout = HudSceneLayout(400, 260, listOf(region)))
+            assertEquals(settings, SettingsJson.decode(SettingsJson.encode(settings)))
+        }
+    }
+
     @Test fun editorSelectsAxesIndependentlyAndPreservesUnknownIds() {
         val one = HudRegion("one", HudRegionContent.CONTROLS, 0, 0, 400, 260, fields = listOf("aileron", "future"))
         var scene by mutableStateOf(HudSceneLayout(800, 260, listOf(one, one.copy(id = "two", x = 400, fields = listOf("rudder")))))

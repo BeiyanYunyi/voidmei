@@ -21,6 +21,25 @@ internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, o
                     label = { Text(field.label) }, modifier = Modifier.testTag("hud-region-control-${region.id}-${field.id}"))
             }
         }
+        var ordering by remember { mutableStateOf(false) }
+        TextButton({ ordering = !ordering }, Modifier.testTag("hud-region-control-order-${region.id}")) {
+            Text(if (ordering) "收起操纵面顺序" else "调整操纵面顺序")
+        }
+        if (ordering) {
+            val visible = selected.distinct().filter { id -> axes.any { it.id == id } }
+            fun move(id: String, other: String) {
+                onChange(region.copy(fields = selected.map { if (it == id) other else if (it == other) id else it }))
+            }
+            visible.forEachIndexed { index, id ->
+                FlowRow {
+                    Text(axes.first { it.id == id }.label)
+                    TextButton({ move(id, visible[index - 1]) }, enabled = index > 0,
+                        modifier = Modifier.testTag("hud-region-control-up-${region.id}-$id")) { Text("上移") }
+                    TextButton({ move(id, visible[index + 1]) }, enabled = index < visible.lastIndex,
+                        modifier = Modifier.testTag("hud-region-control-down-${region.id}-$id")) { Text("下移") }
+                }
+            }
+        }
         return
     }
     if (region.content == HudRegionContent.ALERTS) {
