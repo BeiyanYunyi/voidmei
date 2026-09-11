@@ -615,3 +615,9 @@ IAS 读数关联已有 STALL_SPEED 告警；若同时存在 IAS_LIMIT，保持�
 温度读数保留发动机来源：座舱仪表原值不推断所属发动机；回退到明确的 1 号发动机摄氏温度时，水温和油温分别关联对应通道的热告警。继续要求当前遥测与机型模型匹配，避免将全局过热告警套到其他温度读数。
 
 共享 JVM／JS、桌面单元及相关 GUI 测试通过（`/tmp/voidmei-temperature-source-alert.log`）。补充仅油温过热的反向场景后，两项温度 GUI 回归通过（`/tmp/voidmei-temperature-source-alert-final.log`），覆盖座舱原值不误标、水温与油温独立高亮、机型不匹配时清除告警。本轮未重建 Nix 包，未新增真实游戏验收。
+
+## 温度信息改动的离线整包验证
+
+在 cc2690d 状态重建默认 Kotlin 离线包成功（`/tmp/voidmei-temperature-hud-package-build.log`），包含热预算说明和温度来源告警。新包在隔离 Xvfb/xcompmgr、SOFTWARE_FAST 兼容 HUD 下通过十区域场景：80 ms 刷新、一次 1.5 秒遥测延迟、配置及预设保存、正常退出均通过；86 对飞行／发动机 CSV 记录通过校验，34 次检查保持同一个 900×600 HUD 窗口。
+
+运行日志为 `/tmp/voidmei-temperature-hud-package-run.log`，产物为 `/tmp/voidmei-package-smoke-zc4mmg5l/`。已检查 `hud-scene.png`，确认分散区域、不同背景 alpha、罗盘、水平仪和升降舵读数可见。此场景验证实际离线包运行与记录中的温度来源；热告警触发由前节专门 GUI 测试覆盖，未新增真实游戏或物理 GPU 验收。
