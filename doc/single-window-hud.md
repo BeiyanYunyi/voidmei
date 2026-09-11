@@ -977,3 +977,11 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 离线包 `/nix/store/mgrzxdlxn5gj8pn7b5k7jrs727z6y62r-voidmei-kotlin-2.0.0` 构建成功，十区域兼容 HUD 场景通过。34 次采样保持一个 1040×600 HUD，模拟遥测延迟前后 `/map.img` 只请求一次；配对 CSV、仪表像素、配置保存和正常退出检查通过。已查看截图，底图与对象同时显示，发动机耐热时说明完整且没有滚动条。测试专用洋红色阴影可见于地图、消息和发动机文字。
 
 构建日志 `/tmp/voidmei-engine-style-package-build.log`，运行日志 `/tmp/voidmei-engine-style-package-run.log`，截图与报告 `/tmp/voidmei-package-smoke-2evoyiln`。本次为隔离 Xvfb/xcompmgr、SOFTWARE_FAST、80 ms 轮询验证，不扩展真实游戏、物理 GPU 或其他操作系统的验收结论。
+
+## 设置备份恢复与 HUD 联动验证
+
+设置恢复 GUI 回归加入实际 HudPanel 与 SettingsStore：读取备份但未确认时磁盘配置保持原值；确认后 1 号发动机转速消失，2 号发动机水温及备份的数值颜色生效，重新打开配置文件得到恢复后的全部设置，源备份保持不变。该测试验证同步保存回调，不单独证明主窗口的防抖保存或原生窗口位置恢复。日志 `/tmp/voidmei-settings-restore-hud.log`。
+
+截至 `f2f2435` 的生产代码与新增联动测试，完整 GUI 回归通过：131 个类、320 项，零失败、错误或跳过，62 秒完成（`/tmp/voidmei-settings-backup-full-gui.log`）。离线包 `/nix/store/vj4ql0scyr5nckaism9cjdqi2hs3vaj9-voidmei-kotlin-2.0.0` 构建成功，并通过十区域兼容 HUD 冒烟：86 对 CSV、底图请求一次、窗口稳定性、配置保存与正常退出。包级测试未操作备份文件选择对话框；备份交互由 Compose GUI 测试覆盖。
+
+构建日志 `/tmp/voidmei-settings-backup-package-build.log`，运行日志 `/tmp/voidmei-settings-backup-package-run.log`，制品 `/tmp/voidmei-package-smoke-40o1bfbk`。环境仍为隔离 X11、SOFTWARE_FAST、80 ms 轮询与模拟延迟，不扩展真实游戏或其他平台验收。
