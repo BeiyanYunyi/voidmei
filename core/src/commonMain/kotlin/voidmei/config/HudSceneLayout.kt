@@ -71,6 +71,22 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
         return copy(regions = remaining)
     }
 
+    fun duplicateRegion(id: String): HudSceneLayout {
+        require(regions.size < 32)
+        val layer = regions.indexOfFirst { it.id == id }
+        require(layer >= 0) { "Unknown region" }
+        val source = regions[layer]
+        val newId = (1..33).map { "region-$it" }.first { candidate -> regions.none { it.id == candidate } }
+        fun offset(position: Int, maximum: Int) = when {
+            position + 16 <= maximum -> position + 16
+            position >= 16 -> position - 16
+            else -> maximum
+        }
+        val duplicate = source.copy(id = newId, x = offset(source.x, width - source.width),
+            y = offset(source.y, height - source.height))
+        return copy(regions = regions.toMutableList().apply { add(layer + 1, duplicate) })
+    }
+
     /** Restore only the removed region, retaining edits made to the rest of the scene. */
     fun restoreRegion(region: HudRegion, layer: Int): HudSceneLayout {
         require(regions.size < 32)

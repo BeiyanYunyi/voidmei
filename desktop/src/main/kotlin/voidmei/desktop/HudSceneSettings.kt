@@ -63,6 +63,8 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
             TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, true))) },
                 enabled = layer < scene.regions.lastIndex, modifier = Modifier.testTag("hud-region-layer-up-${region.id}")) { Text("上移一层") }
         }
+        TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.duplicateRegion(region.id))) },
+            enabled = scene.regions.size < 32, modifier = Modifier.testTag("hud-region-duplicate-${region.id}")) { Text("复制此区域") }
         TextButton(onClick = {
             removed = region to layer
             onChange(settings.copy(hudSceneLayout = scene.removeRegion(region.id)))

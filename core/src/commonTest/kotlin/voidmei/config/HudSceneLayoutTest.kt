@@ -3,6 +3,24 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun duplicatesKeepAllOptionsAndStayInsideCanvasWithoutChangingExistingRegions() {
+        val source = HudRegion("region-1", HudRegionContent.ENGINE, 300, 200, 200, 200, .2f, .8f,
+            2, listOf("rpm", "future"), visible = false, title = "右发动机", readingColumns = 1)
+        val other = HudRegion("other", HudRegionContent.FLIGHT, 0, 0, 240, 120)
+        val scene = HudSceneLayout(500, 400, listOf(source, other), displayId = "display")
+        val copied = scene.duplicateRegion(source.id)
+        assertEquals(listOf(source, source.copy(id = "region-2", x = 284, y = 184), other), copied.regions)
+        assertEquals("display", copied.displayId)
+        assertEquals(copied, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = copied))).hudSceneLayout)
+        val fullCanvas = HudSceneLayout(240, 120, listOf(other))
+        assertEquals(other.copy(id = "region-1"), fullCanvas.duplicateRegion("other").regions.last())
+        assertFailsWith<IllegalArgumentException> { scene.duplicateRegion("missing") }
+        var full = scene
+        repeat(30) { full = full.duplicateRegion(source.id) }
+        assertEquals(32, full.regions.map { it.id }.toSet().size)
+        assertFailsWith<IllegalArgumentException> { full.duplicateRegion(source.id) }
+    }
+
     @Test fun regionalColumnsDistinguishInheritanceFromAutomaticAndPersist() {
         val region = HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 240, 120)
         for (columns in listOf(null, 0, 1, 2)) {
