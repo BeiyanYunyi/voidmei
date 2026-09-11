@@ -19,7 +19,8 @@ internal fun readLegacySettings(path: Path, resourceRoot: Path? = null): LegacyS
 }
 
 @Composable
-fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettingsFile, onApply: (LegacySettings) -> Unit) {
+fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettingsFile,
+    readSettings: (Path, Path?) -> LegacySettings = ::readLegacySettings, onApply: (LegacySettings) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) { Text("导入旧版设置") }
     if (!expanded) return
@@ -29,9 +30,11 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
     var source by remember { mutableStateOf("") }
     var status by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var readJob by remember { mutableStateOf<Job?>(null) }
+    var generation by remember { mutableLongStateOf(0L) }
     val scope = rememberCoroutineScope()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("迁移自动记录与托盘启动偏好、刷新间隔、已支持的 HUD 字段、姿态、机械化、准星、表格配色、迎角预警阈值及语音设置；具体变更见预览。旧窗口布局、字体、屏幕位置和透明度尚不迁移，其余 Kotlin 设置与原文件保持不变。")
+        Text("迁移自动记录与托盘启动偏好、刷新间隔、已支持的 HUD 字段、姿态、机械化、准星、表格配色、迎角预警阈值及语音设置；具体变更见预览。旧窗口布局、屏幕位置和透明度尚不迁移，其余 Kotlin 设置与原文件保持不变。")
         OutlinedTextField(path, { path = it; preview = null; status = null }, Modifier.fillMaxWidth(),
             label = { Text("旧版布局文件路径（UTF-8）") }, enabled = !busy, singleLine = true)
         TextButton(enabled = !busy, onClick = {
@@ -46,15 +49,23 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
             preview = null
             status = null
             busy = true
-            scope.launch {
+            val request = ++generation
+            readJob = scope.launch {
                 try {
-                    preview = withContext(Dispatchers.IO) { readLegacySettings(Path.of(selected), selectedRoot?.let { Path.of(it) }) }
-                    source = selected
+                    val result = withContext(Dispatchers.IO) { readSettings(Path.of(selected), selectedRoot?.let { Path.of(it) }) }
+                    if (request == generation) { preview = result; source = selected }
                 } catch (e: CancellationException) { throw e }
-                catch (e: Exception) { status = "读取失败：${e.message}" }
-                finally { busy = false }
+                catch (e: Exception) { if (request == generation) status = "读取失败：${e.message}" }
+                finally { if (request == generation) { busy = false; readJob = null } }
             }
         }) { Text("预览旧设置") }
+        if (busy) TextButton(onClick = {
+            generation++
+            readJob?.cancel()
+            readJob = null
+            busy = false
+            status = "已取消读取"
+        }) { Text("取消读取") }
         preview?.let { imported ->
             Text("来源：$source")
             var showUnmigrated by remember(imported) { mutableStateOf(false) }
