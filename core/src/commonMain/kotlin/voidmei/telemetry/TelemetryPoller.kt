@@ -23,33 +23,46 @@ class TelemetryPoller(
         val origin = timeSource.markNow()
         emit(ConnectionState.Connecting)
         while (currentCoroutineContext().isActive) {
-            val next = try {
-                val telemetry = withTimeout(2500) {
-                    coroutineScope {
-                        val state = async { transport.get("/state") }
-                        val indicators = async { transport.get("/indicators") }
-                        TelemetryParser.parse(state.await(), indicators.await())
-                    }
+            val result = supervisorScope {
+                val request = async { readTelemetry() }
+                val timely = withTimeoutOrNull(1000) { request.await() }
+                if (timely == null) {
+                    calculator.reset()
+                    emit(ConnectionState.Delayed)
                 }
+                timely ?: request.await()
+            }
+            val next = result.fold(onSuccess = { telemetry ->
                 if (telemetry == null) {
                     calculator.reset()
                     ConnectionState.WaitingForFlight
                 } else ConnectionState.Flying(telemetry, calculator.update(telemetry, origin.elapsedNow().inWholeMilliseconds))
-            } catch (e: TimeoutCancellationException) {
-                currentCoroutineContext().ensureActive()
-                calculator.reset()
-                ConnectionState.Disconnected("Telemetry request timed out")
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
+            }, onFailure = { e ->
                 calculator.reset()
                 ConnectionState.Disconnected(e.message ?: "Telemetry unavailable")
-            }
+            })
             emit(next)
             // Read settings between samples without recreating the transport or calculator.
             val nextInterval = intervalProvider?.invoke() ?: intervalMs
             require(nextInterval in 10..5000) { "Telemetry interval must be between 10 and 5000 ms" }
             delay(nextInterval)
         }
+    }
+
+    private suspend fun readTelemetry(): Result<Telemetry?> = try {
+        Result.success(withTimeout(2500) {
+            coroutineScope {
+                val state = async { transport.get("/state") }
+                val indicators = async { transport.get("/indicators") }
+                TelemetryParser.parse(state.await(), indicators.await())
+            }
+        })
+    } catch (e: TimeoutCancellationException) {
+        currentCoroutineContext().ensureActive()
+        Result.failure(IllegalStateException("Telemetry request timed out"))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 }

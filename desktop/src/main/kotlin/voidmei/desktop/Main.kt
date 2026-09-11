@@ -591,6 +591,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
 
 private fun Double?.display(digits: Int = 1): String = readingNumber(this, digits)
 internal fun statusText(state: ConnectionState): String = when (state) {
+    ConnectionState.Delayed -> "遥测更新延迟 · 等待当前请求"
     ConnectionState.Connecting -> "正在连接…"
     ConnectionState.WaitingForFlight -> "已连接 · 等待飞行"
     is ConnectionState.Disconnected -> "连接中断 · 自动重试 · ${state.reason}"

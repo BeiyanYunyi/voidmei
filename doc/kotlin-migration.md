@@ -2974,6 +2974,14 @@ HUD 的过载 G 值现在跟随现有 LOAD_LIMIT 告警使用配置的告警色�
 
 因增加图形高度，补跑完整 `:desktop:guiTest`：65 个类、187 项测试，零失败／错误／跳过，38 秒（`/tmp/voidmei-full-gui-fuel-quantity.log`）。环境为隔离 Xvfb/xcompmgr；不扩大真实游戏、独立平台热键或原生窗口验收结论。本轮未重建 Nix 包。
 
+### 遥测请求延迟时清除旧 HUD 数据
+
+共享 TelemetryPoller 增加 Delayed 状态：单次 `/state`／`/indicators` 请求对等待超过 1 秒时，HUD 显示“遥测更新延迟 · 等待当前请求”，移除旧读数、发动机数据、姿态和告警；继续等待同一请求，原有 2.5 秒总超时仍生效。请求恢复后重新显示飞行数据，计算器重置历史，避免跨延迟区间计算 SEP 等派生变化率。正常配置的轮询间隔不计入请求等待阈值。延迟与断线使用不同状态和可选托盘通知。
+
+共享 JVM／JS 与桌面单元测试通过（`/tmp/voidmei-delayed-telemetry.log`，10 秒），验证延迟通知时刻、迟到样本恢复、派生历史重置、无重叠请求、等待状态空响应、5000 ms 配置间隔、总超时及收集器取消；相关 HUD GUI 回归通过（`/tmp/voidmei-delayed-telemetry-gui.log`），验证旧数据／图形／告警清除和恢复显示。隔离 Xvfb/xcompmgr 测试，不扩大真实游戏验收结论。
+
+离线 Nix 构建通过（`/tmp/voidmei-delayed-telemetry-nix.log`），同时包含此前燃油余量图形；本轮未重复包运行冒烟。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

@@ -100,8 +100,9 @@ class TelemetryTest {
         val transport = TelemetryTransport {
             try { awaitCancellation() } finally { cancelled++ }
         }
-        val states = TelemetryPoller(transport).states().take(2).toList()
-        assertIs<ConnectionState.Disconnected>(states[1])
+        val states = TelemetryPoller(transport).states().take(3).toList()
+        assertEquals(ConnectionState.Delayed, states[1])
+        assertIs<ConnectionState.Disconnected>(states[2])
         assertEquals(2, cancelled)
         val job = launch { TelemetryPoller(transport).states().collect() }
         runCurrent()

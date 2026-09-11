@@ -59,6 +59,7 @@ data class Telemetry(
 )
 
 sealed interface ConnectionState {
+    data object Delayed : ConnectionState
     data object Connecting : ConnectionState
     data object WaitingForFlight : ConnectionState
     data class Flying(val telemetry: Telemetry, val metrics: FlightMetrics) : ConnectionState

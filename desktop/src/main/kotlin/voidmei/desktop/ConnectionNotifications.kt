@@ -4,12 +4,13 @@ import androidx.compose.runtime.*
 import voidmei.telemetry.ConnectionState
 
 internal enum class ConnectionPhase(val description: String) {
-    CONNECTING("正在连接 8111"), WAITING("8111 已连接，等待进入飞行"),
+    CONNECTING("正在连接 8111"), WAITING("8111 已连接，等待进入飞行"), DELAYED("8111 遥测更新延迟，正在等待当前请求"),
     FLYING("已收到飞行数据"), DISCONNECTED("8111 连接已断开，将继续重试");
 
     companion object {
         fun of(state: ConnectionState) = when (state) {
             ConnectionState.Connecting -> CONNECTING
+            ConnectionState.Delayed -> DELAYED
             ConnectionState.WaitingForFlight -> WAITING
             is ConnectionState.Flying -> FLYING
             is ConnectionState.Disconnected -> DISCONNECTED
