@@ -21,6 +21,9 @@ internal fun engineReadingWarnings(flight: ConnectionState.Flying, index: Int, m
             put(HudEngineField.RPM, FlightAlert.HIGH_RPM.label)
         if (FlightAlert.NEGATIVE_LOAD_LOW_THRUST in alerts && index in EngineWarnings.lowThrustUnderNegativeLoad(telemetry))
             put(HudEngineField.THRUST, FlightAlert.NEGATIVE_LOAD_LOW_THRUST.label)
+        if (FlightAlert.COMPRESSOR_STAGE in alerts && CompressorAdvice.recommendations(telemetry,
+                parameters?.engineCompressors.orEmpty()).any { it.engineIndex == index })
+            put(HudEngineField.COMPRESSOR, FlightAlert.COMPRESSOR_STAGE.label)
     }
 }
 
