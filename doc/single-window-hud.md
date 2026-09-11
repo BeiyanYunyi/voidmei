@@ -969,3 +969,11 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 最新生产代码的桌面检查与完整 GUI 回归通过：130 个类、312 项，零失败、错误或跳过，63 秒完成（/tmp/voidmei-map-thermal-full-final.log）。首次完整运行发现原生预览在文本更新后、滚动布局测量完成前就断言滚动条消失；HudDenseMessagesPreviewGuiTest 现等待文本和滚动条状态同时满足，仍要求 5 秒内清除滚动条，未修改运行逻辑或放宽最终要求。
 
 包级场景进一步要求未变化的地图底图仅下载一次，包括模拟遥测延迟前后。最新离线包 `/nix/store/hv3s0d68r3mhcsl2swdh3xhiq15k6007-voidmei-kotlin-2.0.0` 构建与兼容 HUD 冒烟通过，实际 /map.img 请求数为 1。86 对 CSV、单一 HUD 窗口、既有绘制像素、配置保存及正常退出通过；七项 Python 辅助测试通过。构建日志 /tmp/voidmei-map-cache-package-build.log，运行日志 /tmp/voidmei-map-cache-package-run.log，制品 /tmp/voidmei-package-smoke-o1mjm_ib。隔离 X11、SOFTWARE_FAST，不扩展物理 GPU 或真实游戏的验收结论。
+
+## 地图与发动机文字样式的集成验证
+
+针对生产代码 `040a646`（包括地图标签／坐标样式、底图加载期间几何稳定性、所选发动机编号的预览样例和发动机说明文字阴影），完整 GUI 回归执行 130 个类、316 项测试，零失败、错误或跳过，61 秒完成。日志 `/tmp/voidmei-engine-style-full-gui.log`；七项 Python 冒烟辅助测试也通过。
+
+离线包 `/nix/store/mgrzxdlxn5gj8pn7b5k7jrs727z6y62r-voidmei-kotlin-2.0.0` 构建成功，十区域兼容 HUD 场景通过。34 次采样保持一个 1040×600 HUD，模拟遥测延迟前后 `/map.img` 只请求一次；配对 CSV、仪表像素、配置保存和正常退出检查通过。已查看截图，底图与对象同时显示，发动机耐热时说明完整且没有滚动条。测试专用洋红色阴影可见于地图、消息和发动机文字。
+
+构建日志 `/tmp/voidmei-engine-style-package-build.log`，运行日志 `/tmp/voidmei-engine-style-package-run.log`，截图与报告 `/tmp/voidmei-package-smoke-2evoyiln`。本次为隔离 Xvfb/xcompmgr、SOFTWARE_FAST、80 ms 轮询验证，不扩展真实游戏、物理 GPU 或其他操作系统的验收结论。
