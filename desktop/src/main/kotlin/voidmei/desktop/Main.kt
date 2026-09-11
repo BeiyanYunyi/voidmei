@@ -561,7 +561,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
             }
             engineWarnings[engineField]?.takeIf { field.value(flight, model) != null }?.let { warnings[index] = it }
             val alert = when (field) {
-                HudField.IAS -> FlightAlert.IAS_LIMIT
+                HudField.IAS -> if (FlightAlert.IAS_LIMIT in readingAlerts) FlightAlert.IAS_LIMIT else FlightAlert.STALL_SPEED
                 HudField.MACH -> FlightAlert.MACH_LIMIT
                 HudField.LOAD -> FlightAlert.LOAD_LIMIT
                 HudField.ALTITUDE -> if (altitude.radarEstimated) FlightAlert.TERRAIN_CLOSURE else FlightAlert.ALTITUDE_DESCENT

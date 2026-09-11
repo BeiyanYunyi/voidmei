@@ -150,11 +150,11 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
         STALL_IAS -> model?.parametersFor(flight.telemetry.aircraft)?.stallSpeed?.speedKmh(
             flight.telemetry.fuelKg, flight.telemetry.flapsPercent, flight.telemetry.wingSweepRatio)
         RADIO_ALTITUDE_RAW -> flight.telemetry.radioAltitudeRaw
-        IAS -> flight.telemetry.iasKmh
+        IAS -> flight.telemetry.iasKmh?.takeIf { it >= 0 }
         ALTITUDE -> flight.telemetry.altitudeM
-        TAS -> flight.telemetry.tasKmh
+        TAS -> flight.telemetry.tasKmh?.takeIf { it >= 0 }
         CLIMB -> flight.telemetry.verticalSpeedMps
-        MACH -> flight.telemetry.mach
+        MACH -> flight.telemetry.mach?.takeIf { it >= 0 }
         LOAD -> flight.telemetry.loadG
         AOA -> flight.telemetry.angleOfAttackDeg
         FUEL -> flight.telemetry.fuelKg

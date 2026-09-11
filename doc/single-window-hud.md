@@ -591,3 +591,9 @@ HUD 设置始终保留布局预设组件，避免“载入预设 → 返回纵�
 对照旧 HUD 的高度警示展示，补齐 Kotlin 已有告警与读数的关联：海拔高度对应 ALTITUDE_DESCENT，雷达估计高度对应 TERRAIN_CLOSURE，爬升率对应 HIGH_DESCENT 或 ALTITUDE_DESCENT。高度字段按当前实际显示来源及数值判断可用性，雷达有效但海拔缺失时不漏掉高亮；未知数值不着色。未新增告警条件或改变语音行为，也未复制旧版“雷达低于 500 m 即警示”的阈值规则。
 
 桌面单元及三项相关 GUI 回归通过（`/tmp/voidmei-altitude-reading-alerts.log`），覆盖海拔与雷达来源切换、爬升率两类告警、独立雷达字段及缺失清除，并回归附带图形隐藏后的迎角告警。本轮未重建 Nix 包，未新增真实游戏验收。
+
+## 失速速度读数高亮与速度有效范围
+
+IAS 读数关联已有 STALL_SPEED 告警；若同时存在 IAS_LIMIT，保持超速优先。失速告警不高亮 TAS 或 Mach。首次 GUI 验证发现负 IAS 仍显示为数值并着色（`/tmp/voidmei-stall-ias-highlight.log`），因此共享 HUD 字段对 IAS／TAS／Mach 统一拒绝负值及非有限值，保留有效零值。原始遥测与记录数据不改写，未改变告警计算阈值。
+
+共享 JVM／JS、桌面单元和 IAS／高度告警 GUI 回归通过（`/tmp/voidmei-speed-validity-alerts.log`），覆盖失速高亮、超速优先、解除告警、无效值清除及三种速度边界。本轮未重建 Nix 包，未新增真实游戏验收。
