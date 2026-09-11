@@ -35,7 +35,10 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
             } || settings.hudSceneLayout?.enabled != true && settings.hudClickThrough)
         Text("HUD 鼠标穿透（Linux / Windows）")
     }
-    Text("开启后鼠标操作下方窗口，HUD 无法拖动或点击关闭。可在此关闭穿透以重新调整 HUD。", style = MaterialTheme.typography.bodySmall)
+    Text(if (settings.hudSceneLayout?.enabled == true)
+        "分区模式始终穿透鼠标，请在预览中调整区域。返回纵向 HUD 布局后可关闭穿透。"
+        else "开启后鼠标操作下方窗口，HUD 无法拖动或点击关闭。可在此关闭穿透以重新调整 HUD。",
+        Modifier.testTag("hud-click-through-help"), style = MaterialTheme.typography.bodySmall)
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Switch(settings.hudCompatibilityMode, { onChange(settings.copy(hudCompatibilityMode = it)) },
             Modifier.testTag("hud-compatibility"))

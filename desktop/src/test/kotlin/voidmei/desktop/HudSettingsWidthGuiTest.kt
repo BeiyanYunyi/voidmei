@@ -19,6 +19,24 @@ import voidmei.telemetry.HudField
 class HudSettingsWidthGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun pointerHelpTracksSceneModeAndRetainsVerticalPreference() {
+        var settings by mutableStateOf(AppSettings(hudClickThrough = false))
+        compose.setContent { MaterialTheme { Column(Modifier.width(450.dp).height(600.dp)
+            .verticalScroll(rememberScrollState())) {
+            HudSettingsPanel(settings) { settings = it }
+        } } }
+        compose.onNodeWithTag("hud-click-through").performScrollTo().assertIsOff().assertIsEnabled()
+        compose.onNodeWithTag("hud-scene-toggle").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-click-through").performScrollTo().assertIsOn().assertIsNotEnabled()
+        compose.onNodeWithTag("hud-click-through-help").assertTextEquals(
+            "分区模式始终穿透鼠标，请在预览中调整区域。返回纵向 HUD 布局后可关闭穿透。")
+        compose.runOnIdle { assertFalse(settings.hudClickThrough) }
+        compose.onNodeWithTag("hud-scene-toggle").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-click-through").performScrollTo().assertIsOff().assertIsEnabled()
+        compose.onNodeWithTag("hud-click-through-help").assertTextEquals(
+            "开启后鼠标操作下方窗口，HUD 无法拖动或点击关闭。可在此关闭穿透以重新调整 HUD。")
+    }
+
     @Test fun everyFieldCanBeSelectedInsideANarrowSettingsPanel() {
         var settings by mutableStateOf(AppSettings(hudFields = emptyList()))
         compose.setContent { MaterialTheme { Column(Modifier.width(240.dp).height(500.dp)

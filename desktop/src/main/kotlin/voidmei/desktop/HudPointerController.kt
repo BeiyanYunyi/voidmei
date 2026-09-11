@@ -16,10 +16,10 @@ internal class HudPointerController(
             change(enabled)
             needsRestore = enabled
         } catch (e: Exception) {
-            report("无法更改 HUD 鼠标穿透：${e.message}。请关闭穿透选项；若 HUD 仍不能操作，请关闭并重新打开 HUD。")
+            report("无法更改 HUD 鼠标穿透：${e.message}。请关闭穿透选项（分区模式需先返回纵向 HUD 布局）；若 HUD 仍不能操作，请关闭并重新打开 HUD。")
             return false
         } catch (e: LinkageError) {
-            report("无法加载 HUD 鼠标穿透支持：${e.message}。请关闭穿透选项；若 HUD 仍不能操作，请关闭并重新打开 HUD。")
+            report("无法加载 HUD 鼠标穿透支持：${e.message}。请关闭穿透选项（分区模式需先返回纵向 HUD 布局）；若 HUD 仍不能操作，请关闭并重新打开 HUD。")
             return false
         }
         report(null)
