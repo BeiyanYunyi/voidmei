@@ -69,13 +69,22 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false) 
 }
 
 @Composable
-internal fun HudLayoutPreviewWindow(settings: AppSettings, onClose: () -> Unit) {
+internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: Int, onClose: () -> Unit) {
     var warnings by remember { mutableStateOf(false) }
+    var nativeWindow by remember { mutableStateOf<java.awt.Frame?>(null) }
     val state = rememberWindowState(width = settings.hudWidthDp.dp, height = 640.dp)
     LaunchedEffect(settings.hudWidthDp) {
         state.size = DpSize(settings.hudWidthDp.dp, state.size.height)
     }
+    // Hidden/minimized windows may pause their own recomposer; handle activation in the caller's scope.
+    LaunchedEffect(activationRequest, nativeWindow) {
+        nativeWindow?.let {
+            state.isMinimized = false
+            restoreDesktopWindow(it)
+        }
+    }
     Window(onCloseRequest = onClose, state = state, title = "HUD 布局预览 · 示例数据") {
+        SideEffect { nativeWindow = window }
         MaterialTheme(colorScheme = darkColorScheme()) {
             Surface(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize()) {

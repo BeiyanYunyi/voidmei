@@ -42,6 +42,13 @@ class HudLayoutPreviewGuiTest {
             SemanticsProperties.StateDescription, FlightAlert.IAS_LIMIT.label))
         compose.runOnIdle { settings = settings.copy(hudWarningColor = "#00FF00") }
         savePreview("warnings")
+        val bounds = frame.bounds
+        compose.runOnIdle { frame.isVisible = false }
+        compose.waitUntil(5000) { !frame.isVisible }
+        compose.onNodeWithTag("hud-layout-preview").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(5000) { frame.isVisible }
+        compose.runOnIdle { assertSame(frame, windows().single()); assertEquals(bounds, frame.bounds) }
+        compose.onNodeWithText("510 km/h").assertIsDisplayed()
         compose.onNodeWithText("正常读数").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitUntil(5000) { compose.onAllNodesWithText("340 km/h").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("340 km/h").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))

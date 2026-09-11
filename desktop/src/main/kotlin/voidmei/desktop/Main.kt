@@ -247,7 +247,7 @@ fun main(args: Array<String>) {
 
         Window(onCloseRequest = { closeApp() }, title = "VoidMei · Kotlin", state = mainState, visible = mainVisible) {
             LaunchedEffect(mainVisible, mainRestoreRequest) {
-                if (mainVisible && mainRestoreRequest > 0) restoreMainWindow(window)
+                if (mainVisible && mainRestoreRequest > 0) restoreDesktopWindow(window)
             }
             val renderer = rememberRendererDiagnostics(window)
             var showRenderer by remember { mutableStateOf(false) }

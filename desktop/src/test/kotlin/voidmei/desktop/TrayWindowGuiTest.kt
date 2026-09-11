@@ -20,19 +20,19 @@ class TrayWindowGuiTest {
                 window.isVisible = false
                 val beforeRaises = raises
                 val beforeFocus = focusRequests
-                restoreMainWindow(window)
+                restoreDesktopWindow(window)
                 assertTrue(window.isVisible)
                 assertTrue(raises > beforeRaises)
                 assertTrue(focusRequests > beforeFocus)
                 val visibleRaises = raises
-                restoreMainWindow(window)
+                restoreDesktopWindow(window)
                 assertTrue(raises > visibleRaises, "An already visible window must also be raised")
                 window.extendedState = Frame.ICONIFIED
-                restoreMainWindow(window)
+                restoreDesktopWindow(window)
                 assertEquals(0, window.extendedState and Frame.ICONIFIED)
                 window.dispose()
                 val disposedRaises = raises
-                restoreMainWindow(window)
+                restoreDesktopWindow(window)
                 assertFalse(window.isDisplayable)
                 assertEquals(disposedRaises, raises)
             } finally { window.dispose() }

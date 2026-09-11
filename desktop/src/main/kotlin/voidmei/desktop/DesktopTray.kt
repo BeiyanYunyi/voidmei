@@ -62,7 +62,7 @@ internal class TrayAvailabilityListener(private val update: (Boolean) -> Unit) :
 }
 
 /** Called only for an explicit restore request, never for routine telemetry updates. */
-internal fun restoreMainWindow(window: Frame) {
+internal fun restoreDesktopWindow(window: Frame) {
     check(EventQueue.isDispatchThread())
     if (!window.isDisplayable) return
     window.extendedState = window.extendedState and Frame.ICONIFIED.inv()
