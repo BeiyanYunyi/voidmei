@@ -17,6 +17,26 @@ import kotlin.test.*
 class HudRegionRestoreGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun loadingEvenIdenticalPresetClearsOldRemovalButSavingDoesNot() {
+        val one = HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 240, 120)
+        val two = one.copy(id = "two", x = 250, content = HudRegionContent.ENGINE)
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(500, 240, listOf(one, two))))
+        compose.setContent { MaterialTheme { Column(Modifier.size(600.dp, 600.dp).verticalScroll(rememberScrollState())) {
+            HudSceneSettings(settings) { settings = it }
+        } } }
+        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.onNodeWithTag("hud-region-remove-two").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-restore").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("hud-presets-toggle").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-preset-name").performScrollTo().performTextReplacement("当前布局")
+        compose.onNodeWithTag("hud-preset-save").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-restore").performScrollTo().assertIsDisplayed()
+        // Loading the same geometry still starts a new restore context.
+        compose.onNodeWithTag("hud-preset-load-当前布局").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-restore").assertDoesNotExist()
+        compose.runOnIdle { assertEquals(listOf(one), settings.hudSceneLayout!!.regions) }
+    }
+
     @Test fun restoreSurvivesCollapsingAndRetainsChangesMadeAfterRemoval() {
         val other = HudRegion("other", HudRegionContent.FLIGHT, 0, 0, 240, 120)
         val removed = HudRegion("region-1", HudRegionContent.ENGINE, 500, 300, 300, 200,
