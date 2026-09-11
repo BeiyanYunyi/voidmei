@@ -53,6 +53,16 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
         return copy(regions = remaining)
     }
 
+    /** Enlarging the canvas preserves geometry; shrinking keeps each region inside it. */
+    fun resizeCanvas(newWidth: Int, newHeight: Int): HudSceneLayout {
+        require(newWidth in 240..8192 && newHeight in 120..8192)
+        return copy(width = newWidth, height = newHeight, regions = regions.map { region ->
+            val w = minOf(region.width, newWidth)
+            val h = minOf(region.height, newHeight)
+            region.copy(x = minOf(region.x, newWidth - w), y = minOf(region.y, newHeight - h), width = w, height = h)
+        })
+    }
+
     fun toJson() = buildJsonObject {
         put("width", width); put("height", height)
         put("enabled", enabled)

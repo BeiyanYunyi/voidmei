@@ -3,6 +3,23 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun canvasResizePreservesUnchangedGeometryAndKeepsAllRegionsInside() {
+        val scene = HudSceneLayout.initial(AppSettings(hudEngineIndex = 2)).copy(enabled = false)
+        assertEquals(scene.regions, scene.resizeCanvas(1920, 1080).regions)
+        val small = scene.resizeCanvas(240, 120)
+        assertFalse(small.enabled)
+        assertEquals(scene.regions.map { it.id }, small.regions.map { it.id })
+        scene.regions.zip(small.regions).forEach { (before, after) ->
+            assertTrue(after.x + after.width <= 240 && after.y + after.height <= 120)
+            assertEquals(before.copy(x = after.x, y = after.y, width = after.width, height = after.height), after)
+        }
+        val edge = HudSceneLayout(800, 600, listOf(HudRegion("edge", HudRegionContent.FLIGHT, 600, 400, 200, 200)))
+        assertEquals(HudRegion("edge", HudRegionContent.FLIGHT, 200, 100, 200, 200), edge.resizeCanvas(400, 300).regions.single())
+        assertEquals(small, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = small))).hudSceneLayout)
+        assertFailsWith<IllegalArgumentException> { scene.resizeCanvas(239, 120) }
+        assertFailsWith<IllegalArgumentException> { scene.resizeCanvas(240, 8193) }
+    }
+
     @Test fun addAndRemoveRegionsKeepIdentitiesBoundsAndOtherSettings() {
         val base = HudSceneLayout(240, 120, listOf(HudRegion("region-1", HudRegionContent.FLIGHT, 0, 0, 240, 120, .3f)))
         val first = base.addRegion(HudRegionContent.ENGINE)

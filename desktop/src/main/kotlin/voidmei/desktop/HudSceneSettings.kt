@@ -21,6 +21,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
     var expanded by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起分区设置" else "调整分区位置与透明度") }
     if (!expanded) return
+    HudCanvasSizeSettings(scene) { onChange(settings.copy(hudSceneLayout = it)) }
     Text("添加区域（${scene.regions.size}/32）")
     FlowRow {
         HudRegionContent.entries.forEach { content ->
