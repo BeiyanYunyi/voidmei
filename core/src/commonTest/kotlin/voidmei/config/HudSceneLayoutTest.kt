@@ -3,6 +3,17 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun independentFieldsPreserveUnknownIdsOrderAndEmptySelection() {
+        val base = HudRegion("flight", HudRegionContent.FLIGHT, 0, 0, 240, 120)
+        for (fields in listOf(null, emptyList(), listOf("altitude", "future_field", "ias"))) {
+            val scene = HudSceneLayout(240, 120, listOf(base.copy(fields = fields)))
+            val saved = AppSettings(hudSceneLayout = scene)
+            assertEquals(saved, SettingsJson.decode(SettingsJson.encode(saved)))
+            assertEquals(fields, scene.resizeCanvas(800, 600).regions.single().fields)
+            assertEquals(fields, scene.addRegion(HudRegionContent.ENGINE).regions.first().fields)
+        }
+    }
+
     @Test fun canvasResizePreservesUnchangedGeometryAndKeepsAllRegionsInside() {
         val scene = HudSceneLayout.initial(AppSettings(hudEngineIndex = 2)).copy(enabled = false)
         assertEquals(scene.regions, scene.resizeCanvas(1920, 1080).regions)

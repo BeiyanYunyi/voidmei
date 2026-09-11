@@ -40,15 +40,15 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                             else when (region.content) {
                                 HudRegionContent.FLIGHT -> {
                                     Text(connectionLabel ?: statusText(connection))
-                                    FlightPanel(flight, compact = true, fields = HudField.selected(settings.hudFields),
+                                    FlightPanel(flight, compact = true, fields = HudField.selected(region.fields ?: settings.hudFields),
                                         mechanization = false, model = model, thermal = thermal, readingAlerts = alerts,
                                         aoaBarWarningPercent = settings.hudAoaBarWarningPercent, aoaWarningPercent = settings.hudAoaWarningPercent,
                                         compassHeadingUp = settings.hudCompassHeadingUp, hiddenLabels = settings.hudHiddenLabels,
                                         altitudeMode = settings.hudAltitudeMode, pollingIntervalMs = settings.pollIntervalMs)
-                                    if (HudField.HEADING.id in settings.hudFields && mapEndpoint != null) HudMapGrid(mapEndpoint, sharedMap)
+                                    if (HudField.HEADING.id in (region.fields ?: settings.hudFields) && mapEndpoint != null) HudMapGrid(mapEndpoint, sharedMap)
                                 }
                                 HudRegionContent.ENGINE -> HudEnginePanel(flight.telemetry.engines, region.engineIndex,
-                                    fields = HudEngineField.selected(settings.hudEngineFields),
+                                    fields = HudEngineField.selected(region.fields ?: settings.hudEngineFields),
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal))
                                 HudRegionContent.ATTITUDE -> AttitudePanel(flight.telemetry, compact = true, model = model,
                                     earthFixed = settings.hudAttitudeEarthFixed, showAoaLimits = settings.hudAttitudeAoaLimits)

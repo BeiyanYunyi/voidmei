@@ -14,6 +14,8 @@ data class HudRegion(
     val backgroundAlpha: Float = 0.5f,
     val contentAlpha: Float = 1f,
     val engineIndex: Int = 1,
+    /** Null inherits global fields; empty explicitly hides all readings in this region. */
+    val fields: List<String>? = null,
 ) {
     init {
         require(id.isNotBlank() && id.length <= 100 && id.none { it.isISOControl() })
@@ -21,6 +23,7 @@ data class HudRegion(
         require(backgroundAlpha.isFinite() && backgroundAlpha in 0f..1f)
         require(contentAlpha.isFinite() && contentAlpha in 0f..1f)
         require(engineIndex > 0)
+        require(fields == null || fields.all { it.isNotBlank() })
     }
 }
 
@@ -71,6 +74,7 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
             put("x", region.x); put("y", region.y); put("width", region.width); put("height", region.height)
             put("backgroundAlpha", region.backgroundAlpha); put("contentAlpha", region.contentAlpha)
             put("engineIndex", region.engineIndex)
+            put("fields", region.fields?.let { JsonArray(it.map(::JsonPrimitive)) } ?: JsonNull)
         } }))
     }
 
@@ -83,7 +87,10 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
             return HudSceneLayout(root.integer("width"), root.integer("height"), root.getValue("regions").jsonArray.map {
                 val r = it.jsonObject
                 HudRegion(r.text("id"), HudRegionContent.valueOf(r.text("content")), r.integer("x"), r.integer("y"),
-                    r.integer("width"), r.integer("height"), r.alpha("backgroundAlpha"), r.alpha("contentAlpha"), r.integer("engineIndex"))
+                    r.integer("width"), r.integer("height"), r.alpha("backgroundAlpha"), r.alpha("contentAlpha"), r.integer("engineIndex"),
+                    r["fields"]?.takeUnless { it == JsonNull }?.jsonArray?.map { field -> field.jsonPrimitive.let {
+                        require(it.isString); it.content
+                    } })
             }, root["enabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true)
         }
 

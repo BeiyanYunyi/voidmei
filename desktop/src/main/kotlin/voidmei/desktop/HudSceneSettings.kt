@@ -31,13 +31,14 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
             }
         }
     }
-    Text("同类区域可重复添加；飞行和发动机字段沿用 HUD 字段设置。至少保留一个区域。")
+    Text("同类区域可重复添加；读数字段默认沿用 HUD 设置，也可独立选择。至少保留一个区域。")
     scene.regions.forEach { region -> key(region.id) {
         fun update(value: HudRegion) = onChange(settings.copy(hudSceneLayout = scene.copy(
             regions = scene.regions.map { if (it.id == region.id) value else it })))
         Text("${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id}")
         TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.removeRegion(region.id))) },
             enabled = scene.regions.size > 1, modifier = Modifier.testTag("hud-region-remove-${region.id}")) { Text("移除此区域") }
+        HudRegionFieldsSettings(region, settings, ::update)
         if (region.content == HudRegionContent.ENGINE) {
             var engineText by remember(region.engineIndex) { mutableStateOf(region.engineIndex.toString()) }
             val validEngine = engineText.toIntOrNull()?.takeIf { it > 0 }
