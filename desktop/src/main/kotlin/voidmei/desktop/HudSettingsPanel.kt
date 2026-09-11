@@ -19,6 +19,7 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
     var beforeReset by remember { mutableStateOf<AppSettings?>(null) }
     TextButton(onClick = { previewRequest++ }, modifier = Modifier.testTag("hud-layout-preview")) { Text("预览 HUD 布局") }
     if (previewRequest != 0) HudLayoutPreviewWindow(settings, previewRequest) { previewRequest = 0 }
+    HudSceneSettings(settings, onChange)
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Switch(settings.hudAutoHideOnFocusLoss, { onChange(settings.copy(hudAutoHideOnFocusLoss = it)) },
             Modifier.testTag("hud-auto-hide-focus"),
@@ -27,11 +28,11 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
     }
     if (!supportsGameFocus()) Text("当前会话无法检测游戏前台，HUD 将保持显示。", style = MaterialTheme.typography.bodySmall)
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        Switch(settings.hudClickThrough, { onChange(settings.copy(hudClickThrough = it)) },
+        Switch(settings.hudClickThrough || settings.hudSceneLayout?.enabled == true, { onChange(settings.copy(hudClickThrough = it)) },
             Modifier.testTag("hud-click-through"),
-            enabled = System.getProperty("os.name", "").lowercase().let {
+            enabled = settings.hudSceneLayout?.enabled != true && System.getProperty("os.name", "").lowercase().let {
                 it.contains("linux") || it.startsWith("windows")
-            } || settings.hudClickThrough)
+            } || settings.hudSceneLayout?.enabled != true && settings.hudClickThrough)
         Text("HUD 鼠标穿透（Linux / Windows）")
     }
     Text("开启后鼠标操作下方窗口，HUD 无法拖动或点击关闭。可在此关闭穿透以重新调整 HUD。", style = MaterialTheme.typography.bodySmall)

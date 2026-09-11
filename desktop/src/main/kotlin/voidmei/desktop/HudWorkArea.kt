@@ -18,10 +18,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 
 @Composable
-internal fun updateHudWindowSize(window: Window, state: WindowState, preferredWidth: Int, contentHeight: Dp) {
+internal fun updateHudWindowSize(window: Window, state: WindowState, preferredWidth: Int, contentHeight: Dp,
+    scene: voidmei.config.HudSceneLayout? = null) {
     val available = rememberHudAvailablePixels(window)
     val density = LocalDensity.current.density
-    LaunchedEffect(window, state, contentHeight, available, density, preferredWidth) {
+    LaunchedEffect(window, state, contentHeight, available, density, preferredWidth, scene) {
+        if (scene != null) {
+            state.size = DpSize(minOf(scene.width.toFloat(), (available?.width?.div(density) ?: scene.width.toDouble()).toFloat()).dp,
+                minOf(scene.height.toFloat(), (available?.height?.div(density) ?: scene.height.toDouble()).toFloat()).dp)
+            return@LaunchedEffect
+        }
         val target = DpSize(hudWidthDp(preferredWidth, available?.width, density).dp,
             hudHeightDp(contentHeight.value, available?.height, density).dp)
         // A transient warning or a digit wrapping must not repeatedly resize the transparent

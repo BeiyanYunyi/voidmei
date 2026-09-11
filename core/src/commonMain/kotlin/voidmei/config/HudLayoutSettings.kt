@@ -31,5 +31,6 @@ fun AppSettings.withHudLayout(source: AppSettings): AppSettings = copy(
     hudEngineIndex = source.hudEngineIndex,
     hudEngineFields = source.hudEngineFields,
     hudWidthDp = source.hudWidthDp,
+    hudSceneLayout = source.hudSceneLayout,
     hudReadingColumns = source.hudReadingColumns,
 )

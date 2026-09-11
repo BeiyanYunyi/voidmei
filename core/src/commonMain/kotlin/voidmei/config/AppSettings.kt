@@ -64,6 +64,7 @@ data class AppSettings(
     val textFont: String? = null,
     val numberFont: String? = null,
     val hudAltitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL,
+    val hudSceneLayout: HudSceneLayout? = null,
 ) {
     init {
         require(readingColors.keys.all { it in setOf("label", "value", "warning", "shade", "unit") } && readingColors.values.all { parseHexColor(it) != null })
@@ -172,6 +173,7 @@ object SettingsJson {
             hudCrosshairSizeDp = root["hudCrosshairSizeDp"]?.jsonPrimitive?.int ?: defaults.hudCrosshairSizeDp,
             hudEnabled = root["hudEnabled"]?.jsonPrimitive?.boolean ?: defaults.hudEnabled,
             hudOpacity = root["hudOpacity"]?.jsonPrimitive?.float ?: defaults.hudOpacity,
+            hudSceneLayout = root["hudSceneLayout"]?.takeUnless { it == JsonNull }?.let(HudSceneLayout::fromJson),
             hudFontScale = root["hudFontScale"]?.jsonPrimitive?.let {
                 require(!it.isString); it.float
             } ?: defaults.hudFontScale,
@@ -241,6 +243,7 @@ object SettingsJson {
         fields["hudCrosshairSizeDp"] = JsonPrimitive(settings.hudCrosshairSizeDp)
         fields["hudEnabled"] = JsonPrimitive(settings.hudEnabled)
         fields["hudOpacity"] = JsonPrimitive(settings.hudOpacity)
+        fields["hudSceneLayout"] = settings.hudSceneLayout?.toJson() ?: JsonNull
         fields["hudFontScale"] = JsonPrimitive(settings.hudFontScale)
         fields["hudWidthDp"] = JsonPrimitive(settings.hudWidthDp)
         fields["hudEngineIndex"] = settings.hudEngineIndex?.let(::JsonPrimitive) ?: JsonNull

@@ -41,7 +41,9 @@ internal fun HudPanel(
         },
         LocalReadingColumns provides settings.hudReadingColumns,
         LocalReadingColors provides readingColors(settings, hud = true)) {
-        HudPanelContent(connection, settings, alerts, model, onContentHeightChanged, thermal, mapEndpoint, sharedMap, connectionLabel, header)
+        val scene = settings.hudSceneLayout?.takeIf { it.enabled }
+        if (scene != null) HudScene(connection, settings, scene, alerts, model, thermal, mapEndpoint, sharedMap, connectionLabel)
+        else HudPanelContent(connection, settings, alerts, model, onContentHeightChanged, thermal, mapEndpoint, sharedMap, connectionLabel, header)
     }
 }
 

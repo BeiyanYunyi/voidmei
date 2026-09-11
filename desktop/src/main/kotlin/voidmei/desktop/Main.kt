@@ -475,13 +475,13 @@ fun main(args: Array<String>) {
             onCloseRequest = { settings = settings.copy(hudEnabled = false, hudPosition = hudState.savedPosition()) },
             state = hudState,
             compatibilityMode = settings.hudCompatibilityMode,
-            clickThrough = settings.hudClickThrough,
+            clickThrough = settings.hudClickThrough || settings.hudSceneLayout?.enabled == true,
             onPointerError = { hudPointerError = it },
             visible = !settings.hudAutoHideOnFocusLoss || gameFocus != GameFocus.OTHER,
         ) {
             rememberRendererDiagnostics(window)
             if (!java.lang.Boolean.getBoolean("voidmei.diagnostics.hud.fixedSize"))
-                updateHudWindowSize(window, hudState, settings.hudWidthDp, hudContentHeight)
+                updateHudWindowSize(window, hudState, settings.hudWidthDp, hudContentHeight, settings.hudSceneLayout?.takeIf { it.enabled })
             MaterialTheme(typography = typography, colorScheme = hudColorScheme()) {
                 HudPanel(connection, settings, alerts, modelForAlerts, mapEndpoint = activeEndpoint, sharedMap = sharedMap, thermal = thermalObservation, onContentHeightChanged = { hudContentHeight = it }) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

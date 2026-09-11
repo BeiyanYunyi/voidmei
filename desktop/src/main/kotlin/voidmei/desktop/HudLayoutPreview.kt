@@ -78,9 +78,10 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
     var warnings by remember { mutableStateOf(false) }
     var missing by remember { mutableStateOf(false) }
     var nativeWindow by remember { mutableStateOf<java.awt.Frame?>(null) }
-    val state = rememberWindowState(width = settings.hudWidthDp.dp, height = 640.dp)
-    LaunchedEffect(settings.hudWidthDp) {
-        state.size = DpSize(settings.hudWidthDp.dp, state.size.height)
+    val previewWidth = settings.hudSceneLayout?.takeIf { it.enabled }?.width?.coerceAtMost(1100) ?: settings.hudWidthDp
+    val state = rememberWindowState(width = previewWidth.dp, height = 640.dp)
+    LaunchedEffect(previewWidth) {
+        state.size = DpSize(previewWidth.dp, state.size.height)
     }
     // Hidden/minimized windows may pause their own recomposer; handle activation in the caller's scope.
     LaunchedEffect(activationRequest, nativeWindow) {
