@@ -167,6 +167,13 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
 private fun MapPlayerPosition(snapshot: MapSnapshot, compact: Boolean = false) {
     val text = snapshot.player?.position?.let { "玩家位置 ${"%.3f".format(java.util.Locale.ROOT, it.x)}, ${"%.3f".format(java.util.Locale.ROOT, it.y)}" }
         ?: "玩家位置未知"
-    if (compact) HudOverlayText(text, color = LocalReadingColors.current.value ?: LocalContentColor.current)
+    if (compact) {
+        val font = LocalReadingNumberFont.current
+        val annotated = androidx.compose.ui.text.buildAnnotatedString {
+            append(text)
+            if (snapshot.player?.position != null) addStyle(androidx.compose.ui.text.SpanStyle(fontFamily = font), "玩家位置 ".length, text.length)
+        }
+        HudOverlayText(annotated, color = LocalReadingColors.current.value ?: LocalContentColor.current)
+    }
     else Text(text)
 }

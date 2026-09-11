@@ -17,6 +17,30 @@ import kotlin.test.*
 class HudMapRegionGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun coordinateDigitsUseSelectedNumberFontWhileMissingPositionStaysPlain() {
+        var settings by mutableStateOf(AppSettings(hudNumberFont = "serif", hudSceneLayout = HudSceneLayout(500, 500,
+            listOf(HudRegion("map", HudRegionContent.MAP, 0, 0, 500, 500)))))
+        val snapshot = hudPreviewMap()
+        val map = MutableStateFlow<MapConnection>(MapConnection.Available(snapshot))
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp)) {
+            HudPanel(hudPreviewFlight(), settings, emptyList(), null, sharedMap = map) {}
+        } } }
+        fun spans(text: String): List<androidx.compose.ui.text.AnnotatedString.Range<androidx.compose.ui.text.SpanStyle>> {
+            val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            compose.onNodeWithText(text).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(results) }
+            return results.single().layoutInput.text.spanStyles
+        }
+        val text = "玩家位置 0.500, 0.500"
+        var span = spans(text).single()
+        assertEquals("0.500, 0.500", text.substring(span.start, span.end))
+        assertEquals(androidx.compose.ui.text.font.FontFamily.Serif, span.item.fontFamily)
+        compose.runOnIdle { settings = settings.copy(hudNumberFont = "monospace") }
+        span = spans(text).single()
+        assertEquals(androidx.compose.ui.text.font.FontFamily.Monospace, span.item.fontFamily)
+        compose.runOnIdle { map.value = MapConnection.Available(snapshot.copy(objects = emptyList())) }
+        assertTrue(spans("玩家位置未知").isEmpty())
+    }
+
     @Test fun mapTextAndScaleUseHudColorsAndTextShadows() {
         var settings by mutableStateOf(AppSettings(hudLabelColor = "#00FF00", hudValueColor = "#0000FF", hudShadeColor = "#FF0000",
             hudSceneLayout = HudSceneLayout(500, 500, listOf(HudRegion("map", HudRegionContent.MAP, 0, 0, 500, 500)))))
