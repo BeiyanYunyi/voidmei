@@ -103,10 +103,13 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                         showInstruments = region.showFlightInstruments)
                                     if (HudField.HEADING.id in (region.fields ?: settings.hudFields) && mapEndpoint != null) HudMapGrid(mapEndpoint, sharedMap)
                                 }
-                                HudRegionContent.ENGINE -> HudEnginePanel(flight.telemetry.engines, region.engineIndex,
+                                HudRegionContent.ENGINE -> {
+                                    HudEnginePanel(flight.telemetry.engines, region.engineIndex,
                                     fields = HudEngineField.selected(region.fields ?: settings.hudEngineFields),
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal),
                                     showInstruments = region.showEngineInstruments)
+                                    HudCompressorAdvice(flight, region.engineIndex, model, fields)
+                                }
                                 HudRegionContent.ATTITUDE -> Unit
                                 HudRegionContent.MECHANIZATION -> {
                                     if (HudMechanizationField.entries.none { it.id in fields }) Text("未选择机械化内容")
