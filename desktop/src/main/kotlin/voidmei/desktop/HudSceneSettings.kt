@@ -92,6 +92,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
                 modifier = Modifier.testTag("hud-region-engine-${region.id}"))
         }
         Text("位置 ${region.x}, ${region.y} dp")
+        HudRegionGeometrySettings(region, scene, ::update)
         if (scene.width > region.width) Slider(region.x.toFloat(), { update(region.copy(x = it.roundToInt())) },
             valueRange = 0f..(scene.width - region.width).toFloat(), modifier = Modifier.testTag("hud-region-x-${region.id}"))
         if (scene.height > region.height) Slider(region.y.toFloat(), { update(region.copy(y = it.roundToInt())) },
