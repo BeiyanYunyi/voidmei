@@ -36,7 +36,7 @@ internal fun FlightAlertPanel(alerts: List<FlightAlert>, compact: Boolean = fals
                 val warning = alert.severity == AlertSeverity.WARNING
                 Text("${if (warning) "警告" else "提示"} · ${alert.label}",
                     modifier = Modifier.testTag("flight-alert-${alert.name}"),
-                    color = if (warning) Color(0xFFFF967B) else Color(0xFFFFD580),
+                    color = if (warning) LocalReadingColors.current.warning ?: Color(0xFFFF967B) else Color(0xFFFFD580),
                     fontSize = if (compact) 13.sp else 16.sp)
             }
         }

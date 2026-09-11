@@ -16,6 +16,28 @@ import kotlin.test.*
 class HudAlertRegionGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun warningColorFollowsHudSettingsInSceneAndVerticalLayouts() {
+        var settings by mutableStateOf(AppSettings(hudWarningColor = "#00FF00",
+            hudFields = emptyList(), hudAttitude = false, hudMechanization = false,
+            hudEngineFields = emptyList(), hudSceneLayout = HudSceneLayout(500, 300,
+                listOf(HudRegion("alerts", HudRegionContent.ALERTS, 0, 0, 500, 300)))))
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp, 400.dp)) {
+            HudPanel(hudPreviewFlight(), settings, listOf(FlightAlert.EMPTY_FUEL, FlightAlert.LOW_FUEL), null) {}
+        } } }
+        fun color(alert: FlightAlert): androidx.compose.ui.graphics.Color {
+            val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            compose.onNodeWithTag("flight-alert-${alert.name}").performSemanticsAction(
+                androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(results) }
+            return results.single().layoutInput.style.color
+        }
+        assertEquals(androidx.compose.ui.graphics.Color.Green, color(FlightAlert.EMPTY_FUEL))
+        assertEquals(androidx.compose.ui.graphics.Color(0xFFFFD580), color(FlightAlert.LOW_FUEL))
+        compose.runOnIdle { settings = settings.copy(hudWarningColor = "#0000FF", hudSceneLayout = null) }
+        assertEquals(androidx.compose.ui.graphics.Color.Blue, color(FlightAlert.EMPTY_FUEL))
+        compose.runOnIdle { settings = settings.copy(hudWarningColor = null) }
+        assertEquals(androidx.compose.ui.graphics.Color(0xFFFF967B), color(FlightAlert.EMPTY_FUEL))
+    }
+
     @Test fun previewIdentifiesAlertOverflowAndClearsItAfterResizingOrFiltering() {
         var region by mutableStateOf(HudRegion("alerts", HudRegionContent.ALERTS, 0, 0, 500, 100))
         var preview by mutableStateOf(true)
