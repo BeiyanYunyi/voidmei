@@ -27,7 +27,7 @@ internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = fals
             Engine(it, null, null, null, null, null, null)
         }), FlightMetrics())
     val telemetry = TelemetryParser.parse("""{
-        "valid":true,"IAS, km/h":340,"TAS, km/h":360,"Mach":0.30,"H, m":1500,
+        "valid":true,"IAS, km/h":340,"TAS, km/h":360,"M":0.30,"H, m":1500,
         "Vy, m/s":5,"Ny":1.2,"AoA, deg":4,"Mfuel, kg":300,"Mfuel0, kg":600,
         "gear, %":0,"flaps, %":20,"airbrake, %":0,
         "aileron, %":0,"elevator, %":20,"rudder, %":-10,

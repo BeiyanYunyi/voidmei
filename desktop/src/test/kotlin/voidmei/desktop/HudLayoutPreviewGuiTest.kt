@@ -23,6 +23,24 @@ import kotlin.test.*
 class HudLayoutPreviewGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun machPreviewSwitchesBetweenNormalWarningAndMissingSamples() {
+        var warnings by mutableStateOf(false)
+        var missing by mutableStateOf(false)
+        val settings = AppSettings(hudFields = listOf("mach"), hudAttitude = false,
+            hudMechanization = false, hudEngineFields = emptyList())
+        compose.setContent { MaterialTheme { HudLayoutPreview(settings, warnings, missing) } }
+        compose.onNodeWithText("0.30", substring = true).assertIsDisplayed()
+        compose.runOnIdle { warnings = true }
+        compose.onNodeWithText("0.30", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("0.95", substring = true).assertIsDisplayed()
+        compose.runOnIdle { missing = true }
+        compose.onNodeWithText("0.95", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("—", substring = true).assertIsDisplayed()
+        compose.runOnIdle { warnings = false; missing = false }
+        compose.onNodeWithText("0.30", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("—", substring = true).assertDoesNotExist()
+    }
+
     @Test fun previewOpensClosesAndFollowsSettingsWithoutEnablingTheRealHud() {
         var settings by mutableStateOf(AppSettings(hudEnabled = false, hudFields = listOf("ias", "engine1_throttle"),
             textFont = "Monospaced", hudAttitude = false, hudMechanization = false))
