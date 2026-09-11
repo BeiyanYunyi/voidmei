@@ -177,11 +177,7 @@ fun main(args: Array<String>) {
         val hudNeedsMessages = settings.needsHudMessages()
         val messageSession = rememberHudMessageSession(activeEndpoint, connection, hudNeedsMessages || messagePanelExpanded, generation)
 
-        val sharedMap = key(activeEndpoint, generation, connection is ConnectionState.Flying,
-            (connection as? ConnectionState.Flying)?.telemetry?.aircraft) {
-            val mapScope = rememberCoroutineScope()
-            remember { mapStates(activeEndpoint).shareMap(mapScope) }
-        }
+        val sharedMap = rememberTelemetryMapSession(activeEndpoint, connection, generation)
 
         ConnectionNotificationEffect(connection, activeEndpoint, generation) { title, message ->
             if (settings.connectionNotifications && trayAvailable) desktopTray?.showMessage(title, message)
