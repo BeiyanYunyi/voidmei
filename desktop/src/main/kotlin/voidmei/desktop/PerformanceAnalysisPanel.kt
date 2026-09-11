@@ -16,7 +16,17 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Composable
-internal fun PerformanceAnalysisPanel(text: String, chooseExport: (String) -> String? = ::chooseCsvExport) {
+internal fun PerformanceAnalysisPanel(text: String, chooseExport: (String) -> String? = ::chooseCsvExport,
+    analyze: suspend (String) -> FlightPerformanceAnalysis = { source ->
+        val context = currentCoroutineContext()
+        FlightPerformanceAnalyzer.analyze(source) { context.ensureActive() }
+    }) {
+    key(text) { PerformanceAnalysisContent(text, chooseExport, analyze) }
+}
+
+@Composable
+private fun PerformanceAnalysisContent(text: String, chooseExport: (String) -> String?,
+    analyze: suspend (String) -> FlightPerformanceAnalysis) {
     var result by remember(text) { mutableStateOf<FlightPerformanceAnalysis?>(null) }
     var busy by remember(text) { mutableStateOf(false) }
     var error by remember(text) { mutableStateOf<String?>(null) }
@@ -24,17 +34,23 @@ internal fun PerformanceAnalysisPanel(text: String, chooseExport: (String) -> St
     var kind by remember(text) { mutableStateOf(0) }
     var fraction by remember(text, kind) { mutableStateOf(0f) }
     val scope = rememberCoroutineScope()
+    var analysisJob by remember { mutableStateOf<Job?>(null) }
+    var generation by remember { mutableStateOf(0L) }
     TextButton(enabled = !busy, onClick = {
         busy = true; error = null
-        scope.launch {
-            try { result = withContext(Dispatchers.Default) {
-                val context = currentCoroutineContext()
-                FlightPerformanceAnalyzer.analyze(text) { context.ensureActive() }
-            } } catch (e: CancellationException) { throw e }
-            catch (e: Exception) { error = e.message ?: "分析失败" }
-            finally { busy = false }
+        val current = ++generation
+        analysisJob = scope.launch {
+            try {
+                val computed = withContext(Dispatchers.Default) { analyze(text) }
+                if (generation == current) result = computed
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { if (generation == current) error = e.message ?: "分析失败" }
+            finally { if (generation == current) { busy = false; analysisJob = null } }
         }
-    }) { Text(if (busy) "正在统计性能采样…" else "统计爬升与机动采样") }
+    }) { Text(if (analysisJob != null) "正在统计性能采样…" else "统计爬升与机动采样") }
+    if (analysisJob != null) TextButton(onClick = {
+        generation++; analysisJob?.cancel(); analysisJob = null; busy = false
+    }) { Text("取消统计") }
     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     val analysis = result ?: return
     Text("高度档 ${analysis.climb.size} · 滚转速度档 ${analysis.roll.size} · 过载速度档 ${analysis.turn.size}")

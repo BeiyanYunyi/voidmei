@@ -59,7 +59,7 @@ class PerformanceAnalysisGuiTest {
             "0,,0,test,100,200,100,80\n1,,5000,test,200,220,150,90\n"
         try {
             compose.setContent { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
-                PerformanceAnalysisPanel(source) { target.toString() }
+                PerformanceAnalysisPanel(source, chooseExport = { target.toString() })
             } } }
             compose.onNodeWithText("统计爬升与机动采样").performClick()
             compose.waitUntil(10000) { compose.onAllNodesWithText("高度档 2 · 滚转速度档 2 · 过载速度档 0").fetchSemanticsNodes().isNotEmpty() }
