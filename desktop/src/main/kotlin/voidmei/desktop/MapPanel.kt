@@ -70,16 +70,21 @@ private data class MapSelection(val obj: MapObject, val distanceM: Double?)
 internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = null,
     interactive: Boolean = true, side: androidx.compose.ui.unit.Dp = 320.dp, compact: Boolean = false,
     plotModifier: Modifier? = null) {
+    @Composable fun label(text: String, style: androidx.compose.ui.text.TextStyle = LocalTextStyle.current) {
+        if (compact) HudOverlayText(text, color = LocalReadingColors.current.label ?: LocalContentColor.current, style = style)
+        else Text(text, style = style)
+    }
+    val scaleColor = if (compact) LocalReadingColors.current.label ?: Color.White else Color.White
     val distanceScale = MapScale.fromBounds(snapshot.bounds)
     var selection by remember(snapshot.bounds) { mutableStateOf<MapSelection?>(null) }
     val currentSnapshot by rememberUpdatedState(snapshot)
     var plotSize by remember { mutableStateOf(IntSize.Zero) }
-    Text(if (compact) "地图对象 · ${snapshot.objects.size} · ${if (background == null) "无底图" else "含底图"}"
+    label(if (compact) "地图对象 · ${snapshot.objects.size} · ${if (background == null) "无底图" else "含底图"}"
         else "地图对象示意 · ${snapshot.objects.size} 个对象 · 每秒更新" + if (interactive) " · 点击点状对象查看详情" else "")
     val gridLines = remember(snapshot.bounds) { MapGrid.lines(snapshot.bounds) }
-    Text("玩家格号：${MapGrid.playerCell(snapshot) ?: "—"}", style = MaterialTheme.typography.bodySmall)
-    if (compact) MapPlayerPosition(snapshot)
-    if (gridLines == null) Text("地图网格不可用", style = MaterialTheme.typography.bodySmall)
+    label("玩家格号：${MapGrid.playerCell(snapshot) ?: "—"}", style = MaterialTheme.typography.bodySmall)
+    if (compact) MapPlayerPosition(snapshot, true)
+    if (gridLines == null) label("地图网格不可用", style = MaterialTheme.typography.bodySmall)
     val grid = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
     Canvas((plotModifier ?: Modifier.size(side)).onSizeChanged { plotSize = it }.clipToBounds().pointerInput(snapshot.bounds, interactive) {
         if (!interactive) return@pointerInput
@@ -138,16 +143,16 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
     distanceScale?.let { scale ->
         val distance = if (scale.metres >= 1000) "${(scale.metres / 1000).toString().removeSuffix(".0")} km"
             else "${scale.metres.toString().removeSuffix(".0")} m"
-        Text("距离标尺：$distance", style = MaterialTheme.typography.bodySmall)
+        label("距离标尺：$distance", style = MaterialTheme.typography.bodySmall)
         Canvas((if (plotModifier == null) Modifier.size(side, 16.dp) else Modifier.fillMaxWidth().height(16.dp))
             .testTag("map-distance-scale").semantics { contentDescription = "距离标尺 $distance" }) {
             val viewport = MapViewport.fit(snapshot.bounds, plotSize.width.toDouble(), plotSize.height.toDouble()) ?: return@Canvas
             val length = (viewport.width * scale.widthFraction).toFloat()
             val y = size.height / 2
             val x = viewport.left.toFloat()
-            drawLine(Color.White, Offset(x, y), Offset(x + length, y), 2.dp.toPx())
-            drawLine(Color.White, Offset(x, y - 4.dp.toPx()), Offset(x, y + 4.dp.toPx()), 2.dp.toPx())
-            drawLine(Color.White, Offset(x + length, y - 4.dp.toPx()), Offset(x + length, y + 4.dp.toPx()), 2.dp.toPx())
+            drawLine(scaleColor, Offset(x, y), Offset(x + length, y), 2.dp.toPx())
+            drawLine(scaleColor, Offset(x, y - 4.dp.toPx()), Offset(x, y + 4.dp.toPx()), 2.dp.toPx())
+            drawLine(scaleColor, Offset(x + length, y - 4.dp.toPx()), Offset(x + length, y + 4.dp.toPx()), 2.dp.toPx())
         }
     }
     if (!compact) {
@@ -157,7 +162,9 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
 }
 
 @Composable
-private fun MapPlayerPosition(snapshot: MapSnapshot) {
-    snapshot.player?.position?.let { Text("玩家位置 ${"%.3f".format(java.util.Locale.ROOT, it.x)}, ${"%.3f".format(java.util.Locale.ROOT, it.y)}") }
-        ?: Text("玩家位置未知")
+private fun MapPlayerPosition(snapshot: MapSnapshot, compact: Boolean = false) {
+    val text = snapshot.player?.position?.let { "玩家位置 ${"%.3f".format(java.util.Locale.ROOT, it.x)}, ${"%.3f".format(java.util.Locale.ROOT, it.y)}" }
+        ?: "玩家位置未知"
+    if (compact) HudOverlayText(text, color = LocalReadingColors.current.value ?: LocalContentColor.current)
+    else Text(text)
 }

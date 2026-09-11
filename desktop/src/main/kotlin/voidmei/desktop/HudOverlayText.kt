@@ -18,11 +18,11 @@ import androidx.compose.ui.unit.sp
 @Composable
 internal fun HudOverlayText(text: String, modifier: Modifier = Modifier, color: Color = Color.Unspecified,
     fontSize: TextUnit = TextUnit.Unspecified, maxLines: Int = Int.MAX_VALUE,
-    overflow: TextOverflow = TextOverflow.Clip) {
+    overflow: TextOverflow = TextOverflow.Clip, style: androidx.compose.ui.text.TextStyle = LocalTextStyle.current) {
     val shade = LocalReadingColors.current.shade
     val density = LocalDensity.current
     val inset = if (shade == null) 0.dp else with(density) { 1.sp.toDp() }
     val shadow = shade?.let { with(density) { Shadow(it, Offset(inset.toPx(), inset.toPx()), 0f) } }
     Text(text, modifier.padding(end = inset, bottom = inset), color = color, fontSize = fontSize,
-        maxLines = maxLines, overflow = overflow, style = LocalTextStyle.current.copy(shadow = shadow))
+        maxLines = maxLines, overflow = overflow, style = style.copy(shadow = shadow))
 }

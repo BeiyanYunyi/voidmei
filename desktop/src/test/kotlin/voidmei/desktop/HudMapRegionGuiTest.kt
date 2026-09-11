@@ -17,6 +17,26 @@ import kotlin.test.*
 class HudMapRegionGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun mapTextAndScaleUseHudColorsAndTextShadows() {
+        var settings by mutableStateOf(AppSettings(hudLabelColor = "#00FF00", hudValueColor = "#0000FF", hudShadeColor = "#FF0000",
+            hudSceneLayout = HudSceneLayout(500, 500, listOf(HudRegion("map", HudRegionContent.MAP, 0, 0, 500, 500)))))
+        val map = MutableStateFlow<MapConnection>(MapConnection.Available(hudPreviewMap()))
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp)) {
+            HudPanel(hudPreviewFlight(), settings, emptyList(), null, sharedMap = map) {}
+        } } }
+        fun style(text: String): androidx.compose.ui.text.TextStyle {
+            val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            compose.onNodeWithText(text).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(results) }
+            return results.single().layoutInput.style
+        }
+        assertEquals(androidx.compose.ui.graphics.Color.Green, style("地图对象 · 3 · 无底图").color)
+        assertEquals(androidx.compose.ui.graphics.Color.Blue, style("玩家位置 0.500, 0.500").color)
+        assertEquals(androidx.compose.ui.graphics.Color.Red, style("玩家位置 0.500, 0.500").shadow!!.color)
+        compose.runOnIdle { settings = settings.copy(hudValueColor = "#00FF00", hudShadeColor = null) }
+        assertEquals(androidx.compose.ui.graphics.Color.Green, style("玩家位置 0.500, 0.500").color)
+        assertNull(style("玩家位置 0.500, 0.500").shadow)
+    }
+
     @Test fun mapUsesRemainingHeightAfterWrappedTitleAndKeepsScaleVisible() {
         val original = HudRegion("map", HudRegionContent.MAP, 0, 0, 240, 500)
         var region by mutableStateOf(original)
