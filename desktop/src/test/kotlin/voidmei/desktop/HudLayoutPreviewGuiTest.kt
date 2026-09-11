@@ -24,8 +24,8 @@ class HudLayoutPreviewGuiTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun previewOpensClosesAndFollowsSettingsWithoutEnablingTheRealHud() {
-        var settings by mutableStateOf(AppSettings(hudEnabled = false, hudFields = listOf("ias"),
-            hudAttitude = false, hudMechanization = false))
+        var settings by mutableStateOf(AppSettings(hudEnabled = false, hudFields = listOf("ias", "engine1_throttle"),
+            textFont = "Monospaced", hudAttitude = false, hudMechanization = false))
         compose.setContent { MaterialTheme { Column { HudSettingsPanel(settings) { settings = it } } } }
         fun windows() = Window.getWindows().filterIsInstance<Frame>().filter {
             it.title == "HUD 布局预览 · 示例数据" && it.isDisplayable
@@ -35,7 +35,13 @@ class HudLayoutPreviewGuiTest {
         val frame = windows().single()
         compose.onNodeWithText("示例数据与模型 · 可在设置窗口继续调整").assertIsDisplayed()
         compose.onNodeWithText("340 km/h").assertIsDisplayed()
-        savePreview("initial")
+        val initialImage = savePreview("initial")
+        assertTrue((0 until initialImage.height).any { y -> (0 until initialImage.width).any { x ->
+            initialImage.getRGB(x, y) and 0xFFFFFF == 0x84DEC6
+        } }, "The preview throttle gauge must use the live HUD primary color")
+        val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        compose.onNodeWithText("HUD 布局预览").performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        assertEquals(resolveTextFont(settings.textFont).family, layouts.single().layoutInput.style.fontFamily)
         compose.onNodeWithText("告警示例").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitUntil(5000) { compose.onAllNodesWithText("510 km/h").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("510 km/h").assert(SemanticsMatcher.expectValue(
@@ -82,7 +88,7 @@ class HudLayoutPreviewGuiTest {
         compose.runOnIdle { assertFalse(settings.hudEnabled) }
     }
 
-    private fun savePreview(name: String) {
+    private fun savePreview(name: String): java.awt.image.BufferedImage {
         val frame = Window.getWindows().filterIsInstance<Frame>().single {
             it.title == "HUD 布局预览 · 示例数据" && it.isVisible
         }
@@ -94,5 +100,6 @@ class HudLayoutPreviewGuiTest {
         val directory = Path.of("build/hud-preview")
         Files.createDirectories(directory)
         check(ImageIO.write(output, "png", directory.resolve("layout-preview-$name.png").toFile()))
+        return output
     }
 }

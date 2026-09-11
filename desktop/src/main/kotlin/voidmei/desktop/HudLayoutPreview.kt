@@ -74,6 +74,7 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
 
 @Composable
 internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: Int, onClose: () -> Unit) {
+    val typography = remember(settings.textFont) { textTypography(resolveTextFont(settings.textFont).family) }
     var warnings by remember { mutableStateOf(false) }
     var missing by remember { mutableStateOf(false) }
     var nativeWindow by remember { mutableStateOf<java.awt.Frame?>(null) }
@@ -90,7 +91,7 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
     }
     Window(onCloseRequest = onClose, state = state, title = "HUD 布局预览 · 示例数据") {
         SideEffect { nativeWindow = window }
-        MaterialTheme(colorScheme = darkColorScheme()) {
+        MaterialTheme(typography = typography, colorScheme = hudColorScheme()) {
             Surface(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize()) {
                     FlowRow(Modifier.padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

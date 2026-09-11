@@ -462,7 +462,7 @@ fun main(args: Array<String>) {
         if (offlineModels) Window(onCloseRequest = { offlineModels = false }, title = "VoidMei · 离线模型",
             state = rememberWindowState(width = 960.dp, height = 800.dp)) {
             rememberRendererDiagnostics(window)
-            MaterialTheme(typography = typography, colorScheme = darkColorScheme(primary = Color(0xFF84DEC6))) {
+            MaterialTheme(typography = typography, colorScheme = hudColorScheme()) {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -483,7 +483,7 @@ fun main(args: Array<String>) {
             rememberRendererDiagnostics(window)
             if (!java.lang.Boolean.getBoolean("voidmei.diagnostics.hud.fixedSize"))
                 updateHudWindowSize(window, hudState, settings.hudWidthDp, hudContentHeight)
-            MaterialTheme(typography = typography, colorScheme = darkColorScheme(primary = Color(0xFF84DEC6))) {
+            MaterialTheme(typography = typography, colorScheme = hudColorScheme()) {
                 HudPanel(connection, settings, alerts, modelForAlerts, mapEndpoint = activeEndpoint, sharedMap = sharedMap, thermal = thermalObservation, onContentHeightChanged = { hudContentHeight = it }) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         HudDraggableArea(Modifier.weight(1f)) {

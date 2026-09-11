@@ -3068,6 +3068,12 @@ FlightRecorder 对 Delayed 只跳过写入，保留当前 CSV 文件对和时间
 
 桌面单元及原生预览回归通过（`/tmp/voidmei-hud-preview-missing.log`，6 秒），逐项检查全部 HudField／HudEngineField 示例值为空，验证从告警切至缺失时高亮与告警列表清除，再切回正常数据。240 dp 原生窗口回归通过（`/tmp/voidmei-hud-preview-missing-narrow.log`，2 秒），已人工检查 `layout-preview-missing.png` 和 `layout-preview-missing-narrow.png`：按钮、示例标记及未知值均可见。本轮未重建 Nix 包。
 
+### 预览与真实 HUD 使用一致主题
+
+提取既有 HUD 主色方案供真实 HUD、原有同色窗口及预览共用；修正预览默认 Material 主色与实际 HUD 不同的问题。预览显式按 `textFont` 构建文字排版，数字字体仍沿用 HudPanel 的既有设置解析。
+
+桌面单元和相关 GUI 回归通过（`/tmp/voidmei-hud-preview-theme.log`，7 秒）。原生截图像素检查验证示例油门条使用实际 HUD 的 `#84DEC6` 主色；TextLayoutResult 验证预览标题使用配置的 Monospaced 字体，并回归模式切换、缺失数据、窄窗口与数字字体。本轮未重建 Nix 包，不扩大实际游戏／GPU 验收结论。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
