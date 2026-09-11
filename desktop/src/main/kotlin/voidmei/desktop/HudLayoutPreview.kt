@@ -54,7 +54,7 @@ private fun hudPreviewModel() = AircraftAlertModel("preview", FlightModelParamet
 @Composable
 internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, missing: Boolean = false,
     onRegionMove: ((String, Int, Int) -> Unit)? = null,
-    onRegionResize: ((String, Int, Int) -> Unit)? = null) {
+    onRegionResize: ((String, Int, Int) -> Unit)? = null, dragTargetId: String? = null) {
     val flight = remember(warnings, missing) { hudPreviewFlight(warnings, missing) }
     val map = remember(missing) { kotlinx.coroutines.flow.MutableStateFlow<MapConnection>(
         if (missing) MapConnection.Waiting else MapConnection.Available(hudPreviewMap())) }
@@ -77,7 +77,7 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
             Text("HUD 布局预览")
         }
         settings.hudSceneLayout?.takeIf { it.enabled && onRegionMove != null }?.let { scene ->
-            HudSceneDragOverlay(scene, onRegionMove!!, onRegionResize)
+            HudSceneDragOverlay(scene, onRegionMove!!, onRegionResize, dragTargetId)
         }
     }
 }
@@ -89,6 +89,11 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
     var warnings by remember { mutableStateOf(false) }
     var missing by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
+    var dragTarget by remember { mutableStateOf<String?>(null) }
+    val regions = settings.hudSceneLayout?.regions.orEmpty()
+    LaunchedEffect(regions.map { it.id }) {
+        if (regions.none { it.id == dragTarget }) dragTarget = null
+    }
     var nativeWindow by remember { mutableStateOf<java.awt.Frame?>(null) }
     val previewWidth = settings.hudSceneLayout?.takeIf { it.enabled }?.width?.coerceAtMost(1100) ?: settings.hudWidthDp
     val state = rememberWindowState(width = previewWidth.dp, height = 640.dp)
@@ -115,15 +120,17 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
                             FilterChip(editing, { editing = !editing }, label = { Text("拖动区域") },
                                 modifier = Modifier.testTag("hud-preview-edit-regions"))
                     }
-                    if (editing && settings.hudSceneLayout?.enabled == true)
-                        Text("拖动区域以移动，拖动右下角方块调整大小；重叠时选取顶层。修改自动保存。", Modifier.padding(horizontal = 12.dp))
+                    if (editing && settings.hudSceneLayout?.enabled == true) {
+                        HudDragTargetSettings(regions, dragTarget) { dragTarget = it }
+                        Text("拖动区域以移动，拖动右下角方块调整大小；指定目标可编辑被遮挡区域。修改自动保存。", Modifier.padding(horizontal = 12.dp))
+                    }
                     Box(Modifier.weight(1f)) { HudLayoutPreview(settings, warnings, missing,
                         onRegionMove = if (editing && onSettingsChange != null) { id, x, y ->
                             settings.hudSceneLayout?.let { onSettingsChange(settings.copy(hudSceneLayout = it.moveRegion(id, x, y))) }
                         } else null,
                         onRegionResize = if (editing && onSettingsChange != null) { id, width, height ->
                             settings.hudSceneLayout?.let { onSettingsChange(settings.copy(hudSceneLayout = it.resizeRegion(id, width, height))) }
-                        } else null) }
+                        } else null, dragTargetId = dragTarget) }
                 }
             }
         }

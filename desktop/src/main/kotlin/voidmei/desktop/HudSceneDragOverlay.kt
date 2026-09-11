@@ -20,10 +20,11 @@ import kotlin.math.roundToInt
 /** Preview-only input layer. Transparent/empty regions remain selectable by their outlines. */
 @Composable
 internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, Int) -> Unit,
-    onResize: ((String, Int, Int) -> Unit)? = null) {
+    onResize: ((String, Int, Int) -> Unit)? = null, targetId: String? = null) {
     val current by rememberUpdatedState(layout)
     val move by rememberUpdatedState(onMove)
     val resize by rememberUpdatedState(onResize)
+    val target by rememberUpdatedState(targetId)
     val density = LocalDensity.current.density
     var selected by remember { mutableStateOf<String?>(null) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -37,7 +38,9 @@ internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, I
                     val point = down.position
                     val px = point.x / pixelsPerUnit
                     val py = point.y / pixelsPerUnit
-                    val hit = current.regions.lastOrNull { px >= it.x && px < it.x + it.width && py >= it.y && py < it.y + it.height }
+                    val fixed = target?.let { id -> current.regions.firstOrNull { it.id == id } }
+                    val hit = (fixed?.let { listOf(it) } ?: current.regions).lastOrNull {
+                        px >= it.x && px < it.x + it.width && py >= it.y && py < it.y + it.height }
                     selected = hit?.id
                     val resizing = hit != null && resize != null &&
                         px >= hit.x + hit.width - minOf(hit.width.toFloat(), 12f / scale) &&
@@ -70,7 +73,7 @@ internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, I
             layout.regions.forEach { region -> key(region.id) {
                 Box(Modifier.offset((region.x * scale).dp, (region.y * scale).dp)
                     .size((region.width * scale).dp, (region.height * scale).dp)
-                    .border(1.dp, if (selected == region.id) Color.Yellow else Color.Cyan)
+                    .border(1.dp, if ((targetId ?: selected) == region.id) Color.Yellow else Color.Cyan)
                     .testTag("hud-drag-region-${region.id}")) {
                     Text(region.title.ifBlank { region.content.label } + if (region.visible) "" else " · 已隐藏", color = Color.Cyan)
                     if (onResize != null) Box(Modifier.align(Alignment.BottomEnd)

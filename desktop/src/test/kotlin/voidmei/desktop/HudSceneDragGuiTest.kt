@@ -16,6 +16,31 @@ import kotlin.test.*
 class HudSceneDragGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun explicitTargetMovesCoveredRegionWithoutReorderingAndAutoRestoresTopHit() {
+        val bottom = HudRegion("bottom", HudRegionContent.FLIGHT, 100, 100, 300, 200)
+        val top = bottom.copy(id = "top")
+        var scene by mutableStateOf(HudSceneLayout(1000, 600, listOf(bottom, top)))
+        var target by mutableStateOf<String?>(null)
+        compose.setContent { MaterialTheme { Column {
+            HudDragTargetSettings(scene.regions, target) { target = it }
+            Box(Modifier.size(500.dp, 300.dp)) {
+                HudSceneDragOverlay(scene, { id, x, y -> scene = scene.moveRegion(id, x, y) }, targetId = target)
+            }
+        } } }
+        compose.onNodeWithTag("hud-drag-target-menu").performClick()
+        compose.onNodeWithTag("hud-drag-target-bottom").performClick()
+        val overlay = compose.onNodeWithTag("hud-scene-drag-overlay")
+        overlay.performTouchInput { swipe(Offset(100f, 100f), Offset(150f, 125f), 500) }
+        compose.runOnIdle { assertEquals(listOf(bottom.copy(x = 200, y = 150), top), scene.regions) }
+        // Outside the designated region: leave the top region untouched.
+        overlay.performTouchInput { swipe(Offset(60f, 60f), Offset(80f, 70f), 500) }
+        compose.runOnIdle { assertEquals(top, scene.regions.last()) }
+        compose.onNodeWithTag("hud-drag-target-menu").performClick()
+        compose.onNodeWithTag("hud-drag-target-auto").performClick()
+        overlay.performTouchInput { swipe(Offset(125f, 100f), Offset(175f, 125f), 500) }
+        compose.runOnIdle { assertEquals(listOf(bottom.copy(x = 200, y = 150), top.copy(x = 200, y = 150)), scene.regions) }
+    }
+
     @Test fun cornerDragResizesAtPreviewScaleAndClampsBothSizeLimits() {
         val region = HudRegion("one", HudRegionContent.FLIGHT, 100, 100, 300, 200, 0f, fields = listOf("ias"))
         var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(1000, 600, listOf(region))))
