@@ -41,6 +41,16 @@ tasks.register<Test>("nativeHudTransparencyTest") {
     outputs.upToDateWhen { false }
     systemProperty("java.awt.headless", "false")
 }
+tasks.test { exclude("**/HudScenePerformanceTest.class") }
+tasks.register<Test>("nativeHudScenePerformanceTest") {
+    description = "Measures compatible full-display HUD updates on an isolated composited display."
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    include("**/HudScenePerformanceTest.class")
+    outputs.upToDateWhen { false }
+    systemProperty("java.awt.headless", "false")
+}
 // JNI libraries inside JARs are invisible to jpackage's ELF dependency scanner.
 tasks.withType<AbstractJPackageTask>().configureEach {
     if (targetFormat == TargetFormat.Deb) {
