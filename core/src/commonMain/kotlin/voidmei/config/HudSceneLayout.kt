@@ -61,6 +61,18 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
         return copy(regions = remaining)
     }
 
+    /** Restore only the removed region, retaining edits made to the rest of the scene. */
+    fun restoreRegion(region: HudRegion, layer: Int): HudSceneLayout {
+        require(regions.size < 32)
+        val id = if (regions.none { it.id == region.id }) region.id else
+            (1..33).map { "region-$it" }.first { candidate -> regions.none { it.id == candidate } }
+        val restoredWidth = minOf(region.width, width)
+        val restoredHeight = minOf(region.height, height)
+        val restored = region.copy(id = id, width = restoredWidth, height = restoredHeight,
+            x = minOf(region.x, width - restoredWidth), y = minOf(region.y, height - restoredHeight))
+        return copy(regions = regions.toMutableList().apply { add(layer.coerceIn(0, size), restored) })
+    }
+
     /** Later regions paint over earlier ones; reordering never changes region geometry or fields. */
     fun moveRegionLayer(id: String, towardFront: Boolean): HudSceneLayout {
         val index = regions.indexOfFirst { it.id == id }

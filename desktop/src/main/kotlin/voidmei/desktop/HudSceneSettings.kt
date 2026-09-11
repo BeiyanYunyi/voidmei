@@ -10,6 +10,7 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> Unit) {
+    var removed by remember { mutableStateOf<Pair<HudRegion, Int>?>(null) }
     val scene = settings.hudSceneLayout?.takeIf { it.enabled }
     TextButton(onClick = { onChange(settings.copy(hudSceneLayout = if (scene == null)
         settings.hudSceneLayout?.copy(enabled = true) ?: HudSceneLayout.initial(settings) else scene.copy(enabled = false))) },
@@ -20,6 +21,16 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
     Text("分区布局自动穿透鼠标。在此调整区域；预览同步显示。画布 ${scene.width} × ${scene.height} dp，空间不足时整体缩小。")
     var expanded by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起分区设置" else "调整分区位置与透明度") }
+    removed?.let { (region, layer) ->
+        TextButton(onClick = {
+            onChange(settings.copy(hudSceneLayout = scene.restoreRegion(region, layer)))
+            removed = null
+        }, enabled = scene.regions.size < 32, modifier = Modifier.testTag("hud-region-restore")) {
+            Text("恢复上次移除的区域 · ${region.content.label}")
+        }
+        Text(if (scene.regions.size >= 32) "已达 32 个区域，暂不能恢复；再次移除会替换这条恢复记录。"
+            else "仅保留本次设置页面中的最近一次移除；恢复时适配当前画布，编号冲突时使用新编号。")
+    }
     if (!expanded) return
     HudDisplaySettings(scene) { onChange(settings.copy(hudSceneLayout = it)) }
     HudCanvasSizeSettings(scene) { onChange(settings.copy(hudSceneLayout = it)) }
@@ -48,7 +59,10 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
             TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, true))) },
                 enabled = layer < scene.regions.lastIndex, modifier = Modifier.testTag("hud-region-layer-up-${region.id}")) { Text("上移一层") }
         }
-        TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.removeRegion(region.id))) },
+        TextButton(onClick = {
+            removed = region to layer
+            onChange(settings.copy(hudSceneLayout = scene.removeRegion(region.id)))
+        },
             enabled = scene.regions.size > 1, modifier = Modifier.testTag("hud-region-remove-${region.id}")) { Text("移除此区域") }
         HudRegionFieldsSettings(region, settings, ::update)
         if (region.content == HudRegionContent.ENGINE) {

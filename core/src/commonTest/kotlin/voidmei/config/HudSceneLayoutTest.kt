@@ -3,6 +3,23 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun restoringRemovedRegionPreservesLaterEditsAndHandlesReusedIdsAndSmallerCanvas() {
+        val removed = HudRegion("region-1", HudRegionContent.ENGINE, 500, 300, 300, 200,
+            .25f, .75f, 2, listOf("rpm", "future_field"), visible = false)
+        val other = HudRegion("other", HudRegionContent.FLIGHT, 0, 0, 200, 100)
+        val scene = HudSceneLayout(800, 600, listOf(removed, other), displayId = "display")
+        assertEquals(scene, scene.removeRegion(removed.id).restoreRegion(removed, 0))
+        val edited = scene.removeRegion(removed.id).addRegion(HudRegionContent.MAP).resizeCanvas(240, 120)
+        val restored = edited.restoreRegion(removed, 0)
+        assertEquals(edited.regions, restored.regions.drop(1))
+        assertEquals(removed.copy(id = "region-2", x = 0, y = 0, width = 240, height = 120), restored.regions.first())
+        assertEquals("display", restored.displayId)
+        assertEquals(restored, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = restored))).hudSceneLayout)
+        var full = edited
+        repeat(30) { full = full.addRegion(HudRegionContent.FLIGHT) }
+        assertFailsWith<IllegalArgumentException> { full.restoreRegion(removed, 0) }
+    }
+
     @Test fun mapRegionCanBeRepeatedAndPersistedWithIndependentAppearance() {
         val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.MAP).addRegion(HudRegionContent.MAP)
         val maps = scene.regions.filter { it.content == HudRegionContent.MAP }
