@@ -38,6 +38,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                 val fields = region.fields ?: when (region.content) {
                     HudRegionContent.ENGINE -> settings.hudEngineFields
                     HudRegionContent.MECHANIZATION -> HudMechanizationField.inherited(settings)
+                    HudRegionContent.MESSAGES -> HudMessageKind.entries.map { it.name.lowercase() }
                     else -> settings.hudFields
                 }
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields) {
@@ -100,7 +101,8 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                         alerts = alerts, showFlapBar = HudMechanizationField.FLAP_BAR.id in fields)
                                 }
                                 HudRegionContent.ALERTS -> Unit
-                                HudRegionContent.MESSAGES -> HudRecentMessages(messages)
+                                HudRegionContent.MESSAGES -> HudRecentMessages(messages,
+                                    HudMessageKind.entries.filter { it.name.lowercase() in fields }.toSet())
                                 HudRegionContent.MAP -> Unit
                                 HudRegionContent.CROSSHAIR -> Unit
                                 HudRegionContent.COMPASS -> Unit

@@ -10,6 +10,20 @@ import voidmei.telemetry.*
 
 @Composable
 internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, onChange: (HudRegion) -> Unit) {
+    if (region.content == HudRegionContent.MESSAGES) {
+        val selected = region.fields ?: HudMessageKind.entries.map { it.name.lowercase() }
+        Text("消息类别（筛选后显示最近 5 条）")
+        FlowRow {
+            HudMessageKind.entries.forEach { kind ->
+                val id = kind.name.lowercase()
+                FilterChip(id in selected, { onChange(region.copy(fields =
+                    if (id in selected) selected.filterNot { it == id } else selected + id)) },
+                    label = { Text(if (kind == HudMessageKind.EVENT) "事件" else "损伤") },
+                    modifier = Modifier.testTag("hud-region-message-${region.id}-$id"))
+            }
+        }
+        return
+    }
     if (region.content == HudRegionContent.MECHANIZATION) {
         Row {
             Switch(region.fields != null, { onChange(region.copy(fields = if (it) HudMechanizationField.inherited(settings) else null)) },
