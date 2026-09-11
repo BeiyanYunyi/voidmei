@@ -58,7 +58,7 @@ class HudRegionVisibilityGuiTest {
         var active = 0
         var starts = 0
         compose.setContent {
-            rememberHudMessageSession("http://test", hudPreviewFlight(), settings.needsHudMessages() || panelExpanded, 0) {
+            rememberHudMessageSession("http://test", hudPreviewFlight(), settings.needsHudMessages() || panelExpanded, 0) { _, _ ->
                 flow {
                     active++; starts++
                     try { emit(HudMessageState(emptyList())); awaitCancellation() }

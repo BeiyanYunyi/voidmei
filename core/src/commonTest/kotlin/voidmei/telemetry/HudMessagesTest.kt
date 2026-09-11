@@ -5,6 +5,31 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.test.runTest
 
 class HudMessagesTest {
+    @Test fun resumeRetainsEvictedCategoryCursorAndHistoryThroughFailure() = runTest {
+        val paths = mutableListOf<String>()
+        val damage = (1..201).joinToString(",") { "{\"id\":$it,\"msg\":\"damage $it\"}" }
+        val first = HudMessagePoller(TelemetryTransport {
+            """{"events":[{"id":9,"msg":"old event"}],"damage":[$damage]}"""
+        }).states().take(2).last()
+        assertEquals(200, first.messages.size)
+        assertTrue(first.messages.none { it.kind == HudMessageKind.EVENT })
+        assertEquals(9, first.lastEventId)
+        val resumed = HudMessagePoller(TelemetryTransport { path ->
+            paths += path
+            if (paths.size == 1) "broken" else
+                """{"events":[{"id":9,"msg":"old event"},{"id":10,"msg":"new event"}],"damage":[{"id":201,"msg":"damage 201"}]}"""
+        }).states(first).take(3).toList()
+        assertEquals(first, resumed[0])
+        assertEquals(first, resumed[1].copy(error = null))
+        assertNotNull(resumed[1].error)
+        assertEquals(List(2) { "/hudmsg?lastEvt=9&lastDmg=201" }, paths)
+        assertEquals(200, resumed.last().messages.size)
+        assertEquals("new event", resumed.last().messages.last().text)
+        assertEquals(1, resumed.last().messages.count { it.kind == HudMessageKind.EVENT })
+        assertEquals(10, resumed.last().lastEventId)
+        assertEquals(201, resumed.last().lastDamageId)
+    }
+
     @Test fun jsonEscapesAndIndependentIdsArePreserved() {
         val rows = HudMessageParser.parse("""{"damage":[{"msg":"发动机 \"过热\"","id":1}],"events":[{"id":1,"msg":"a\nb"}]}""")
         assertEquals(listOf(HudMessageKind.EVENT, HudMessageKind.DAMAGE), rows.map { it.kind })

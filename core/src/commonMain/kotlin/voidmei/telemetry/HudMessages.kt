@@ -6,7 +6,12 @@ import kotlinx.coroutines.flow.flow
 
 enum class HudMessageKind { EVENT, DAMAGE }
 data class HudMessage(val kind: HudMessageKind, val id: Int, val text: String)
-data class HudMessageState(val messages: List<HudMessage>, val error: String? = null)
+data class HudMessageState(
+    val messages: List<HudMessage>, val error: String? = null,
+    // Cursors outlive entries evicted from the bounded history, including across a pause.
+    val lastEventId: Int = messages.filter { it.kind == HudMessageKind.EVENT }.maxOfOrNull { it.id } ?: 0,
+    val lastDamageId: Int = messages.filter { it.kind == HudMessageKind.DAMAGE }.maxOfOrNull { it.id } ?: 0,
+)
 
 object HudMessageParser {
     fun parse(text: String): List<HudMessage> {
@@ -28,14 +33,14 @@ object HudMessageParser {
     }
 }
 
-/** Independent cursors; failed responses never advance either one. Recreate for a new flight. */
+/** Independent cursors; failures never advance them. Supply a saved state only when resuming the same flight. */
 class HudMessagePoller(private val transport: TelemetryTransport, private val intervalMs: Long = 1000) {
     init { require(intervalMs in 100..10000) }
-    fun states() = flow {
-        var eventId = 0
-        var damageId = 0
-        var history = emptyList<HudMessage>()
-        emit(HudMessageState(history))
+    fun states(initial: HudMessageState = HudMessageState(emptyList())) = flow {
+        var eventId = initial.lastEventId
+        var damageId = initial.lastDamageId
+        var history = initial.messages.takeLast(200)
+        emit(initial.copy(messages = history))
         while (currentCoroutineContext().isActive) {
             val state = try {
                 val incoming = withTimeout(2500) {
@@ -45,12 +50,12 @@ class HudMessagePoller(private val transport: TelemetryTransport, private val in
                 eventId = maxOf(eventId, incoming.filter { it.kind == HudMessageKind.EVENT }.maxOfOrNull { it.id } ?: 0)
                 damageId = maxOf(damageId, incoming.filter { it.kind == HudMessageKind.DAMAGE }.maxOfOrNull { it.id } ?: 0)
                 history = (history + new).takeLast(200)
-                HudMessageState(history)
+                HudMessageState(history, lastEventId = eventId, lastDamageId = damageId)
             } catch (e: TimeoutCancellationException) {
                 currentCoroutineContext().ensureActive()
-                HudMessageState(history, "消息请求超时")
+                HudMessageState(history, "消息请求超时", eventId, damageId)
             } catch (e: CancellationException) { throw e }
-              catch (e: Exception) { HudMessageState(history, e.message ?: "消息不可用") }
+              catch (e: Exception) { HudMessageState(history, e.message ?: "消息不可用", eventId, damageId) }
             emit(state)
             delay(intervalMs)
         }

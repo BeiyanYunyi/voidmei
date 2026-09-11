@@ -18,6 +18,44 @@ import kotlin.test.*
 class HudMessageSessionGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun pauseResumesFromSavedHistoryButReloadAndDisconnectStartFresh() {
+        var enabled by mutableStateOf(true)
+        var connection: ConnectionState by mutableStateOf(hudPreviewFlight())
+        var session: HudMessageSession? = null
+        val seeds = mutableListOf<HudMessageState>()
+        var active = 0
+        val saved = HudMessageState(listOf(HudMessage(HudMessageKind.DAMAGE, 50, "已有损伤")),
+            lastEventId = 30, lastDamageId = 50)
+        compose.setContent {
+            val messages = rememberHudMessageSession("http://test", connection, enabled, 0) { _, initial ->
+                flow {
+                    seeds += initial
+                    active++
+                    try { emit(saved); awaitCancellation() } finally { active-- }
+                }
+            }
+            SideEffect { session = messages }
+        }
+        compose.waitUntil(5000) { session?.state == saved && active == 1 }
+        compose.runOnIdle { enabled = false }
+        compose.waitUntil(5000) { active == 0 }
+        compose.runOnIdle { assertEquals(saved, session!!.state); enabled = true }
+        compose.waitUntil(5000) { seeds.size == 2 && active == 1 }
+        compose.runOnIdle {
+            assertEquals(saved, seeds[1])
+            session!!.reload()
+        }
+        compose.waitUntil(5000) { seeds.size == 3 && active == 1 }
+        compose.runOnIdle {
+            assertEquals(HudMessageState(emptyList()), seeds[2])
+            connection = ConnectionState.Disconnected("test")
+        }
+        compose.waitUntil(5000) { active == 0 && session?.state?.messages?.isEmpty() == true }
+        compose.runOnIdle { connection = hudPreviewFlight() }
+        compose.waitUntil(5000) { seeds.size == 4 && active == 1 }
+        compose.runOnIdle { assertEquals(HudMessageState(emptyList()), seeds[3]) }
+    }
+
     @Test fun consumersShareReaderAndDelaysKeepHistoryUntilRealDisconnect() {
         var connection: ConnectionState by mutableStateOf(hudPreviewFlight())
         var enabled by mutableStateOf(false)
@@ -25,7 +63,7 @@ class HudMessageSessionGuiTest {
         var session: HudMessageSession? = null
         var starts = 0
         var active = 0
-        val source: (String) -> kotlinx.coroutines.flow.Flow<HudMessageState> = {
+        val source: (String, HudMessageState) -> kotlinx.coroutines.flow.Flow<HudMessageState> = { _, _ ->
             flow {
                 starts++; active++
                 try {

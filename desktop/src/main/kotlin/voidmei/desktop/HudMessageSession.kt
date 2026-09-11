@@ -13,14 +13,14 @@ internal fun AppSettings.needsHudMessages(): Boolean = hudEnabled && hudSceneLay
 
 internal data class HudMessageSession(val state: HudMessageState, val reload: () -> Unit)
 
-private fun hudMessageStates(endpoint: String) = flow {
-    HttpTelemetryTransport(endpoint).use { transport -> emitAll(HudMessagePoller(transport).states()) }
+private fun hudMessageStates(endpoint: String, initial: HudMessageState) = flow {
+    HttpTelemetryTransport(endpoint).use { transport -> emitAll(HudMessagePoller(transport).states(initial)) }
 }
 
 /** One application-level reader for the settings panel and all HUD message regions. */
 @Composable
 internal fun rememberHudMessageSession(endpoint: String, connection: ConnectionState, enabled: Boolean,
-    sessionKey: Any?, source: (String) -> Flow<HudMessageState> = ::hudMessageStates): HudMessageSession {
+    sessionKey: Any?, source: (String, HudMessageState) -> Flow<HudMessageState> = ::hudMessageStates): HudMessageSession {
     var previous by remember(endpoint, sessionKey) { mutableStateOf(false to (null as String?)) }
     val flight = when (connection) {
         is ConnectionState.Flying -> true to connection.telemetry.aircraft
@@ -35,7 +35,7 @@ internal fun rememberHudMessageSession(endpoint: String, connection: ConnectionS
     LaunchedEffect(endpoint, sessionKey, flight, reload, enabled) {
         if (enabled && flight.first) {
             try {
-                source(endpoint).collect { state = it }
+                source(endpoint, state).collect { state = it }
             } catch (e: CancellationException) { throw e }
               catch (e: Exception) { state = state.copy(error = e.message ?: "消息不可用") }
         }
