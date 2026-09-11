@@ -3,6 +3,18 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun regionTitlesPersistThroughEditingAndOldLayoutsDefaultToEmpty() {
+        val region = HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 240, 120, title = "能量与机动")
+        val scene = HudSceneLayout(500, 400, listOf(region))
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(SettingsJson.encode(AppSettings(hudSceneLayout = scene))).toString()
+        assertEquals(scene, SettingsJson.decode(json).hudSceneLayout)
+        assertEquals("", SettingsJson.decode(json.replace(",\"title\":\"能量与机动\"", "")).hudSceneLayout!!.regions.single().title)
+        assertEquals(region.title, scene.moveRegion("one", 100, 100).resizeRegion("one", 300, 200).regions.single().title)
+        assertFailsWith<IllegalArgumentException> { region.copy(title = "x".repeat(81)) }
+        assertFailsWith<IllegalArgumentException> { region.copy(title = "a\nb") }
+        assertFails { SettingsJson.decode(json.replace("\"title\":\"能量与机动\"", "\"title\":7")) }
+    }
+
     @Test fun crosshairRegionDefaultsToTransparentAndPersistsGeometry() {
         val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.CROSSHAIR)
         val region = scene.regions.last()

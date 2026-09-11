@@ -47,8 +47,10 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                             val size = minOf(region.width, region.height)
                             if (settings.hudCrosshairImage.isEmpty()) CrosshairPanel(size, Modifier.fillMaxSize())
                             else ImageCrosshair(settings.hudCrosshairImage, size, Modifier.fillMaxSize(), settings.hudCrosshairStretch, shared = crosshairImage)
+                            if (region.title.isNotBlank()) Text(region.title, Modifier.align(androidx.compose.ui.Alignment.TopCenter))
                         } else {
                         Column(Modifier.fillMaxSize().padding(end = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            if (region.title.isNotBlank()) Text(region.title)
                             if (flight == null) Text(connectionLabel ?: statusText(connection))
                             else if (region.content == HudRegionContent.ALERTS) FlightAlertPanel(alerts, compact = true,
                                 maximumHeight = (region.height - 24).dp)
