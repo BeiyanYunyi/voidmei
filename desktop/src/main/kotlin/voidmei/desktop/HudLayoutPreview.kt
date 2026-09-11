@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.rememberWindowState
+import voidmei.config.HudRegionContent
 import voidmei.config.AppSettings
 import voidmei.telemetry.*
 import voidmei.fm.*
@@ -55,7 +56,7 @@ private fun hudPreviewModel() = AircraftAlertModel("preview", FlightModelParamet
 @Composable
 internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, missing: Boolean = false,
     onRegionMove: ((String, Int, Int) -> Unit)? = null,
-    onRegionResize: ((String, Int, Int) -> Unit)? = null, dragTargetId: String? = null) {
+    onRegionResize: ((String, Int, Int) -> Unit)? = null, dragTargetId: String? = null, denseMessages: Boolean = false) {
     val flight = remember(warnings, missing) { hudPreviewFlight(warnings, missing) }
     val map = remember(missing) { kotlinx.coroutines.flow.MutableStateFlow<MapConnection>(
         if (missing) MapConnection.Waiting else MapConnection.Available(hudPreviewMap())) }
@@ -72,7 +73,9 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
                     Offset(x * step, y * step), Size(step, step))
         }
         HudPanel(flight, settings, alerts, model, thermal = thermal, sharedMap = map,
-            messages = HudMessageState(if (missing) emptyList() else listOf(
+            messages = HudMessageState(if (missing) emptyList() else if (denseMessages) (1..20).flatMap { id -> listOf(
+                HudMessage(HudMessageKind.EVENT, id, "示例事件消息 $id"),
+                HudMessage(HudMessageKind.DAMAGE, id, "示例损伤消息 $id")) } else listOf(
                 HudMessage(HudMessageKind.EVENT, 1, "示例事件消息"), HudMessage(HudMessageKind.DAMAGE, 1, "示例损伤消息"))),
             connectionLabel = "示例数据与模型 · 可在设置窗口继续调整") {
             Text("HUD 布局预览")
@@ -90,6 +93,7 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
     var warnings by remember { mutableStateOf(false) }
     var missing by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
+    var denseMessages by remember { mutableStateOf(false) }
     var dragTarget by remember { mutableStateOf<String?>(null) }
     val regions = settings.hudSceneLayout?.regions.orEmpty()
     LaunchedEffect(regions.map { it.id }) {
@@ -117,6 +121,9 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
                         FilterChip(!warnings && !missing, { warnings = false; missing = false }, label = { Text("正常读数") })
                         FilterChip(warnings && !missing, { warnings = true; missing = false }, label = { Text("告警示例") })
                         FilterChip(missing, { warnings = false; missing = true }, label = { Text("缺失数据") })
+                        if (settings.hudSceneLayout?.let { it.enabled && it.regions.any { region -> region.visible && region.content == HudRegionContent.MESSAGES } } == true)
+                            FilterChip(denseMessages, { denseMessages = !denseMessages }, enabled = !missing,
+                                label = { Text("密集消息") }, modifier = Modifier.testTag("hud-preview-dense-messages"))
                         if (settings.hudSceneLayout?.enabled == true && onSettingsChange != null)
                             FilterChip(editing, { editing = !editing }, label = { Text("拖动区域") },
                                 modifier = Modifier.testTag("hud-preview-edit-regions"))
@@ -131,7 +138,7 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
                         } else null,
                         onRegionResize = if (editing && onSettingsChange != null) { id, width, height ->
                             settings.hudSceneLayout?.let { onSettingsChange(settings.copy(hudSceneLayout = it.resizeRegion(id, width, height))) }
-                        } else null, dragTargetId = dragTarget) }
+                        } else null, dragTargetId = dragTarget, denseMessages = denseMessages) }
                 }
             }
         }
