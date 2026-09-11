@@ -16,6 +16,38 @@ import voidmei.config.*
 class HudPresetTransferGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun renameDuringImportPreservesBothLayoutsAndRejectsDuplicateTargets() {
+        val root = Files.createTempDirectory("voidmei-preset-rename-")
+        try {
+            val scene = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
+            val incoming = scene.copy(enabled = false)
+            val input = root.resolve("input.json")
+            writeHudPresets(input, mapOf("巡航" to incoming, "作战" to scene))
+            val original = AppSettings(hudSceneLayout = scene, hudScenePresets = mapOf("巡航" to scene))
+            var settings by mutableStateOf(original)
+            compose.setContent { MaterialTheme { Column(Modifier.size(800.dp, 900.dp)) {
+                HudPresetTransfer(settings, { settings = it }, { input.toString() }, { null })
+            } } }
+            compose.onNodeWithTag("hud-presets-import").performClick()
+            compose.waitUntil(5000) { compose.onAllNodesWithTag("hud-presets-import-apply").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("hud-presets-import-rename-巡航").performClick()
+            val field = compose.onNodeWithTag("hud-presets-import-name-巡航")
+            for (invalid in listOf(" ", "x".repeat(81), "作战")) {
+                field.performTextReplacement(invalid)
+                compose.onNodeWithTag("hud-presets-import-apply").assertIsNotEnabled()
+            }
+            field.performTextReplacement(" 备用巡航 ")
+            compose.onNodeWithTag("hud-presets-import-apply").assertIsEnabled()
+            compose.runOnIdle { assertEquals(original, settings) }
+            compose.onNodeWithTag("hud-presets-import-apply").performClick()
+            compose.runOnIdle {
+                assertEquals(original.copy(hudScenePresets = mapOf("巡航" to scene,
+                    "备用巡航" to incoming, "作战" to scene)), settings)
+            }
+            assertEquals(mapOf("巡航" to incoming, "作战" to scene), readHudPresets(input))
+        } finally { root.toFile().deleteRecursively() }
+    }
+
     @Test fun importPreviewsConflictsAndMergesIntoLatestSettingsWithoutLoading() {
         val root = Files.createTempDirectory("voidmei-preset-ui-")
         try {

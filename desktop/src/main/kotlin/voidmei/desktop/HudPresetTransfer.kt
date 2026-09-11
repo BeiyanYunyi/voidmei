@@ -69,15 +69,31 @@ internal fun HudPresetTransfer(settings: AppSettings, onChange: (AppSettings) ->
     if (busy) Text("正在处理预设文件…")
     if (status.isNotEmpty()) Text(status, Modifier.testTag("hud-presets-file-status"))
     imported?.let { presets ->
-        val additions = presets.filterKeys { it !in settings.hudScenePresets }
+        var names by remember(presets) { mutableStateOf<Map<String, String>>(emptyMap()) }
+        val targets = presets.keys.associateWith { (names[it] ?: it).trim() }
+        val invalid = targets.values.any { it.isEmpty() || it.length > 80 || it.any(Char::isISOControl) }
+        val duplicates = targets.values.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+        val additions = if (invalid || duplicates.isNotEmpty()) emptyMap() else presets.entries
+            .filter { targets.getValue(it.key) !in settings.hudScenePresets }
+            .associate { targets.getValue(it.key) to it.value }
         val fits = settings.hudScenePresets.size + additions.size <= 16
         Text("文件：$source")
         if (presets.isEmpty()) Text("文件中没有预设。")
         presets.forEach { (name, scene) ->
+            val target = targets.getValue(name)
             Text("$name · ${scene.regions.size} 区域 · ${scene.width} × ${scene.height} dp" +
-                if (name in settings.hudScenePresets) " · 同名，跳过" else " · 待添加")
+                if (target in settings.hudScenePresets) " · 同名，跳过" else " · 待添加")
+            if (name in names) {
+                OutlinedTextField(names.getValue(name), { names = names + (name to it) }, singleLine = true,
+                    label = { Text("导入名称 · $name") },
+                    isError = target.isEmpty() || target.length > 80 || target.any(Char::isISOControl) || target in duplicates,
+                    modifier = Modifier.testTag("hud-presets-import-name-$name"))
+            } else TextButton({ names = names + (name to name) },
+                modifier = Modifier.testTag("hud-presets-import-rename-$name")) { Text("修改导入名称") }
         }
-        Text("仅添加不同名预设，保留当前布局与全局设置。")
+        Text("仅添加不同名预设；可修改导入名称以保留同名布局。保留当前布局与全局设置。")
+        if (invalid) Text("导入名称须为 1–80 个字符，不能含控制字符。")
+        if (duplicates.isNotEmpty()) Text("文件内的导入名称重复，请分别命名。")
         if (!fits) Text("添加后超过 16 套，请先移除部分已保存预设。")
         Button({
             onChange(settings.copy(hudScenePresets = settings.hudScenePresets + additions))
