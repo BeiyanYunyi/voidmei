@@ -16,6 +16,28 @@ import kotlin.test.*
 class HudAlertRegionGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun longTitleAndLargeFontLeaveAlertsInsideRegionWithOneScrollArea() {
+        val title = "发动机与飞行告警".repeat(6)
+        val scene = HudSceneLayout(300, 220, listOf(HudRegion("alerts", HudRegionContent.ALERTS,
+            0, 0, 300, 220, title = title)))
+        val alerts = FlightAlert.entries.take(10)
+        var fontScale by mutableStateOf(1.5f)
+        compose.setContent { MaterialTheme { Box(Modifier.size(300.dp, 220.dp)) {
+            HudPanel(hudPreviewFlight(), AppSettings(hudSceneLayout = scene, hudFontScale = fontScale), alerts, null) {}
+        } } }
+        for (scale in listOf(1.5f, 2f)) {
+            compose.runOnIdle { fontScale = scale }
+            val region = compose.onNodeWithTag("hud-region-alerts").getUnclippedBoundsInRoot()
+            val list = compose.onNodeWithTag("flight-alerts").getUnclippedBoundsInRoot()
+            assertTrue(list.bottom <= region.bottom)
+            assertTrue(list.bottom - list.top >= 60.dp)
+            compose.onNodeWithTag("flight-alert-scrollbar").assertIsDisplayed()
+            compose.onNodeWithTag("flight-alert-${alerts.sortedBy { it.severity }.last().name}").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText(title).assertIsDisplayed()
+            compose.onAllNodes(hasScrollAction()).assertCountEquals(1)
+        }
+    }
+
     @Test fun alertOnlyLayoutShowsConnectionLossAndSuppressesStaleAlerts() {
         val region = HudRegion("alerts", HudRegionContent.ALERTS, 0, 0, 400, 200)
         val scene = HudSceneLayout(400, 200, listOf(region))
