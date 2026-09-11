@@ -69,6 +69,15 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
         },
             enabled = scene.regions.size > 1, modifier = Modifier.testTag("hud-region-remove-${region.id}")) { Text("移除此区域") }
         HudRegionFieldsSettings(region, settings, ::update)
+        if (region.content == HudRegionContent.FLIGHT || region.content == HudRegionContent.ENGINE) {
+            Text("区域读数列数")
+            FlowRow {
+                listOf(null to "继承全局", 0 to "自动", 1 to "单列", 2 to "双列").forEach { (columns, label) ->
+                    FilterChip(region.readingColumns == columns, { update(region.copy(readingColumns = columns)) },
+                        label = { Text(label) }, modifier = Modifier.testTag("hud-region-columns-${region.id}-${columns ?: "inherit"}"))
+                }
+            }
+        }
         if (region.content == HudRegionContent.ENGINE) {
             var engineText by remember(region.engineIndex) { mutableStateOf(region.engineIndex.toString()) }
             val validEngine = engineText.toIntOrNull()?.takeIf { it > 0 }

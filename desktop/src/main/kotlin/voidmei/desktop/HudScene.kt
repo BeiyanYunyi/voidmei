@@ -34,6 +34,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
             if (layout.displayId == null) 1f else Float.MAX_VALUE).coerceAtLeast(0.01f)
         CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale)) {
             layout.regions.forEach { region -> key(region.id) {
+                CompositionLocalProvider(LocalReadingColumns provides (region.readingColumns ?: settings.hudReadingColumns)) {
                 val fields = region.fields ?: if (region.content == HudRegionContent.ENGINE) settings.hudEngineFields else settings.hudFields
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields) {
                     rememberScrollState()
@@ -85,7 +86,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                         }
                     }
                 }
-            } }
+            } } }
         }
         if (flight != null && settings.hudCrosshair && !hasCrosshairRegions) {
             if (settings.hudCrosshairImage.isEmpty()) CrosshairPanel(settings.hudCrosshairSizeDp, Modifier.matchParentSize(), settings.hudCrosshairRight)
