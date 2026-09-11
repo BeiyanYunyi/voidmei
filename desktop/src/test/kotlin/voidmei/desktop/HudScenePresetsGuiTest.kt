@@ -15,6 +15,32 @@ import voidmei.config.*
 class HudScenePresetsGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun renamingPresetKeepsSavedContentOrderAndCurrentLayout() {
+        val original = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240,
+            fields = listOf("ias", "future"), showFlightInstruments = false)))
+        val edited = original.resizeCanvas(600, 400)
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = edited,
+            hudScenePresets = mapOf("旧名称" to original, "另一套" to edited)))
+        compose.setContent { MaterialTheme { Column(Modifier.size(700.dp, 800.dp)) {
+            HudScenePresetSettings(settings) { settings = it }
+        } } }
+        compose.onNodeWithTag("hud-presets-toggle").performClick()
+        compose.onNodeWithTag("hud-preset-rename-旧名称").assertIsNotEnabled()
+        compose.onNodeWithTag("hud-preset-name").performTextReplacement("另一套")
+        compose.onNodeWithTag("hud-preset-rename-旧名称").assertIsNotEnabled()
+        compose.onNodeWithTag("hud-preset-name").performTextReplacement(" 新名称 ")
+        compose.onNodeWithTag("hud-preset-rename-旧名称").performClick()
+        compose.runOnIdle {
+            assertEquals(listOf("新名称", "另一套"), settings.hudScenePresets.keys.toList())
+            assertEquals(original, settings.hudScenePresets["新名称"])
+            assertEquals(edited, settings.hudSceneLayout)
+            assertEquals(settings, SettingsJson.decode(SettingsJson.encode(settings)))
+        }
+        compose.onNodeWithTag("hud-preset-rename-新名称").assertIsNotEnabled()
+        compose.onNodeWithTag("hud-preset-load-新名称").performClick()
+        compose.runOnIdle { assertEquals(original, settings.hudSceneLayout) }
+    }
+
     @Test fun undoLoadRestoresVerticalStateAndKeepsLaterPreferencesAndPresets() {
         val first = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
         val second = first.resizeCanvas(600, 400)

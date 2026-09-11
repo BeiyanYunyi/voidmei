@@ -32,6 +32,7 @@ internal fun HudScenePresetSettings(settings: AppSettings, canLoad: Boolean = tr
     val exists = trimmed in settings.hudScenePresets
     Text("保存画布与区域配置；继承的字段、字体和颜色继续使用全局设置。最多 16 套。")
     OutlinedTextField(name, { name = it }, label = { Text("布局名称") }, singleLine = true,
+        supportingText = { Text("输入保存名称，或用于下方预设重命名；重命名不会覆盖同名预设。") },
         isError = name.isNotEmpty() && !valid, modifier = Modifier.testTag("hud-preset-name"))
     Button(onClick = {
         settings.hudSceneLayout?.let { scene ->
@@ -48,6 +49,13 @@ internal fun HudScenePresetSettings(settings: AppSettings, canLoad: Boolean = tr
                 onChange(settings.copy(hudSceneLayout = scene.copy(enabled = true)))
             }, enabled = canLoad,
                 modifier = Modifier.testTag("hud-preset-load-$key")) { Text("载入") }
+            TextButton({
+                onChange(settings.copy(hudScenePresets = settings.hudScenePresets.entries.associate { (oldName, layout) ->
+                    (if (oldName == key) trimmed else oldName) to layout
+                }))
+            }, enabled = valid && !exists, modifier = Modifier.testTag("hud-preset-rename-$key")) {
+                Text("重命名为输入名称")
+            }
             TextButton({ onChange(settings.copy(hudScenePresets = settings.hudScenePresets - key)) },
                 Modifier.testTag("hud-preset-delete-$key")) { Text("删除预设") }
         }
