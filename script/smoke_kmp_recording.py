@@ -67,7 +67,8 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                 elif hud_scene and self.path == "/map_obj.json":
                     data = [{"type": "aircraft", "icon": "Player", "x": .5, "y": .5, "dx": 0, "dy": -1}]
                 elif hud_scene and self.path.startswith("/hudmsg?"):
-                    data = {"events": [{"id": 1, "msg": "Packaged HUD scene message"}], "damage": []}
+                    data = {"events": [{"id": 1, "msg": "Previous"},
+                                       {"id": 2, "msg": "Long packaged HUD message " * 30}], "damage": []}
             body = json.dumps(data).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -99,6 +100,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                 region("controls", "CONTROLS", 600, 300, 440, 260, .5, ["aileron", "elevator"]),
                 region("alerts", "ALERTS", 900, 0, 140, 260, .5, ["advisory"])])
             settings["hudSceneLayout"]["regions"][1]["readingColumns"] = 2
+            settings["hudSceneLayout"]["regions"][3]["messageMaxLines"] = 2
             settings["hudSceneLayout"]["regions"][8]["showControlStick"] = True
             detail = json.loads(json.dumps(settings["hudSceneLayout"]))
             detail["enabled"] = False
@@ -191,6 +193,8 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                 raise RuntimeError("Packaged scene lost independent selection: " + name)
         if regions["controls"].get("showControlStick") is not True:
             raise RuntimeError("Packaged scene lost two-axis controls setting")
+        if regions["messages"].get("messageMaxLines") != 2:
+            raise RuntimeError("Packaged scene lost the per-message line limit")
         if "[VoidMei exit test] single HUD stable" not in (root / "startup.log").read_text():
             raise RuntimeError("Packaged scene did not retain one stable HUD window")
         presets = saved.get("hudScenePresets", {})

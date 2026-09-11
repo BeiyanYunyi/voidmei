@@ -918,3 +918,10 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 随后对最新离线包 `/nix/store/3gra1djs92a760x82z42nklhv4kqvizn-voidmei-kotlin-2.0.0` 运行兼容 HUD 包级场景：SOFTWARE_FAST、80 ms 轮询、延迟样本、单窗口分区、关闭前 UI 检查及正常退出。86 对 CSV 样本通过检查；34 次采样保持同一 HUD 窗口及 1040×600 尺寸；操纵面二维标记、混合比、升降舵、天地背景和罗盘的像素检查通过，窗口位置保存与退出码 0 通过。已查看分区截图，推进功率 354.1 kW 和推进效率 53.5% 可见。
 
 运行日志：`/tmp/voidmei-current-hud-package.log`；截图、配置、CSV 与报告：`/tmp/voidmei-package-smoke-4nzbxiyl`。包级场景提供有效推进输入，缺失原因的显示与恢复以专用 GUI 回归为证据。本次为隔离 Xvfb/xcompmgr 和模拟 HTTP 验证，不增加真实游戏、物理 NVIDIA GPU、多屏或原生 Wayland 的验收结论。
+
+
+## 长消息限行的离线包验证
+
+包级 HUD 场景改为发送一条长消息和一条较早的短消息，将消息区域 `messageMaxLines` 设为 2，并检查正常退出后此设置及命名预设保留。最新 Kotlin 离线包 `/nix/store/gl24rbfxfij90dq6m0bfmiajpb7xg5rg-voidmei-kotlin-2.0.0` 构建成功，兼容 HUD、SOFTWARE_FAST、80 ms 轮询和延迟样本场景通过。实际截图确认新消息显示两行并以省略号结束，随后“事件 #1 · Previous”仍完整可见；此显示结论来自截图检查，脚本自动断言覆盖配置持久化。
+
+34 次窗口采样保持同一个 1040×600 HUD；86 对飞行／发动机 CSV、既有仪表像素、位置保存和退出码 0 检查通过。七项 Python 冒烟辅助测试通过。构建日志 `/tmp/voidmei-message-package-build.log`，运行日志 `/tmp/voidmei-message-package-run.log`，截图与报告 `/tmp/voidmei-package-smoke-wsskjv19`。测试环境为隔离 Xvfb/xcompmgr 与模拟 HTTP，未进行真实游戏或物理 GPU 验收。
