@@ -2,6 +2,7 @@ package voidmei.desktop
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +24,8 @@ internal fun EngineControlBars(engine: Engine, fields: List<HudEngineField>) {
         }
         val value = field.value(engine) ?: return@forEach
         val label = "${engine.index} 号${field.label}，满刻度 $maximum%"
-        Text(label, style = MaterialTheme.typography.bodySmall)
+        Text(label, style = MaterialTheme.typography.bodySmall,
+            color = LocalReadingColors.current.label ?: LocalContentColor.current)
         LinearProgressIndicator(
             progress = { (value / maximum).coerceIn(0.0, 1.0).toFloat() },
             modifier = Modifier.fillMaxWidth().testTag("hud-engine-${field.id}-${engine.index}").semantics {

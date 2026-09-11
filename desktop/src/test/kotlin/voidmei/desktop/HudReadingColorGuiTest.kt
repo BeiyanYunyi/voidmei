@@ -17,6 +17,31 @@ import voidmei.telemetry.*
 class HudReadingColorGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun engineGaugeCaptionsFollowLabelColorChanges() {
+        val engine = hudPreviewFlight().telemetry.engines.first().copy(rpmControlPercent = 50.0,
+            mixturePercent = 60.0, radiatorPercent = 25.0, oilRadiatorPercent = 75.0)
+        val base = hudPreviewFlight()
+        val flight = base.copy(telemetry = base.telemetry.copy(engines = listOf(engine)))
+        var settings by mutableStateOf(AppSettings(hudFields = emptyList(), hudAttitude = false,
+            hudMechanization = false, hudEngineIndex = engine.index, hudLabelColor = "#00FF00",
+            hudEngineFields = listOf("rpm_control", "mixture", "radiator", "oil_radiator")))
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp, 550.dp)) {
+            HudPanel(flight, settings, emptyList(), null) {}
+        } } }
+        fun check(green: Boolean) {
+            for ((label, maximum) in listOf("转速控制" to 100, "混合比" to 120, "水散热器" to 100, "油散热器" to 100)) {
+                val pixels = compose.onNodeWithText("${engine.index} 号$label，满刻度 $maximum%").captureToImage().toPixelMap()
+                assertTrue((0 until pixels.height).any { y -> (0 until pixels.width).any { x ->
+                    val c = pixels[x, y]
+                    c.red < .2f && if (green) c.green > .8f && c.blue < .2f else c.blue > .8f && c.green < .2f
+                } }, "Caption color: $label")
+            }
+        }
+        check(true)
+        compose.runOnIdle { settings = settings.copy(hudLabelColor = "#0000FF") }
+        check(false)
+    }
+
     @Test fun hudUsesConfiguredLabelValueAndWarningColors() {
         var alerts by mutableStateOf(emptyList<FlightAlert>())
         var settings by mutableStateOf(AppSettings(hudFields = listOf("ias"), hudAttitude = false,

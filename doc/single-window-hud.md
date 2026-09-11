@@ -669,3 +669,7 @@ IAS 读数关联已有 STALL_SPEED 告警；若同时存在 IAS_LIMIT，保持�
 扩展十区域整包冒烟场景：发动机区选择转速、水温和混合比，合成数据提供 60% 混合比；退出代理检查发动机区域内仪表颜色像素。未启用的“详细”预设另保存 `showEngineInstruments=false`，实际退出后的配置校验确认此开关保留。
 
 Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼容 HUD 实际进程场景通过（`/tmp/voidmei-engine-gauges-package-build.log`、`/tmp/voidmei-engine-gauges-package-run.log`）。产物 `/tmp/voidmei-package-smoke-t6ns1yay/`：86 对记录、34 次同一 900×600 HUD 窗口检查、496 个发动机仪表颜色像素，80 ms 刷新、延迟恢复和正常退出均通过。已检查截图中的混合比数值、满刻度说明和半量程条形图。此为隔离 X11 软件绘制验证，其他发动机仪表和换档建议的具体行为由各自 GUI 测试覆盖，未新增真实游戏或物理 GPU 验收。
+
+## 发动机仪表说明颜色
+
+转速控制、混合比、水散热器及油散热器的满刻度说明现在继承 HUD 标签颜色，未指定颜色时保持原有内容颜色。桌面单元和两类 GUI 回归通过（`/tmp/voidmei-engine-gauge-label-colors.log`）；像素测试确认四种说明都随标签颜色从绿色实时切换为蓝色，并保留已有数值、单位、告警和阴影颜色测试。本轮未重建 Nix 包，未新增真实游戏验收。
