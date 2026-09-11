@@ -68,11 +68,13 @@ public final class CloseWindowAgent {
                                             var image = new java.awt.Robot().createScreenCapture(hudBounds);
                                             javax.imageio.ImageIO.write(image, "png", root.resolve("hud-scene.png").toFile());
                                             int yellow = 0;
-                                            int sky = 0, ground = 0, compass = 0, elevator = 0, engineControl = 0, controlStick = 0;
+                                            int sky = 0, ground = 0, compass = 0, elevator = 0, engineControl = 0, controlStick = 0, messageShadow = 0;
                                             for (int y = 0; y < image.getHeight(); y++) for (int x = 0; x < image.getWidth(); x++) {
                                                 int rgb = image.getRGB(x, y);
                                                 if (((rgb >> 16) & 255) > 200 && ((rgb >> 8) & 255) > 180 && (rgb & 255) < 80) yellow++;
                                                 int color = rgb & 0xffffff;
+                                                if (x >= 312 && x < 568 && y >= 60 && y < 150 &&
+                                                    ((rgb >> 16) & 255) > 160 && ((rgb >> 8) & 255) < 80 && (rgb & 255) > 160) messageShadow++;
                                                 if (x >= 12 && x < 268 && y >= 350 && y < 440 && color == 0x84dec6) engineControl++;
                                                 if (x >= 300 && x < 580 && y >= 380 && y < 600) {
                                                     if (color == 0x1e526f) sky++;
@@ -83,6 +85,8 @@ public final class CloseWindowAgent {
                                                 if (x >= 300 && x < 460 && y >= 180 && y < 360 && color == 0xffd580) compass++;
                                             }
                                             if (elevator < 20) throw new AssertionError("HUD elevator position marker not visible at +67%: " + elevator);
+                                            if (messageShadow < 20) throw new AssertionError("HUD configured message shadow not visible: " + messageShadow);
+                                            System.out.println("[VoidMei exit test] HUD message shadow pixels=" + messageShadow);
                                             if (controlStick < 30) throw new AssertionError("HUD two-axis control marker not visible: " + controlStick);
                                             System.out.println("[VoidMei exit test] HUD control stick pixels=" + controlStick);
                                             if (engineControl < 150) throw new AssertionError("HUD engine control gauge not visible: " + engineControl);

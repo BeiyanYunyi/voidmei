@@ -85,13 +85,14 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                     "hudEnabled": True, "pollIntervalMs": poll_interval_ms}
         if hud_scene:
             settings["hudPosition"] = {"x": 40, "y": 40}
+            settings["hudShadeColor"] = "#FF00FF"
             def region(name, content, x, y, width, height, alpha=.5, fields=None):
                 return dict(id=name, content=content, x=x, y=y, width=width, height=height,
                             backgroundAlpha=alpha, contentAlpha=1, engineIndex=1, fields=fields, visible=True)
             settings["hudSceneLayout"] = dict(width=1040, height=600, enabled=True, regions=[
                 region("flight", "FLIGHT", 0, 0, 280, 180, .25, ["ias", "altitude"]),
-                region("engine", "ENGINE", 0, 200, 280, 250, .75, ["rpm", "water_temperature", "mixture", "heat_budget", "thrust_power", "propulsive_efficiency"]),
-                region("mechanization", "MECHANIZATION", 0, 460, 280, 120, .5, ["gear", "airbrake"]),
+                region("engine", "ENGINE", 0, 200, 280, 270, .75, ["rpm", "water_temperature", "mixture", "heat_budget", "thrust_power", "propulsive_efficiency"]),
+                region("mechanization", "MECHANIZATION", 0, 480, 280, 100, .5, ["gear", "airbrake"]),
                 region("messages", "MESSAGES", 300, 0, 280, 160, .5, ["event"]),
                 region("compass", "COMPASS", 300, 180, 160, 180),
                 region("crosshair", "CROSSHAIR", 470, 180, 110, 110, 0),
@@ -100,6 +101,8 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                 region("controls", "CONTROLS", 600, 300, 440, 260, .5, ["aileron", "elevator"]),
                 region("alerts", "ALERTS", 900, 0, 140, 260, .5, ["advisory"])])
             settings["hudSceneLayout"]["regions"][1]["readingColumns"] = 2
+            settings["hudSceneLayout"]["regions"][0]["hiddenLabels"] = ["ias"]
+            settings["hudSceneLayout"]["regions"][1]["hiddenLabels"] = ["rpm"]
             settings["hudSceneLayout"]["regions"][3]["messageMaxLines"] = 2
             settings["hudSceneLayout"]["regions"][8]["showControlStick"] = True
             detail = json.loads(json.dumps(settings["hudSceneLayout"]))
@@ -195,6 +198,10 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
             raise RuntimeError("Packaged scene lost two-axis controls setting")
         if regions["messages"].get("messageMaxLines") != 2:
             raise RuntimeError("Packaged scene lost the per-message line limit")
+        if regions["flight"].get("hiddenLabels") != ["ias"] or regions["engine"].get("hiddenLabels") != ["rpm"]:
+            raise RuntimeError("Packaged scene lost independent label visibility")
+        if saved.get("hudShadeColor") != "#FF00FF":
+            raise RuntimeError("Packaged scene lost text shadow color")
         if "[VoidMei exit test] single HUD stable" not in (root / "startup.log").read_text():
             raise RuntimeError("Packaged scene did not retain one stable HUD window")
         presets = saved.get("hudScenePresets", {})
