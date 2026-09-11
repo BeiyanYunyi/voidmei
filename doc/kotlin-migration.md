@@ -2778,6 +2778,12 @@ FlightRecorder 在两份 CSV 追加并 flush 成功后更新观察器；每个�
 
 `nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-performance-cancel-nix.log`），同时包含此前到档时间说明修正。
 
+### 性能分析与表格配色后的完整 GUI 回归
+
+在 `58a0ca8` 生产代码上不加过滤运行 `:desktop:guiTest`：51 个测试类、171 项测试，零失败、零错误、零跳过，37 秒通过。包含新增性能图/导出、区间联动、取消与重试、表格默认配色和 HUD 继承，以及既有桌面交互回归。
+
+日志 `/tmp/voidmei-full-gui-after-performance.log`；XML/HTML 报告副本 `/tmp/voidmei-full-gui-after-performance-results/`。环境为隔离 Xvfb/xcompmgr、SOFTWARE_FAST，不包含独立原生 HUD 指针、热键和托盘任务，也不代表真实游戏或 Windows/macOS 验收。本轮无生产代码变化，未重复构建包。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
