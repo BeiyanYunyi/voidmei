@@ -554,6 +554,7 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
             val alert = when (field) {
                 HudField.IAS -> FlightAlert.IAS_LIMIT
                 HudField.MACH -> FlightAlert.MACH_LIMIT
+                HudField.LOAD -> FlightAlert.LOAD_LIMIT
                 else -> null
             }
             if (alert != null && alert in readingAlerts && field.value(flight, model) != null)
