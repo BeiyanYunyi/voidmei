@@ -109,7 +109,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal),
                                     showInstruments = region.showEngineInstruments,
                                     heatBudget = thermal?.hudBudget(flight, model, region.engineIndex),
-                                    powerPercent = flight.enginePowerPercentReading(region.engineIndex, model))
+                                    powerPercent = flight.enginePowerPercentReading(region.engineIndex, model), tasKmh = flight.telemetry.tasKmh)
                                     if (HudEngineField.HEAT_BUDGET.id in fields)
                                         ThermalBudgetStatusPanel(flight, model, thermal, region.engineIndex)
                                     if (region.showEngineInstruments) CompressorStageBar(flight, region.engineIndex, model, fields)

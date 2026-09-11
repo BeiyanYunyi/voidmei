@@ -13,9 +13,10 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
     MANIFOLD_INHG("manifold_inhg", "进气压力（inHg）", "inHg", 1),
     BOOST_PSI("boost_psi", "增压（相对1atm）", "psi", 1),
     HEAT_BUDGET("heat_budget", "热预算估计", "s", 1),
-    FM_POWER_PERCENT("fm_power_percent", "动力量（FM峰值）", "%", 1);
+    FM_POWER_PERCENT("fm_power_percent", "动力量（FM峰值）", "%", 1),
+    THRUST_POWER("thrust_power", "推进功率", "kW", 1);
 
-    fun value(engine: Engine): Double? = when (this) {
+    fun value(engine: Engine, tasKmh: Double? = null): Double? = when (this) {
         THROTTLE -> engine.throttlePercent?.takeIf { it >= 0 }
         RPM -> engine.rpm?.takeIf { it >= 0 }
         POWER -> engine.powerHp
@@ -35,10 +36,15 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
         EFFICIENCY -> engine.efficiencyPercent
         HEAT_BUDGET -> null // Supplied as an uncertainty interval from the matching thermal observation.
         FM_POWER_PERCENT -> null // Requires the selected aircraft's per-engine reference.
+        THRUST_POWER -> {
+            val speed = tasKmh?.takeIf { it.isFinite() && it >= 0 }?.div(3.6)
+            val thrust = engine.thrustKgf?.takeIf { it.isFinite() && it >= 0 }
+            if (speed != null && thrust != null) thrust * FlightCalculator.G * speed / 1000 else null
+        }
     }?.takeIf { it.isFinite() }
 
     companion object {
-        val defaults = entries.filterNot { it == MANIFOLD_INHG || it == BOOST_PSI || it == HEAT_BUDGET || it == FM_POWER_PERCENT }.map { it.id }
+        val defaults = entries.filterNot { it == MANIFOLD_INHG || it == BOOST_PSI || it == HEAT_BUDGET || it == FM_POWER_PERCENT || it == THRUST_POWER }.map { it.id }
         fun selected(ids: List<String>) = ids.distinct().mapNotNull { id -> entries.find { it.id == id } }
     }
 }

@@ -3,6 +3,20 @@ package voidmei.telemetry
 import kotlin.test.*
 
 class HudEngineValidityTest {
+    @Test fun thrustPowerUsesOnlySelectedEngineAndValidTrueAirspeed() {
+        val engine = TelemetryParser.parse("""{"valid":true,"thrust 2, kgs":100}""",
+            """{"valid":true}""")!!.engines.single()
+        assertEquals(98.0665, HudEngineField.THRUST_POWER.value(engine, 360.0)!!, .000001)
+        assertEquals(0.0, HudEngineField.THRUST_POWER.value(engine, 0.0))
+        assertEquals(0.0, HudEngineField.THRUST_POWER.value(engine.copy(thrustKgf = 0.0), 360.0))
+        for (invalid in listOf(null, -1.0, Double.NaN, Double.POSITIVE_INFINITY)) {
+            assertNull(HudEngineField.THRUST_POWER.value(engine, invalid))
+            assertNull(HudEngineField.THRUST_POWER.value(engine.copy(thrustKgf = invalid), 360.0))
+        }
+        assertNull(HudEngineField.THRUST_POWER.value(engine.copy(thrustKgf = Double.MAX_VALUE), Double.MAX_VALUE))
+        assertFalse(HudEngineField.THRUST_POWER.id in HudEngineField.defaults)
+    }
+
     @Test fun compressorStagesArePositiveIntegersWithoutChangingRawTelemetry() {
         val base = TelemetryParser.parse("""{"valid":true,"compressor stage 1":0}""",
             """{"valid":true,"type":"test"}""")!!.engines.single()
