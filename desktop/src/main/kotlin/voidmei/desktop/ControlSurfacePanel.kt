@@ -19,10 +19,25 @@ internal fun ControlSurfacePanel(telemetry: Telemetry, fields: List<String>? = n
     val axes = listOf(Triple("aileron", "副翼", telemetry.aileronPercent), Triple("elevator", "升降舵", telemetry.elevatorPercent),
         Triple("rudder", "方向舵", telemetry.rudderPercent))
     val selected = fields?.distinct()?.mapNotNull { id -> axes.find { it.first == id } } ?: axes
+    val stick = showStick && selected.any { it.first == "aileron" } && selected.any { it.first == "elevator" }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (showStick && selected.any { it.first == "aileron" } && selected.any { it.first == "elevator" })
-            ControlStickPanel(telemetry)
         if (selected.isEmpty()) Text("未选择操纵面")
+        BoxWithConstraints {
+            if (stick && maxWidth >= 360.dp) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.width(140.dp)) { ControlStickPanel(telemetry) }
+                Column(Modifier.weight(1f)) { ControlAxisReadings(selected) }
+            } else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (stick) ControlStickPanel(telemetry)
+                ControlAxisReadings(selected)
+            }
+        }
+        if (selected.isNotEmpty()) Text("刻度 −100% / 0 / +100%；百分比不代表实际偏转角。", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+private fun ControlAxisReadings(selected: List<Triple<String, String, Double?>>) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         selected.forEach { (id, label, raw) ->
             val value = controlSurfacePercent(raw)
             Text("$label ${readingNumber(value, 1)}%")
@@ -40,6 +55,5 @@ internal fun ControlSurfacePanel(telemetry: Telemetry, fields: List<String>? = n
                 }
             }
         }
-        if (selected.isNotEmpty()) Text("刻度 −100% / 0 / +100%；百分比不代表实际偏转角。", style = MaterialTheme.typography.bodySmall)
     }
 }

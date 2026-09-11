@@ -18,6 +18,28 @@ import voidmei.config.*
 class ControlStickGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun defaultRegionFitsBothInstrumentsAndNarrowRegionStacksThem() {
+        val region = HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 440, 260, showControlStick = true)
+        var settings by mutableStateOf(AppSettings(hudSceneLayout = HudSceneLayout(440, 260, listOf(region))))
+        compose.setContent { MaterialTheme { Box(Modifier.size(440.dp, 500.dp)) {
+            HudPanel(hudPreviewFlight(), settings, emptyList(), null) {}
+        } } }
+        val stick = compose.onNodeWithTag("hud-control-stick")
+        val aileron = compose.onNodeWithTag("hud-control-aileron")
+        val rudder = compose.onNodeWithTag("hud-control-rudder")
+        stick.assertIsDisplayed()
+        rudder.assertIsDisplayed()
+        assertTrue(aileron.getUnclippedBoundsInRoot().left > stick.getUnclippedBoundsInRoot().right)
+        val bounds = compose.onNodeWithTag("hud-region-controls").getUnclippedBoundsInRoot()
+        assertTrue(rudder.getUnclippedBoundsInRoot().bottom <= bounds.bottom)
+        assertTrue(stick.getUnclippedBoundsInRoot().bottom <= bounds.bottom)
+        compose.runOnIdle { settings = settings.copy(hudSceneLayout = HudSceneLayout(320, 500,
+            listOf(region.copy(width = 320, height = 500)))) }
+        stick.assertIsDisplayed()
+        rudder.assertIsDisplayed()
+        assertTrue(aileron.getUnclippedBoundsInRoot().top > stick.getUnclippedBoundsInRoot().bottom)
+    }
+
     @Test fun scenePlotsSignedAxesAndClearsIncompletePositionWithoutHidingValidReadings() {
         var flight by mutableStateOf(hudPreviewFlight())
         val region = HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 400, 500,
