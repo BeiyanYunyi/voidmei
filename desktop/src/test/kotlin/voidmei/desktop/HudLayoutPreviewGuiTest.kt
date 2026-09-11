@@ -4,6 +4,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.*
 import androidx.compose.ui.test.*
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createComposeRule
 import org.junit.Rule
 import org.junit.Test
@@ -15,6 +17,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import javax.imageio.ImageIO
 import voidmei.config.AppSettings
+import voidmei.telemetry.FlightAlert
 import kotlin.test.*
 
 class HudLayoutPreviewGuiTest {
@@ -30,9 +33,18 @@ class HudLayoutPreviewGuiTest {
         compose.onNodeWithTag("hud-layout-preview").performClick()
         compose.waitUntil(5000) { windows().singleOrNull()?.isVisible == true }
         val frame = windows().single()
-        compose.onNodeWithText("示例数据 · 可在设置窗口继续调整").assertIsDisplayed()
+        compose.onNodeWithText("示例数据与模型 · 可在设置窗口继续调整").assertIsDisplayed()
         compose.onNodeWithText("340 km/h").assertIsDisplayed()
         savePreview("initial")
+        compose.onNodeWithText("告警示例").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(5000) { compose.onAllNodesWithText("510 km/h").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("510 km/h").assert(SemanticsMatcher.expectValue(
+            SemanticsProperties.StateDescription, FlightAlert.IAS_LIMIT.label))
+        compose.runOnIdle { settings = settings.copy(hudWarningColor = "#00FF00") }
+        savePreview("warnings")
+        compose.onNodeWithText("正常读数").performSemanticsAction(SemanticsActions.OnClick) { it() }
+        compose.waitUntil(5000) { compose.onAllNodesWithText("340 km/h").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("340 km/h").assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
         compose.runOnIdle {
             assertFalse(settings.hudEnabled)
             settings = settings.copy(hudFields = listOf("altitude"), hudEngineIndex = 2,

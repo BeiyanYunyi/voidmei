@@ -3022,6 +3022,12 @@ HUD 设置新增“预览 HUD 布局”，打开可与设置页同时使用的�
 
 最终离线 Nix 包构建通过（`/tmp/voidmei-hud-layout-preview-nix-after.log`），产物 `/nix/store/3lmn0ksfcd5w9q78jv06wyc66l0nvl39-voidmei-kotlin-2.0.0`。隔离 Xvfb/xcompmgr 验证，不扩大真实游戏及其他平台验收结论。
 
+### HUD 预览支持告警示例
+
+独立预览新增“正常读数／告警示例”切换，使用隔离的合成机翼限制、转速限制和温度预算模型，调用既有 FlightAlerts／EngineThermalMonitor 生成超速、迎角、转速、温度及低油量提示。窗口明确标记“示例数据与模型”，切换不写配置、不进入实时模型会话或语音流程。读数告警色随 HUD 配置更新；窗口工具栏使用深色 Surface，与预览主题保持一致。
+
+桌面单元和六项相关 GUI 回归通过（`/tmp/voidmei-hud-preview-warnings.log`，7 秒），覆盖模式切换、实际超速读数告警语义、恢复正常、设置联动及现有温度／配色规则；深色工具栏修正后的原生窗口回归通过（`/tmp/voidmei-hud-preview-warnings-after.log`，2 秒）。`desktop/build/hud-preview/layout-preview-warnings.png` 已人工检查：自定义绿色超速读数、告警列表与深色工具栏显示正确。本轮未重建 Nix 包。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
