@@ -3,6 +3,20 @@ package voidmei.telemetry
 import kotlin.test.*
 
 class HudEngineValidityTest {
+    @Test fun unavailableControlsAreUnknownButZeroAndRichMixtureRemainValid() {
+        val base = TelemetryParser.parse(
+            """{"valid":true,"RPM throttle 1, %":-1,"mixture 1, %":-1}""",
+            """{"valid":true,"type":"test"}""")!!.engines.single()
+        assertEquals(-1.0, base.rpmControlPercent)
+        assertEquals(-1.0, base.mixturePercent)
+        for (value in listOf(null, -1.0, -0.5, Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0.0, 100.0, 120.0)) {
+            val engine = base.copy(rpmControlPercent = value, mixturePercent = value)
+            val expected = value?.takeIf { it.isFinite() && it >= 0 }
+            assertEquals(expected, HudEngineField.RPM_CONTROL.value(engine), "RPM control $value")
+            assertEquals(expected, HudEngineField.MIXTURE.value(engine), "Mixture $value")
+        }
+    }
+
     @Test fun throttleAndRpmMatchFlightReadingsWithoutRejectingSignedChannels() {
         val base = TelemetryParser.parse("""{"valid":true,"throttle 1, %":110,"RPM 1":2200,"water temp 1, C":-20,"magneto 1":-1}""",
             """{"valid":true,"type":"test"}""")!!

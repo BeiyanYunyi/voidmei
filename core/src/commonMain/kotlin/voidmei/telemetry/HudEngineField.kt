@@ -20,8 +20,8 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
         THRUST -> engine.thrustKgf
         WATER_TEMPERATURE -> engine.waterTemperatureC
         OIL_TEMPERATURE -> engine.oilTemperatureC
-        RPM_CONTROL -> engine.rpmControlPercent
-        MIXTURE -> engine.mixturePercent
+        RPM_CONTROL -> engine.rpmControlPercent?.takeIf { it >= 0 }
+        MIXTURE -> engine.mixturePercent?.takeIf { it >= 0 }
         RADIATOR -> engine.radiatorPercent
         OIL_RADIATOR -> engine.oilRadiatorPercent
         COMPRESSOR -> engine.compressorStage

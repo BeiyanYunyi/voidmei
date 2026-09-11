@@ -621,3 +621,9 @@ IAS 读数关联已有 STALL_SPEED 告警；若同时存在 IAS_LIMIT，保持�
 在 cc2690d 状态重建默认 Kotlin 离线包成功（`/tmp/voidmei-temperature-hud-package-build.log`），包含热预算说明和温度来源告警。新包在隔离 Xvfb/xcompmgr、SOFTWARE_FAST 兼容 HUD 下通过十区域场景：80 ms 刷新、一次 1.5 秒遥测延迟、配置及预设保存、正常退出均通过；86 对飞行／发动机 CSV 记录通过校验，34 次检查保持同一个 900×600 HUD 窗口。
 
 运行日志为 `/tmp/voidmei-temperature-hud-package-run.log`，产物为 `/tmp/voidmei-package-smoke-zc4mmg5l/`。已检查 `hud-scene.png`，确认分散区域、不同背景 alpha、罗盘、水平仪和升降舵读数可见。此场景验证实际离线包运行与记录中的温度来源；热告警触发由前节专门 GUI 测试覆盖，未新增真实游戏或物理 GPU 验收。
+
+## 不可用的发动机控制读数
+
+对照旧 `EngineControlOverlay` 的 PITCH（实际来源为 RPM 控制百分比）和 MIXTURE 分支，负值代表不可用。KMP 发动机 HUD 的转速控制与混合比现在显示未知值，不再把这些负值显示为有效百分比。零值及 120% 混合比仍显示，遥测解析和记录保留原始负值；有符号温度、磁电机等其他通道不受此规则影响。
+
+共享 JVM／JS、桌面单元及发动机有效值 GUI 回归通过（`/tmp/voidmei-unavailable-engine-controls.log`），覆盖负数、非有限数、零、富油混合比，以及有效读数变为不可用后清除旧值并恢复。本轮未重建 Nix 包，未新增真实游戏验收。
