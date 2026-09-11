@@ -58,7 +58,9 @@ private fun HudPanelContent(
     val flight = connection as? ConnectionState.Flying
     val fields = HudField.selected(settings.hudFields)
     // Keep manual scrolling during ordinary samples, but start a new flight/layout at its first reading.
-    val bodyScroll = key(flight != null, flight?.telemetry?.aircraft?.lowercase(), fields) { rememberScrollState() }
+    val engineFields = settings.hudEngineIndex?.let { HudEngineField.selected(settings.hudEngineFields) }
+    val bodyScroll = key(flight != null, flight?.telemetry?.aircraft?.lowercase(), fields,
+        settings.hudEngineIndex, engineFields, settings.hudReadingColumns) { rememberScrollState() }
     var headerHeight by remember { mutableStateOf(-1) }
     var bodyHeight by remember { mutableStateOf(-1) }
     val reportHeight by rememberUpdatedState(onContentHeightChanged)
