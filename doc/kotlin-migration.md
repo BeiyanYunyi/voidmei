@@ -2920,6 +2920,16 @@ Linux Kotlin CI 在同次构建的 Deb 上执行该脚本，沿用既有制品�
 
 桌面单元及四项相关 GUI 回归通过（`/tmp/voidmei-hud-scroll-indicator.log`，6 秒），实际截图验证滚动前后的滑块位置，验证进度、等待状态内容缩短后的隐藏，并复核发动机布局重置、模型说明/字号变化后的高度、底部滚动时新告警仍可见。本轮未重建 Nix 包。
 
+### 真机快照 HUD 排版检查与默认文字对比度修复
+
+新增 RealSnapshotHudGuiTest，以用户提供且未修改的 script/mock_data.json 渲染完整共享 HudPanel。普通 440×700、双列和 260×360、1.5 倍字号单列两个场景覆盖选定飞行/发动机读数、未选项隐藏、滚动查看与溢出位置指示。单快照没有速度历史，SEP 明确保持未知，不虚构动态估计。测试导出三张 PNG 到 desktop/build/hud-preview，CI 测试制品包含该目录。
+
+检查截图发现发动机标题、姿态说明及其他普通文字在深色 HUD 中呈黑色。即使外层使用实际 darkColorScheme 也能复现对比度断言失败（`/tmp/voidmei-real-snapshot-contrast-before.log`）：透明 HUD 未通过 Material Surface 提供浅色 LocalContentColor。现于 HudPanel 提供白色默认内容颜色，保留显式字段、告警、单位和用户配色覆盖。
+
+桌面单元、真机快照布局/像素对比度、既有 HUD 配色与滚动指示回归通过（`/tmp/voidmei-real-snapshot-contrast-after.log`，6 秒），actionlint 通过；修复后截图人工检查标题和说明可读。截图副本 `/tmp/voidmei-real-hud-preview/`，源快照 SHA-256 仍为 `65c96d593e8f9c13734fff5eec9f26d33db0c0b6ed59f1b7b42532202d344dbf`。验证使用隔离 Compose/X11 与静态快照，不宣称实时游戏、物理 GPU 或原生窗口合成已重新验收。
+
+默认 Nix 包构建通过（`/tmp/voidmei-hud-text-contrast-nix.log`），产物 `/nix/store/9ib4dqinjjr1c01g0k3pkwmx7ay5g76f-voidmei-kotlin-2.0.0`，同时包含近期 HUD 滚动重置和位置指示改动。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

@@ -33,6 +33,8 @@ internal fun HudPanel(
     val systemDensity = LocalDensity.current
     CompositionLocalProvider(LocalDensity provides Density(systemDensity.density,
         systemDensity.fontScale * settings.hudFontScale),
+        // The transparent HUD has no Material Surface to supply a light content color.
+        androidx.compose.material3.LocalContentColor provides Color.White,
         LocalReadingNumberFont provides remember(settings.hudNumberFont, settings.numberFont) {
             resolveHudNumberFont(settings.hudNumberFont ?: settings.numberFont).family
         },

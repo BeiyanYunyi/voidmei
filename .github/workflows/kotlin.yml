@@ -126,4 +126,5 @@ jobs:
           path: |
             core/build/reports/tests/
             desktop/build/reports/tests/
+            desktop/build/hud-preview/
             desktop/build/native-tray/
