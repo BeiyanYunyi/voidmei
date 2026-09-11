@@ -33,7 +33,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields) {
                     rememberScrollState()
                 }
-                if (region.content != HudRegionContent.ALERTS || alerts.isNotEmpty()) {
+                if (region.visible && (region.content != HudRegionContent.ALERTS || alerts.isNotEmpty())) {
                     Box(Modifier.offset(region.x.dp, region.y.dp).size(region.width.dp, region.height.dp)
                         .clipToBounds().testTag("hud-region-${region.id}")
                         .background(Color(0xFF111820).copy(alpha = region.backgroundAlpha))) {

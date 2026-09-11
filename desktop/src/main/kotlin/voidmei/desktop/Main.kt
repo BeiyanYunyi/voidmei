@@ -174,9 +174,7 @@ fun main(args: Array<String>) {
         var endpointError by remember { mutableStateOf<String?>(null) }
         var connection by remember { mutableStateOf<ConnectionState>(ConnectionState.Connecting) }
         var messagePanelExpanded by remember { mutableStateOf(false) }
-        val hudNeedsMessages = settings.hudEnabled && settings.hudSceneLayout?.let { scene ->
-            scene.enabled && scene.regions.any { it.content == voidmei.config.HudRegionContent.MESSAGES }
-        } == true
+        val hudNeedsMessages = settings.needsHudMessages()
         val messageSession = rememberHudMessageSession(activeEndpoint, connection, hudNeedsMessages || messagePanelExpanded, generation)
 
         val sharedMap = key(activeEndpoint, generation, connection is ConnectionState.Flying,

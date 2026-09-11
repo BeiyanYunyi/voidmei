@@ -39,6 +39,10 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
             regions = scene.regions.map { if (it.id == region.id) value else it })))
         Text("${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id}")
         Row {
+            Switch(region.visible, { update(region.copy(visible = it)) }, Modifier.testTag("hud-region-visible-${region.id}"))
+            Text("显示此区域")
+        }
+        Row {
             TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, false))) },
                 enabled = layer > 0, modifier = Modifier.testTag("hud-region-layer-down-${region.id}")) { Text("下移一层") }
             TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, true))) },

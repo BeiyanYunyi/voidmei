@@ -4,6 +4,12 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import voidmei.telemetry.*
+import voidmei.config.AppSettings
+import voidmei.config.HudRegionContent
+
+internal fun AppSettings.needsHudMessages(): Boolean = hudEnabled && hudSceneLayout?.let { scene ->
+    scene.enabled && scene.regions.any { it.visible && it.content == HudRegionContent.MESSAGES }
+} == true
 
 internal data class HudMessageSession(val state: HudMessageState, val reload: () -> Unit)
 

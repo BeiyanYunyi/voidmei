@@ -16,6 +16,7 @@ data class HudRegion(
     val engineIndex: Int = 1,
     /** Null inherits global fields; empty explicitly hides all readings in this region. */
     val fields: List<String>? = null,
+    val visible: Boolean = true,
 ) {
     init {
         require(id.isNotBlank() && id.length <= 100 && id.none { it.isISOControl() })
@@ -98,6 +99,7 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
             put("backgroundAlpha", region.backgroundAlpha); put("contentAlpha", region.contentAlpha)
             put("engineIndex", region.engineIndex)
             put("fields", region.fields?.let { JsonArray(it.map(::JsonPrimitive)) } ?: JsonNull)
+            put("visible", region.visible)
         } }))
     }
 
@@ -113,7 +115,7 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
                     r.integer("width"), r.integer("height"), r.alpha("backgroundAlpha"), r.alpha("contentAlpha"), r.integer("engineIndex"),
                     r["fields"]?.takeUnless { it == JsonNull }?.jsonArray?.map { field -> field.jsonPrimitive.let {
                         require(it.isString); it.content
-                    } })
+                    } }, r["visible"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true)
             }, root["enabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
                 root["displayId"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content })
         }

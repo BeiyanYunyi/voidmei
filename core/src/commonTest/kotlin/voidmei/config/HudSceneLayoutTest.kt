@@ -3,6 +3,20 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun hiddenRegionsPersistAndOldConfigurationsRemainVisible() {
+        val region = HudRegion("engine", HudRegionContent.ENGINE, 20, 30, 200, 150,
+            .25f, .75f, 2, listOf("rpm", "future_field"), visible = false)
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(500, 400, listOf(region)))
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(SettingsJson.encode(settings)).toString()
+        assertEquals(settings, SettingsJson.decode(json))
+        assertEquals(region.copy(visible = true), SettingsJson.decode(json.replace(",\"visible\":false", ""))
+            .hudSceneLayout!!.regions.single())
+        assertFalse(settings.hudSceneLayout!!.resizeRegion("engine", 300, 250).regions.single().visible)
+        for (invalid in listOf("\"false\"", "null", "0")) {
+            assertFails { SettingsJson.decode(json.replace("\"visible\":false", "\"visible\":$invalid")) }
+        }
+    }
+
     @Test fun messageRegionCanBeAddedAndPersisted() {
         val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.MESSAGES)
         assertEquals(HudRegionContent.MESSAGES, scene.regions.last().content)

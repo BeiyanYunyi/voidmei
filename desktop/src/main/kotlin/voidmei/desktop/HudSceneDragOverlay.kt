@@ -72,7 +72,7 @@ internal fun HudSceneDragOverlay(layout: HudSceneLayout, onMove: (String, Int, I
                     .size((region.width * scale).dp, (region.height * scale).dp)
                     .border(1.dp, if (selected == region.id) Color.Yellow else Color.Cyan)
                     .testTag("hud-drag-region-${region.id}")) {
-                    Text(region.content.label, color = Color.Cyan)
+                    Text(region.content.label + if (region.visible) "" else " · 已隐藏", color = Color.Cyan)
                     if (onResize != null) Box(Modifier.align(Alignment.BottomEnd)
                         .size(minOf(12f, region.width * scale).dp, minOf(12f, region.height * scale).dp)
                         .background(Color.Cyan).testTag("hud-resize-region-${region.id}"))
