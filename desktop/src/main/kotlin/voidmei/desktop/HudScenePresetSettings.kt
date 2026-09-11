@@ -52,6 +52,7 @@ internal fun HudScenePresetSettings(settings: AppSettings, canLoad: Boolean = tr
         })
     }
     if (!expanded) return
+    HudPresetTransfer(settings, onChange)
     var name by remember { mutableStateOf("") }
     val trimmed = name.trim()
     val valid = trimmed.isNotEmpty() && trimmed.length <= 80 && trimmed.none { it.isISOControl() }

@@ -11,6 +11,11 @@ import voidmei.recording.FlightRecordReader
 internal fun exportRecordCsv(path: Path, text: String, write: (Path, ByteArray) -> Unit = ::writeRecordData) {
     val bytes = text.toByteArray(Charsets.UTF_8)
     require(bytes.size <= FlightRecordReader.MAX_BYTES) { "导出记录超过 64 MiB 限制" }
+    exportNewFile(path, bytes, write)
+}
+
+/** Publish fully written bytes without overwriting any existing destination. */
+internal fun exportNewFile(path: Path, bytes: ByteArray, write: (Path, ByteArray) -> Unit = ::writeRecordData) {
     val target = path.toAbsolutePath()
     val temporary = Files.createTempFile(target.parent, ".voidmei-export-", ".tmp")
     try {

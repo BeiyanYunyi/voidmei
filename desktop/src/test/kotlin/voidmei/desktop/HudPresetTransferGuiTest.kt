@@ -1,0 +1,58 @@
+package voidmei.desktop
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.*
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.unit.dp
+import org.junit.Rule
+import org.junit.Test
+import java.nio.file.Files
+import kotlin.test.*
+import voidmei.config.*
+
+class HudPresetTransferGuiTest {
+    @get:Rule val compose = createComposeRule()
+
+    @Test fun importPreviewsConflictsAndMergesIntoLatestSettingsWithoutLoading() {
+        val root = Files.createTempDirectory("voidmei-preset-ui-")
+        try {
+            val scene = HudSceneLayout(400, 240, listOf(HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 400, 240)))
+            val backup = mapOf("已有" to scene, "新布局" to scene.copy(enabled = false))
+            val input = root.resolve("input.json")
+            val output = root.resolve("output.json")
+            writeHudPresets(input, backup)
+            val original = AppSettings(hudSceneLayout = scene, hudScenePresets = mapOf("已有" to scene.resizeCanvas(600, 400)))
+            var settings by mutableStateOf(original)
+            var selected: String? = input.toString()
+            compose.setContent { MaterialTheme { Column(Modifier.size(800.dp, 850.dp)) {
+                HudPresetTransfer(settings, { settings = it }, { selected }, { output.toString() })
+            } } }
+            compose.onNodeWithTag("hud-presets-import").performClick()
+            compose.waitUntil(5000) { compose.onAllNodesWithTag("hud-presets-import-apply").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithText("已有 · 1 区域 · 400 × 240 dp · 同名，跳过").assertIsDisplayed()
+            compose.runOnIdle { assertEquals(original, settings); settings = settings.copy(voiceVolume = 25,
+                hudScenePresets = (1..16).associate { "占位$it" to scene }) }
+            compose.onNodeWithTag("hud-presets-import-apply").assertIsNotEnabled()
+            compose.runOnIdle { settings = settings.copy(hudScenePresets = original.hudScenePresets) }
+            compose.onNodeWithTag("hud-presets-import-apply").performClick()
+            compose.runOnIdle {
+                assertEquals(original.copy(voiceVolume = 25,
+                    hudScenePresets = original.hudScenePresets + ("新布局" to backup.getValue("新布局"))), settings)
+            }
+            compose.onNodeWithTag("hud-presets-export").performClick()
+            compose.waitUntil(5000) { compose.onAllNodesWithText("已导出 2 套预设：$output").fetchSemanticsNodes().isNotEmpty() }
+            assertEquals(settings.hudScenePresets, readHudPresets(output))
+            selected = null
+            compose.onNodeWithTag("hud-presets-import").performClick()
+            compose.onNodeWithTag("hud-presets-import-apply").assertDoesNotExist()
+            Files.writeString(input, "{}")
+            selected = input.toString()
+            compose.onNodeWithTag("hud-presets-import").performClick()
+            compose.waitUntil(5000) { compose.onAllNodesWithText("读取失败：不是 VoidMei HUD 预设文件").fetchSemanticsNodes().isNotEmpty() }
+            compose.onNodeWithTag("hud-presets-import-apply").assertDoesNotExist()
+        } finally { root.toFile().deleteRecursively() }
+    }
+}
