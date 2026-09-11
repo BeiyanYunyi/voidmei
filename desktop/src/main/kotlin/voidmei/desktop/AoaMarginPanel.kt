@@ -7,14 +7,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import voidmei.telemetry.*
-import java.util.Locale
 
 @Composable
 internal fun AoaMarginPanel(telemetry: Telemetry, model: AircraftAlertModel?, warningPercent: Double = 25.0) {
     val margin = PositiveAoaMargin.fromTelemetry(telemetry, model)
     val warning = margin != null && (margin.degrees <= 0 || margin.fraction < warningPercent / 100.0)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("距模型正迎角限 " + (margin?.let { String.format(Locale.ROOT, "%.1f°", it.degrees) } ?: "—"),
+        Text("距模型正迎角限 " + (margin?.let { readingNumber(it.degrees) + "°" } ?: "—"),
             style = MaterialTheme.typography.bodySmall)
         if (warning) Text(if (margin!!.degrees <= 0) "已达模型正迎角限" else "正迎角余量低于阈值",
             color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)

@@ -35,7 +35,7 @@ internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model
             Text("姿态数据不可用", color = MaterialTheme.colorScheme.onSurfaceVariant)
             val pitch = AttitudeGeometry.fromIndicators(telemetry.pitchDeg, 0.0)?.pitchDeg
             val roll = AttitudeGeometry.fromIndicators(0.0, telemetry.rollDeg)?.rollDeg
-            fun angle(value: Double?) = value?.let { String.format(Locale.ROOT, "%.1f", it) } ?: "—"
+            fun angle(value: Double?) = readingNumber(value)
             Text("俯仰 ${angle(pitch)}° · 横滚 ${angle(roll)}°", style = MaterialTheme.typography.bodySmall)
         }
         else {
@@ -93,7 +93,7 @@ internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model
                     }
                 }
             }
-            Text("俯仰 ${String.format(Locale.ROOT, "%.1f", attitude.pitchDeg)}° · 横滚 ${String.format(Locale.ROOT, "%.1f", attitude.rollDeg)}° · " +
+            Text("俯仰 ${readingNumber(attitude.pitchDeg)}° · 横滚 ${readingNumber(attitude.rollDeg)}° · " +
                 when { marker == null -> "迎角/侧滑未知"; marker.outsideScale -> "迎角/侧滑超量程"; else -> "青色十字：迎角/侧滑" } +
                 if (airflowLimits.isEmpty()) "" else " · 红虚线：模型迎角限",
                 style = MaterialTheme.typography.bodySmall)
