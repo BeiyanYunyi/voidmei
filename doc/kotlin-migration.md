@@ -2900,6 +2900,14 @@ Linux Kotlin CI 在同次构建的 Deb 上执行该脚本，沿用既有制品�
 
 桌面单元测试通过；新搜索 GUI 与原完整 HUD 字段选择/排序/恢复默认 GUI 回归通过（`/tmp/voidmei-hud-field-search-after.log`）。覆盖中文/ID/单位、多个关键词、已选排除、添加顺序、空结果和清除。初次测试误以为 fuel_percent 只匹配一个字段，实际还匹配 booster_fuel_percent；已修正测试假设，保留模糊匹配行为。本轮未重建 Nix 包。
 
+### HUD 字段展示改进后的完整 GUI 回归
+
+在 `df994f4` 生产代码上无过滤运行 :desktop:guiTest：57 个测试类、177 项测试，零失败、零错误、零跳过，39 秒通过。覆盖固定列数、发动机字段筛选/排序、可添加字段搜索，以及此前的软件渲染偏好和已有 HUD、录制、模型、设置交互。
+
+日志 `/tmp/voidmei-full-gui-hud-readings.log`，XML/HTML 报告副本 `/tmp/voidmei-full-gui-hud-readings-results/`。使用隔离 Xvfb/xcompmgr 与 SOFTWARE_FAST，不包含独立原生热键、托盘或 HUD 指针任务，也不替代实机游戏显示检查。按用户优先级，后续仍优先 HUD 信息展示，热键后置。
+
+默认 Nix 包构建通过（`/tmp/voidmei-hud-readings-nix.log`），产物 `/nix/store/j375pwzyyfvxh6ds9ga464ww8vxz6ma9-voidmei-kotlin-2.0.0`，包含发动机排序和字段搜索。此轮仅更新验证记录，未修改应用代码或扩大实机验收结论。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
