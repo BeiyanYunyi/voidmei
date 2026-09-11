@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.assertEquals
 import voidmei.telemetry.*
+import voidmei.config.*
 
 class HudMapBackgroundGuiTest {
     @get:Rule val compose = createComposeRule()
@@ -44,18 +45,31 @@ class HudMapBackgroundGuiTest {
         server.start()
         val snapshot = MapSnapshot(MapTelemetryParser.info(info.get().toString())!!, emptyList())
         val shared = MutableStateFlow<MapConnection>(MapConnection.Available(snapshot))
+        var connection by mutableStateOf<ConnectionState>(hudPreviewFlight())
+        var second by mutableStateOf(false)
         try {
-            compose.setContent { MaterialTheme { Box(Modifier.size(500.dp)) {
-                HudMapObjects("http://127.0.0.1:${server.address.port}", shared, "战场地图")
+            compose.setContent { MaterialTheme { Box(Modifier.size(1000.dp, 500.dp)) {
+                val region = HudRegion("map", HudRegionContent.MAP, 0, 0, 500, 500)
+                HudPanel(connection, AppSettings(hudSceneLayout = HudSceneLayout(1000, 500,
+                    if (second) listOf(region, region.copy(id = "second", x = 500)) else listOf(region))),
+                    emptyList(), null, mapEndpoint = "http://127.0.0.1:${server.address.port}", sharedMap = shared) {}
             } } }
             fun waitForFailure() = compose.waitUntil(5000) {
                 compose.onAllNodes(hasText("底图不可用", substring = true)).fetchSemanticsNodes().isNotEmpty()
             }
             fun waitForImage() = compose.waitUntil(8000) {
-                compose.onAllNodesWithContentDescription("地图底图与对象位置方向").fetchSemanticsNodes().isNotEmpty()
+                compose.onAllNodesWithContentDescription("地图底图与对象位置方向").fetchSemanticsNodes().size == (if (second) 2 else 1)
             }
             waitForFailure()
             broken.set(false)
+            waitForImage()
+            assertEquals(2, images.get())
+            compose.runOnIdle { second = true }
+            waitForImage()
+            assertEquals(2, images.get())
+            compose.runOnIdle { connection = ConnectionState.Delayed }
+            compose.onNodeWithContentDescription("地图底图与对象位置方向").assertDoesNotExist()
+            compose.runOnIdle { connection = hudPreviewFlight() }
             waitForImage()
             assertEquals(2, images.get())
             broken.set(true)
@@ -64,7 +78,7 @@ class HudMapBackgroundGuiTest {
             compose.runOnIdle { shared.value = MapConnection.Available(snapshot.copy(bounds = MapTelemetryParser.info(next.toString())!!)) }
             waitForFailure()
             compose.onNodeWithContentDescription("地图底图与对象位置方向").assertDoesNotExist()
-            compose.onNodeWithContentDescription("地图对象位置与方向示意，不含底图").assertIsDisplayed()
+            compose.onAllNodesWithContentDescription("地图对象位置与方向示意，不含底图").assertCountEquals(2)
             broken.set(false)
             waitForImage()
             compose.runOnIdle { shared.value = MapConnection.Waiting }

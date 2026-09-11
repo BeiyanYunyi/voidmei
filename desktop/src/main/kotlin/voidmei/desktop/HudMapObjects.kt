@@ -9,7 +9,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.*
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
 import voidmei.telemetry.MapConnection
 
 @Composable
@@ -18,6 +17,7 @@ internal fun HudMapObjects(endpoint: String?, shared: StateFlow<MapConnection>?,
     if (title.isNotBlank()) Text(title, maxLines = 2, overflow = TextOverflow.Ellipsis)
     if (endpoint == null && shared == null) { Text("地图数据不可用"); return@Column }
     key(endpoint, shared) {
+        val cache = LocalHudMapBackgroundCache.current ?: remember(endpoint) { endpoint?.let(::HudMapBackgroundCache) }
         val flow = shared ?: remember(endpoint) { mapStates(requireNotNull(endpoint)) }
         val state by flow.collectAsState(MapConnection.Connecting)
         when (val current = state) {
@@ -32,9 +32,7 @@ internal fun HudMapObjects(endpoint: String?, shared: StateFlow<MapConnection>?,
                     if (endpoint == null) return@LaunchedEffect
                     do {
                         try {
-                            background = withContext(Dispatchers.IO) {
-                                HttpTelemetryTransport(endpoint).use { loadMapBackground(it, bounds).toComposeImageBitmap() }
-                            }
+                            background = requireNotNull(cache).load(bounds)
                             error = null
                             break
                         } catch (e: CancellationException) { throw e }

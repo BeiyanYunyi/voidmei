@@ -952,3 +952,8 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 旧版 Service.getHeatTolerance 返回 curLoadMinWorkTime 的秒数；KMP 已有对应逐发动机热预算范围，默认未选。为便于发现，发动机字段显示名改为“耐热时估计”，飞行字段为“1 号耐热时估计”，持久化 ID heat_budget／heat_tolerance 保持不变。更详细的含义仍在预算状态说明和快速入门中，避免长名称挤占窄 HUD 区域。此变更不将模型区间宣称为实际损坏倒计时。
 
 最终简短名称版本离线包 `/nix/store/qqwf1cijfj7cg2wwh590c1w5yhkw9zla-voidmei-kotlin-2.0.0` 构建及兼容 HUD 冒烟通过：87 对 CSV、地图图片请求、单窗口稳定性、配置保存与正常退出通过。已检查最终截图；日志 `/tmp/voidmei-map-heat-final-package.log`，制品 `/tmp/voidmei-package-smoke-zimmr15x`。以上是隔离 X11 软件渲染验证，等待用户新版 HUD 底图的实战反馈。
+
+
+## 底图在 HUD 会话内复用
+
+底图缓存提升至 HudPanel 会话，按端点与共享地图会话重置，只保留一张匹配完整 MapBounds 的已验证图片。多个地图区域串行共享下载；短暂遥测延迟暂时隐藏地图后，恢复时可复用图片。地图元数据改变后清空旧缓存并重新验证、下载，失败仍自动重试。真实 HTTP GUI 回归确认增加第二个区域及 Delayed → Flying 不增加图片请求，同时覆盖换图失败时移除旧图、恢复以及等待状态清除显示。桌面单元和地图 GUI 检查通过（/tmp/voidmei-map-cache-final.log，8 秒）；未重建离线包。首次测试命令缺少 xcompmgr 路径，补齐后运行成功。

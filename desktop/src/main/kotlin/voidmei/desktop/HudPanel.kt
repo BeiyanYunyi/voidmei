@@ -33,6 +33,7 @@ internal fun HudPanel(
     header: @Composable () -> Unit,
 ) {
     val systemDensity = LocalDensity.current
+    val mapBackground = remember(mapEndpoint, sharedMap) { mapEndpoint?.let(::HudMapBackgroundCache) }
     CompositionLocalProvider(LocalDensity provides Density(systemDensity.density,
         systemDensity.fontScale * settings.hudFontScale),
         // The transparent HUD has no Material Surface to supply a light content color.
@@ -41,7 +42,8 @@ internal fun HudPanel(
             resolveHudNumberFont(settings.hudNumberFont ?: settings.numberFont).family
         },
         LocalReadingColumns provides settings.hudReadingColumns,
-        LocalReadingColors provides readingColors(settings, hud = true)) {
+        LocalReadingColors provides readingColors(settings, hud = true),
+        LocalHudMapBackgroundCache provides mapBackground) {
         val scene = settings.hudSceneLayout?.takeIf { it.enabled }
         if (scene != null) HudScene(connection, settings, scene, alerts, model, thermal, mapEndpoint, sharedMap, connectionLabel, messages)
         else HudPanelContent(connection, settings, alerts, model, onContentHeightChanged, thermal, mapEndpoint, sharedMap, connectionLabel, header)
