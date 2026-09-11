@@ -3,6 +3,12 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun messageRegionCanBeAddedAndPersisted() {
+        val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.MESSAGES)
+        assertEquals(HudRegionContent.MESSAGES, scene.regions.last().content)
+        assertEquals(scene, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = scene))).hudSceneLayout)
+    }
+
     @Test fun selectedDisplaySurvivesCanvasAndRegionChanges() {
         val scene = HudSceneLayout.initial(AppSettings()).copy(displayId = "external-display")
         assertEquals(scene, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = scene))).hudSceneLayout)

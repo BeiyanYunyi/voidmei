@@ -21,7 +21,7 @@ import voidmei.telemetry.*
 @Composable
 internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout: HudSceneLayout,
     alerts: List<FlightAlert>, model: AircraftAlertModel?, thermal: EngineThermalObservation?,
-    mapEndpoint: String?, sharedMap: kotlinx.coroutines.flow.StateFlow<MapConnection>?, connectionLabel: String?) {
+    mapEndpoint: String?, sharedMap: kotlinx.coroutines.flow.StateFlow<MapConnection>?, connectionLabel: String?, messages: HudMessageState? = null) {
     val density = LocalDensity.current
     val flight = connection as? ConnectionState.Flying
     BoxWithConstraints(Modifier.fillMaxSize().testTag("hud-scene")) {
@@ -57,6 +57,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     settings.hudGear, settings.hudFlaps, settings.hudAirbrake, automaticSweep = true,
                                     alerts = alerts, showFlapBar = settings.hudFlapBar)
                                 HudRegionContent.ALERTS -> Unit
+                                HudRegionContent.MESSAGES -> HudRecentMessages(messages)
                             }
                         }
                     }

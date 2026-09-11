@@ -173,6 +173,11 @@ fun main(args: Array<String>) {
         val gameFocus by rememberGameFocus(overlay && settings.hudAutoHideOnFocusLoss)
         var endpointError by remember { mutableStateOf<String?>(null) }
         var connection by remember { mutableStateOf<ConnectionState>(ConnectionState.Connecting) }
+        var messagePanelExpanded by remember { mutableStateOf(false) }
+        val hudNeedsMessages = settings.hudEnabled && settings.hudSceneLayout?.let { scene ->
+            scene.enabled && scene.regions.any { it.content == voidmei.config.HudRegionContent.MESSAGES }
+        } == true
+        val messageSession = rememberHudMessageSession(activeEndpoint, connection, hudNeedsMessages || messagePanelExpanded, generation)
 
         val sharedMap = key(activeEndpoint, generation, connection is ConnectionState.Flying,
             (connection as? ConnectionState.Flying)?.telemetry?.aircraft) {
@@ -450,7 +455,7 @@ fun main(args: Array<String>) {
                             EngineRecordingPanel(latestFile = lastRecording?.engines?.toString())
                             SectionHeading(MainSection.MAP, anchors)
                             MapPanel(activeEndpoint, connection is ConnectionState.Flying, sharedMap)
-                            HudMessagesPanel(activeEndpoint, flight)
+                            HudMessagesPanel(activeEndpoint, flight, messageSession) { messagePanelExpanded = it }
                             Text("迁移开发版：完整功能迁移、真实游戏及多平台验证仍在进行。", style = MaterialTheme.typography.bodySmall)
                         }
                     }
@@ -483,7 +488,8 @@ fun main(args: Array<String>) {
             if (!java.lang.Boolean.getBoolean("voidmei.diagnostics.hud.fixedSize"))
                 updateHudWindowSize(window, hudState, settings.hudWidthDp, hudContentHeight, settings.hudSceneLayout?.takeIf { it.enabled })
             MaterialTheme(typography = typography, colorScheme = hudColorScheme()) {
-                HudPanel(connection, settings, alerts, modelForAlerts, mapEndpoint = activeEndpoint, sharedMap = sharedMap, thermal = thermalObservation, onContentHeightChanged = { hudContentHeight = it }) {
+                HudPanel(connection, settings, alerts, modelForAlerts, mapEndpoint = activeEndpoint, sharedMap = sharedMap, thermal = thermalObservation,
+                    messages = messageSession.state, onContentHeightChanged = { hudContentHeight = it }) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         HudDraggableArea(Modifier.weight(1f)) {
                             Box(Modifier.fillMaxWidth().heightIn(min = 40.dp), contentAlignment = androidx.compose.ui.Alignment.CenterStart) {

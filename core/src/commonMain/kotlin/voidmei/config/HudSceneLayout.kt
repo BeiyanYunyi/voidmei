@@ -3,7 +3,7 @@ package voidmei.config
 import kotlinx.serialization.json.*
 
 enum class HudRegionContent(val label: String) {
-    FLIGHT("飞行读数"), ENGINE("发动机"), ATTITUDE("姿态"), MECHANIZATION("机械化"), ALERTS("告警")
+    FLIGHT("飞行读数"), ENGINE("发动机"), ATTITUDE("姿态"), MECHANIZATION("机械化"), ALERTS("告警"), MESSAGES("游戏消息")
 }
 
 /** Coordinates are relative to one transparent window; list order defines stacking. */
@@ -45,6 +45,7 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
             HudRegionContent.FLIGHT, HudRegionContent.ENGINE -> 470
             HudRegionContent.ATTITUDE, HudRegionContent.MECHANIZATION -> 204
             HudRegionContent.ALERTS -> 180
+            HudRegionContent.MESSAGES -> 300
         })
         // Stagger new regions so overlapping instances do not look like one unchanged region.
         val offset = 16 * (regions.size + 1)

@@ -13,11 +13,20 @@ import kotlinx.coroutines.*
 import voidmei.telemetry.*
 
 @Composable
-internal fun HudMessagesPanel(endpoint: String, flight: ConnectionState.Flying?) {
+internal fun HudMessagesPanel(endpoint: String, flight: ConnectionState.Flying?, shared: HudMessageSession? = null,
+    onExpandedChange: (Boolean) -> Unit = {}) {
     var expanded by remember { mutableStateOf(false) }
-    TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起游戏消息" else "查看游戏消息") }
+    val expandedChange by rememberUpdatedState(onExpandedChange)
+    DisposableEffect(Unit) { onDispose { expandedChange(false) } }
+    TextButton(onClick = { expanded = !expanded; expandedChange(expanded) }) { Text(if (expanded) "收起游戏消息" else "查看游戏消息") }
     if (!expanded) return
     if (flight == null) { Text("进入飞行后读取游戏消息"); return }
+    if (shared != null) {
+        TextButton(onClick = shared.reload) { Text("重新读取游戏消息") }
+        Text("重新读取会清空共享历史并从零游标获取，同时更新 HUD 消息区域。", style = MaterialTheme.typography.bodySmall)
+        HudMessageList(shared.state)
+        return
+    }
     var reload by remember(endpoint, flight.telemetry.aircraft) { mutableStateOf(0) }
     var state by remember(endpoint, flight.telemetry.aircraft, reload) { mutableStateOf(HudMessageState(emptyList())) }
     LaunchedEffect(endpoint, flight.telemetry.aircraft, reload) {

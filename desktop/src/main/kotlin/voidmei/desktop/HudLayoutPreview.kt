@@ -69,6 +69,8 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
                     Offset(x * step, y * step), Size(step, step))
         }
         HudPanel(flight, settings, alerts, model, thermal = thermal,
+            messages = HudMessageState(if (missing) emptyList() else listOf(
+                HudMessage(HudMessageKind.EVENT, 1, "示例事件消息"), HudMessage(HudMessageKind.DAMAGE, 1, "示例损伤消息"))),
             connectionLabel = "示例数据与模型 · 可在设置窗口继续调整") {
             Text("HUD 布局预览")
         }

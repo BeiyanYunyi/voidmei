@@ -29,6 +29,7 @@ internal fun HudPanel(
     mapEndpoint: String? = null,
     sharedMap: kotlinx.coroutines.flow.StateFlow<MapConnection>? = null,
     connectionLabel: String? = null,
+    messages: HudMessageState? = null,
     header: @Composable () -> Unit,
 ) {
     val systemDensity = LocalDensity.current
@@ -42,7 +43,7 @@ internal fun HudPanel(
         LocalReadingColumns provides settings.hudReadingColumns,
         LocalReadingColors provides readingColors(settings, hud = true)) {
         val scene = settings.hudSceneLayout?.takeIf { it.enabled }
-        if (scene != null) HudScene(connection, settings, scene, alerts, model, thermal, mapEndpoint, sharedMap, connectionLabel)
+        if (scene != null) HudScene(connection, settings, scene, alerts, model, thermal, mapEndpoint, sharedMap, connectionLabel, messages)
         else HudPanelContent(connection, settings, alerts, model, onContentHeightChanged, thermal, mapEndpoint, sharedMap, connectionLabel, header)
     }
 }
