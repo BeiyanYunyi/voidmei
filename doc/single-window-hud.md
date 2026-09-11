@@ -889,3 +889,11 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 发动机字段新增可选 propulsive_efficiency，沿用全机估计的推进功率 kW ÷ 轴功率 hp ÷ 0.735 × 100，使用同一发动机的推力及轴功率与当前 TAS。要求轴功率有限且大于零，缺失输入或非有限结果显示未知，合法零速可显示零，不截断超过 100% 的估计值。原 efficiency 字段继续显示遥测原值，两者默认选择互不改变。
 
 共享 JVM／JS、桌面单元及两类共 3 项 GUI 回归通过（`/tmp/voidmei-engine-propulsive-efficiency.log`，10 秒）。验证原值保留、零速、无效分母、输入缺失、超过 100% 的结果，以及实际分区中 66.7%／33.4% 双发动机独立显示、单侧缺失隔离、TAS 缺失清除和纵向 HUD 恢复。本轮未重建离线包或新增真机验收。
+
+## 逐发动机推进读数的实际离线包回归
+
+包级十区域夹具加入发动机 thrust_power 和 propulsive_efficiency，提供 500 kgf 推力、260 km/h TAS、900 hp 轴功率；发动机区域增高到 250 dp，机械化区域相应下移。保存检查覆盖两个字段，配对 CSV 检查每条样本的本发动机推力与 354.129 kW 推进功率，截图中读数为 354.1 kW 和 53.5%。
+
+`nix build path:.#kotlin-offline` 成功（`/tmp/voidmei-propulsion-package-build.log`），产物 `/nix/store/wxb63k43p26wj92yjdzxckq2v1d14wpg-voidmei-kotlin-2.0.0`。首轮截图显示新增读数正常，但原混合比像素采样范围未随图形下移而更新，导致检查失败并等待退出超时；修正外部测试夹具采样位置后复跑通过（`/tmp/voidmei-propulsion-package-final.log`）。
+
+最终实际兼容 HUD、SOFTWARE_FAST、80 ms 与延迟样本场景获得 86 对 CSV 行；34 次检查保持同一个 1040×600 HUD 窗口，正常退出与保存通过。已查看 `/tmp/voidmei-package-smoke-43si04z0/hud-scene.png`，推进读数、混合比及二维操纵面均可见。Python 冒烟辅助 4 项测试通过。本次使用隔离 Xvfb/xcompmgr 和合成遥测，未新增真实游戏或物理 GPU 验收。

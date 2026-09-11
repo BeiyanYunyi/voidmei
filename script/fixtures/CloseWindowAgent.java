@@ -67,7 +67,7 @@ public final class CloseWindowAgent {
                                                 int rgb = image.getRGB(x, y);
                                                 if (((rgb >> 16) & 255) > 200 && ((rgb >> 8) & 255) > 180 && (rgb & 255) < 80) yellow++;
                                                 int color = rgb & 0xffffff;
-                                                if (x >= 12 && x < 268 && y >= 270 && y < 380 && color == 0x84dec6) engineControl++;
+                                                if (x >= 12 && x < 268 && y >= 350 && y < 440 && color == 0x84dec6) engineControl++;
                                                 if (x >= 300 && x < 580 && y >= 380 && y < 600) {
                                                     if (color == 0x1e526f) sky++;
                                                     if (color == 0x644e3c) ground++;
