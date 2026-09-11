@@ -12,13 +12,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import voidmei.telemetry.Telemetry
+import voidmei.telemetry.controlSurfacePercent
 
 @Composable
 internal fun ControlSurfacePanel(telemetry: Telemetry) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         listOf(Triple("aileron", "副翼", telemetry.aileronPercent), Triple("elevator", "升降舵", telemetry.elevatorPercent),
             Triple("rudder", "方向舵", telemetry.rudderPercent)).forEach { (id, label, raw) ->
-            val value = raw?.takeIf { it.isFinite() && it in -100.0..100.0 }
+            val value = controlSurfacePercent(raw)
             Text("$label ${readingNumber(value, 1)}%")
             Canvas(Modifier.fillMaxWidth().height(24.dp).testTag("hud-control-$id").semantics {
                 contentDescription = "$label，刻度 -100% 至 +100%"

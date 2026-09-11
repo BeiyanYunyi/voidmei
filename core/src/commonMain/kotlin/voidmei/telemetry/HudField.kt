@@ -136,9 +136,9 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
         ENGINE1_RPM -> flight.telemetry.engines.singleOrNull { it.index == 1 }?.rpm?.takeIf { it >= 0 }
         ENGINE1_PITCH -> flight.telemetry.engines.singleOrNull { it.index == 1 }?.propellerPitchDeg
         WING_SWEEP -> flight.telemetry.wingSweepRatio?.takeIf { it in 0.0..1.0 }?.times(100)
-        AILERON -> flight.telemetry.aileronPercent
-        ELEVATOR -> flight.telemetry.elevatorPercent
-        RUDDER -> flight.telemetry.rudderPercent
+        AILERON -> controlSurfacePercent(flight.telemetry.aileronPercent)
+        ELEVATOR -> controlSurfacePercent(flight.telemetry.elevatorPercent)
+        RUDDER -> controlSurfacePercent(flight.telemetry.rudderPercent)
         HEADING -> AttitudeGeometry.heading(flight.telemetry.headingDeg)?.let { kotlin.math.round(it) % 360 }
         PITCH -> AttitudeGeometry.fromIndicators(flight.telemetry.pitchDeg, 0.0)?.pitchDeg
         ROLL -> AttitudeGeometry.fromIndicators(0.0, flight.telemetry.rollDeg)?.rollDeg
