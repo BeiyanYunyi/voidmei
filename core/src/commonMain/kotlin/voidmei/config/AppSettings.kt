@@ -38,6 +38,7 @@ data class AppSettings(
     val hudWidthDp: Int = 440,
     val recordingAutoStart: Boolean = false,
     val startInTray: Boolean = false,
+    val connectionNotifications: Boolean = false,
     val hudCompatibilityMode: Boolean = false,
     val hudClickThrough: Boolean = false,
     val hudAutoHideOnFocusLoss: Boolean = false,
@@ -130,6 +131,9 @@ object SettingsJson {
             hudCompatibilityMode = root["hudCompatibilityMode"]?.jsonPrimitive?.let {
                 require(!it.isString); it.boolean
             } ?: defaultHudCompatibilityMode,
+            connectionNotifications = root["connectionNotifications"]?.jsonPrimitive?.let {
+                require(!it.isString); it.boolean
+            } ?: defaults.connectionNotifications,
             startInTray = root["startInTray"]?.jsonPrimitive?.boolean ?: defaults.startInTray,
             recordingAutoStart = root["recordingAutoStart"]?.jsonPrimitive?.let {
                 require(!it.isString); it.boolean
@@ -224,6 +228,7 @@ object SettingsJson {
         fields["hudEngineIndex"] = settings.hudEngineIndex?.let(::JsonPrimitive) ?: JsonNull
         fields["fmDataRoot"] = JsonPrimitive(settings.fmDataRoot)
         fields["recordingDirectory"] = JsonPrimitive(settings.recordingDirectory)
+        fields["connectionNotifications"] = JsonPrimitive(settings.connectionNotifications)
         fields["startInTray"] = JsonPrimitive(settings.startInTray)
         fields["recordingAutoStart"] = JsonPrimitive(settings.recordingAutoStart)
         fields["hudCompatibilityMode"] = JsonPrimitive(settings.hudCompatibilityMode)

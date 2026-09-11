@@ -173,6 +173,9 @@ fun main(args: Array<String>) {
             remember { mapStates(activeEndpoint).shareMap(mapScope) }
         }
 
+        ConnectionNotificationEffect(connection, activeEndpoint, generation) { title, message ->
+            if (settings.connectionNotifications && trayAvailable) desktopTray?.showMessage(title, message)
+        }
         val flightModel = rememberFlightModelSession(
             (connection as? ConnectionState.Flying)?.telemetry?.aircraft, settings.fmDataRoot)
         val modelForAlerts = flightModel.alertModel
@@ -279,6 +282,10 @@ fun main(args: Array<String>) {
                                 Switch(settings.startInTray, { settings = settings.copy(startInTray = it) }, enabled = !closing)
                                 Text("下次启动进入托盘")
                                 if (trayAvailable) TextButton(onClick = { mainVisible = false }) { Text("隐藏到托盘") }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Switch(settings.connectionNotifications, { settings = settings.copy(connectionNotifications = it) }, enabled = !closing)
+                                Text("通知 8111 连接状态变化（需要托盘）")
                             }
                             if (!trayAvailable) Text(trayError?.let { "托盘不可用：$it" } ?: "当前桌面不支持托盘，启动时保持主窗口可见。")
                             settingsError?.let {

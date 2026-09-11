@@ -2706,6 +2706,18 @@ F-14 同时提供真实的未支持字段证据：升降舵有效速度 `[1801, 
 
 与原后台换机/目录失效测试一起通过，2 项测试零失败、零跳过（`/tmp/voidmei-shared-model-gui.log`）。这是共享模型参数及面板交互证据，不代表实机燃油功率精度或语音告警播放验证。本轮未修改生产代码，未重复构建 Nix 包。
 
+### 可选连接状态托盘通知
+
+核对旧 Controller.initStatusBar/changeS2/changeS3 与 StatusBar.S1/S2/S3：enableStatusBar 控制独立状态窗口，从等待服务、等待飞行更新至进入飞行后释放。新增默认关闭的 connectionNotifications 偏好、严格 JSON 布尔持久化与旧 enableStatusBar 导入，主窗口提供开关及导入预览。
+
+应用层 ConnectionNotificationEffect 在连接阶段变化时复用现有托盘消息入口。首次组合仅记录基线；Connecting 不发通知，等待飞行、进入飞行及断线后续变化发送通知。错误原因或飞行样本变化不重复提示，换机不作为连接事件；切换端点/重新连接重建跟踪基线，避免将旧状态归入新连接。关闭开关或托盘缺失时仍消耗事件，恢复后不补发。
+
+共享 JVM/JS、桌面及首项 GUI 回归通过（`/tmp/voidmei-connection-notifications-tests.log`）；补充飞行/采样/换机后，两项 GUI 回归全部通过（`/tmp/voidmei-connection-notifications-gui.log`）。验证默认关闭、严格布尔、往返保存、旧开关开/关导入、状态去重、开关及托盘恢复、端点变化、飞行离开与重入。
+
+当前实现是托盘通知，未复刻旧独立状态浮窗；不把回调通过视为原生气泡已人工验收。无托盘时仍使用主窗口已有连接状态显示。
+
+`nix build path:.#kotlin-offline` 构建通过（`/tmp/voidmei-connection-notifications-nix.log`），包含连接状态通知及配置开关。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

@@ -91,6 +91,7 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
             if (imported.hudCrosshair == null && imported.movesCrosshairRight)
                 Text("准星位置：HUD 右侧；保留当前开关。")
             imported.hudCrosshairSizeDp?.let { Text("${if (imported.hudCrosshairImage == null) "线框" else "图片"}准星跨度：$it dp；旧比例乘以 2，仅换算准星，不改变 HUD 字号或布局。") }
+            imported.connectionNotifications?.let { Text("8111 状态托盘通知：${if (it) "开启" else "关闭"}") }
             imported.startInTray?.let { Text("下次启动进入托盘：${if (it) "开启" else "关闭"}；托盘不可用时显示主窗口，当前窗口保持不变。") }
             imported.recordingAutoStart?.let { Text("下次启动自动开启记录：${if (it) "开启" else "关闭"}；当前录制状态不变。") }
             imported.hudAoaWarningPercent?.let {
