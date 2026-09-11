@@ -18,6 +18,29 @@ import voidmei.telemetry.*
 class HudCompressorAdviceGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun previewShowsFirstAndLastCompressorStagesWithoutInventingMissingValues() {
+        val region = HudRegion("one", HudRegionContent.ENGINE, 0, 0, 400, 300, fields = listOf("compressor"))
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(800, 300,
+            listOf(region, region.copy(id = "two", x = 400, engineIndex = 2))))
+        var missing by mutableStateOf(false)
+        compose.setContent { MaterialTheme { Box(Modifier.size(800.dp, 300.dp)) {
+            HudLayoutPreview(settings, missing = missing)
+        } } }
+        fun checkStages() {
+            compose.onNodeWithTag("hud-compressor-stage-1").assertRangeInfoEquals(ProgressBarRangeInfo(1f, 1f..2f))
+            compose.onNodeWithTag("hud-compressor-stage-2").assertRangeInfoEquals(ProgressBarRangeInfo(2f, 1f..2f))
+        }
+        checkStages()
+        compose.onNodeWithTag("hud-compressor-advice-1").assertDoesNotExist()
+        compose.onNodeWithTag("hud-compressor-advice-2").assertDoesNotExist()
+        compose.runOnIdle { missing = true }
+        compose.onNodeWithTag("hud-compressor-stage-1").assertDoesNotExist()
+        compose.onNodeWithTag("hud-compressor-stage-2").assertDoesNotExist()
+        compose.onAllNodesWithText("— ").assertCountEquals(2)
+        compose.runOnIdle { missing = false }
+        checkStages()
+    }
+
     @Test fun adviceFollowsEngineFieldsModelAndConnectionInSceneAndVerticalHud() {
         val stages = listOf(CompressorStage(1000.0, 1000.0, 800.0), CompressorStage(1000.0, 1500.0, 1200.0))
         val models = PistonModels(PistonMilitaryModel(stages, 3000.0), stages.reversed(), null)

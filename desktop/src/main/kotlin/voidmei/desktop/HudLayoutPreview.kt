@@ -32,9 +32,11 @@ internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = fals
         "throttle 1, %":95,"RPM 1":2400,"power 1, hp":900,"thrust 1, kgs":700,
         "water temp 1, C":95,"oil temp 1, C":80,
         "RPM throttle 1, %":80,"mixture 1, %":100,"radiator 1, %":35,"oil radiator 1, %":20,
+        "compressor stage 1":1,
         "throttle 2, %":90,"RPM 2":2300,"power 2, hp":850,"thrust 2, kgs":650,
         "water temp 2, C":90,"oil temp 2, C":75,
-        "RPM throttle 2, %":70,"mixture 2, %":90,"radiator 2, %":50,"oil radiator 2, %":40
+        "RPM throttle 2, %":70,"mixture 2, %":90,"radiator 2, %":50,"oil radiator 2, %":40,
+        "compressor stage 2":2
     }""", """{"valid":true,"type":"preview","aviahorizon_pitch":-5,"aviahorizon_roll":15,"compass":45}""")!!
     val next = if (warnings) telemetry.copy(iasKmh = 510.0, tasKmh = 550.0, mach = .95,
         angleOfAttackDeg = 16.0, fuelKg = 30.0, engines = telemetry.engines.map {
@@ -53,6 +55,9 @@ internal fun hudPreviewFlight(warnings: Boolean = false, missing: Boolean = fals
 private fun hudPreviewModel() = AircraftAlertModel("preview", FlightModelParameters(null, null,
     listOf(WingConfiguration(0.0, 500.0, .9, -10.0, 15.0, -8.0, 18.0)), false, emptyList(),
     engineRpmLimits = (1..2).map { EngineRpmLimit(it, 3000.0) },
+    engineCompressors = (1..2).associateWith { PistonModels(PistonMilitaryModel(listOf(
+        CompressorStage(1000.0, 1000.0, 800.0), CompressorStage(3000.0, 1100.0, 850.0)), 3000.0),
+        null, "预览未提供 WEP 功率模型") },
     engineThermals = (1..2).map { EngineThermalParameters(it, listOf(EngineThermalBand(1, 100.0, 85.0, 200.0, 100.0))) }))
 
 @Composable
