@@ -25,6 +25,7 @@ data class HudRegion(
     val showFlightStatus: Boolean = true,
     val showEngineInstruments: Boolean = true,
     val showControlStick: Boolean = false,
+    val messageMaxLines: Int = 0, // Zero keeps full messages.
 ) {
     init {
         require(id.isNotBlank() && id.length <= 100 && id.none { it.isISOControl() })
@@ -33,6 +34,7 @@ data class HudRegion(
         require(contentAlpha.isFinite() && contentAlpha in 0f..1f)
         require(engineIndex > 0)
         require(messageLimit in 1..20)
+        require(messageMaxLines in 0..10)
         require(fields == null || fields.all { it.isNotBlank() })
         require(title.length <= 80 && title.none { it.isISOControl() })
         require(readingColumns == null || readingColumns in 0..2)
@@ -158,6 +160,7 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
             put("showFlightStatus", region.showFlightStatus)
             put("showEngineInstruments", region.showEngineInstruments)
             put("showControlStick", region.showControlStick)
+            put("messageMaxLines", region.messageMaxLines)
         } }))
     }
 
@@ -181,7 +184,8 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
                     r["messageLimit"]?.jsonPrimitive?.let { require(!it.isString); it.int } ?: 5,
                     r["showFlightStatus"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
                     r["showEngineInstruments"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
-                    r["showControlStick"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: false)
+                    r["showControlStick"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: false,
+                    r["messageMaxLines"]?.jsonPrimitive?.let { require(!it.isString); it.int } ?: 0)
             }, root["enabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
                 root["displayId"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content })
         }

@@ -3,6 +3,17 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun messageLineLimitPersistsAndOldLayoutsKeepFullText() {
+        val scene = HudSceneLayout(240, 400, listOf(HudRegion("messages", HudRegionContent.MESSAGES,
+            0, 0, 240, 400, messageMaxLines = 3)))
+        val settings = AppSettings(hudSceneLayout = scene, hudScenePresets = mapOf("messages" to scene))
+        val json = kotlinx.serialization.json.Json.parseToJsonElement(SettingsJson.encode(settings)).toString()
+        assertEquals(settings, SettingsJson.decode(json))
+        assertEquals(settings.hudScenePresets, HudPresetFile.decode(HudPresetFile.encode(settings.hudScenePresets)))
+        assertEquals(0, SettingsJson.decode(json.replace(",\"messageMaxLines\":3", "")).hudSceneLayout!!.regions.single().messageMaxLines)
+        for (bad in listOf("null", "-1", "11", "1.5", "\"3\"", "true"))
+            assertFails { SettingsJson.decode(json.replace("\"messageMaxLines\":3", "\"messageMaxLines\":$bad")) }
+    }
     @Test fun optionalControlStickPersistsWithoutChangingOldLayouts() {
         val region = HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 240, 400, showControlStick = true)
         val scene = HudSceneLayout(240, 400, listOf(region))

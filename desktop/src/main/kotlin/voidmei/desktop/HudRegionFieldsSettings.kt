@@ -59,6 +59,15 @@ internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, o
     if (region.content == HudRegionContent.MESSAGES) {
         val selected = region.fields ?: HudMessageKind.entries.map { it.name.lowercase() }
         Text("消息类别（筛选后显示最近 ${region.messageLimit} 条）")
+        Text("单条消息最大行数（超出显示省略号）")
+        FlowRow {
+            listOf(0, 1, 2, 3, 5, 10).forEach { lines ->
+                FilterChip(region.messageMaxLines == lines, { onChange(region.copy(messageMaxLines = lines)) },
+                    label = { Text(if (lines == 0) "完整显示" else "$lines 行") },
+                    modifier = Modifier.testTag("hud-region-message-lines-${region.id}-$lines"))
+            }
+        }
+        Text("完整原文可在“查看游戏消息”中阅读。")
         FlowRow {
             listOf(1, 3, 5, 10, 20).forEach { limit ->
                 FilterChip(region.messageLimit == limit, { onChange(region.copy(messageLimit = limit)) },
