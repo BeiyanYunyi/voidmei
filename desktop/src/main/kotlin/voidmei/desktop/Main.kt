@@ -321,6 +321,16 @@ fun main(args: Array<String>) {
                                 mainState.position = resetWindowPosition()
                                 hudState.position = resetWindowPosition(64)
                             }
+                            SettingsTransferPanel(finalSettings(),
+                                canRestore = !closing && !recordingBusy && recording !is RecordingState.Active && writer != null && settingsError == null,
+                                onRestore = { restored ->
+                                    settings = restored
+                                    endpoint = restored.endpoint
+                                    endpointError = null
+                                    recordingPath = restored.recordingDirectory
+                                    mainState.position = restorePosition(restored.mainPosition)
+                                    hudState.position = restorePosition(restored.hudPosition)
+                                })
                             LegacySettingsPanel { imported ->
                                 val updated = imported.applyTo(settings)
                                 if (imported.httpPort != null) validateEndpoint(updated.endpoint)

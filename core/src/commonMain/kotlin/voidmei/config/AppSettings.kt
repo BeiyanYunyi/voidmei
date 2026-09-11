@@ -125,6 +125,14 @@ object SettingsJson {
         // Syntax, matching container types and unterminated strings remain the JSON parser's responsibility.
     }
 
+    /** A transfer must not silently interpret an unrelated versioned JSON document as defaults. */
+    fun decodeBackup(text: String, defaultHudCompatibilityMode: Boolean = false): AppSettings {
+        val settings = decode(text, defaultHudCompatibilityMode)
+        val root = Json.parseToJsonElement(text).jsonObject
+        require("endpoint" in root && "pollIntervalMs" in root) { "不是完整的 KMP 设置备份；布局预设请使用预设导入入口" }
+        return settings
+    }
+
     fun decode(text: String, defaultHudCompatibilityMode: Boolean = false): AppSettings {
         checkNesting(text)
         val root = Json.parseToJsonElement(text).jsonObject

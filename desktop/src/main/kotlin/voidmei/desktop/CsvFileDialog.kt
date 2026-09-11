@@ -14,6 +14,8 @@ internal fun chooseLegacySettingsFile(current: String): String? = csvFileDialog(
 internal fun chooseVoiceArchive(current: String): String? = csvFileDialog(current, FileDialog.LOAD, "ZIP 语音包")
 internal fun chooseHudPresetImport(current: String): String? = csvFileDialog(current, FileDialog.LOAD, "读取 HUD 预设")
 internal fun chooseHudPresetExport(current: String): String? = csvFileDialog(current, FileDialog.SAVE, "导出 HUD 预设（新文件）")
+internal fun chooseSettingsImport(current: String): String? = csvFileDialog(current, FileDialog.LOAD, "读取 KMP 设置备份")
+internal fun chooseSettingsExport(current: String): String? = csvFileDialog(current, FileDialog.SAVE, "备份 KMP 设置（新文件）")
 
 private fun csvFileDialog(current: String, mode: Int, title: String = "CSV 记录"): String? {
     val owner = KeyboardFocusManager.getCurrentKeyboardFocusManager().activeWindow
