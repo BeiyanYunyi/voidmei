@@ -99,7 +99,7 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
 
 @Composable
 internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: Int,
-    onSettingsChange: ((AppSettings) -> Unit)? = null, onClose: () -> Unit) {
+    onSettingsChange: ((AppSettings) -> Unit)? = null, presetName: String? = null, onClose: () -> Unit) {
     val typography = remember(settings.textFont) { textTypography(resolveTextFont(settings.textFont).family) }
     var warnings by remember { mutableStateOf(false) }
     var missing by remember { mutableStateOf(false) }
@@ -126,11 +126,13 @@ internal fun HudLayoutPreviewWindow(settings: AppSettings, activationRequest: In
             restoreDesktopWindow(it)
         }
     }
-    Window(onCloseRequest = onClose, state = state, title = "HUD 布局预览 · 示例数据") {
+    Window(onCloseRequest = onClose, state = state,
+        title = presetName?.let { "HUD 布局预览 · $it · 示例数据" } ?: "HUD 布局预览 · 示例数据") {
         SideEffect { nativeWindow = window }
         MaterialTheme(typography = typography, colorScheme = hudColorScheme()) {
             Surface(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize()) {
+                    if (presetName != null) Text("预设预览：$presetName（只读）", Modifier.padding(12.dp))
                     FlowRow(Modifier.padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(!warnings && !missing, { warnings = false; missing = false }, label = { Text("正常读数") })
                         FilterChip(warnings && !missing, { warnings = true; missing = false }, label = { Text("告警示例") })

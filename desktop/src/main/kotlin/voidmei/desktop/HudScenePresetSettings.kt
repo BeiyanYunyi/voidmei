@@ -17,6 +17,12 @@ internal fun HudScenePresetSettings(settings: AppSettings, canLoad: Boolean = tr
     var expanded by remember { mutableStateOf(false) }
     var deleted by remember { mutableStateOf<DeletedHudPreset?>(null) }
     var previous by remember { mutableStateOf<PreviousHudLayout?>(null) }
+    var preview by remember { mutableStateOf<Pair<String, HudSceneLayout>?>(null) }
+    var previewRequest by remember { mutableStateOf(0) }
+    preview?.let { (name, scene) ->
+        HudLayoutPreviewWindow(settings.copy(hudSceneLayout = scene.copy(enabled = true)), previewRequest,
+            presetName = name, onClose = { preview = null })
+    }
     TextButton({ expanded = !expanded }, Modifier.testTag("hud-presets-toggle")) { Text(if (expanded) "收起布局预设" else "管理布局预设") }
     previous?.let { saved ->
         TextButton({
@@ -63,6 +69,8 @@ internal fun HudScenePresetSettings(settings: AppSettings, canLoad: Boolean = tr
     settings.hudScenePresets.forEach { (key, scene) ->
         Text("$key · ${scene.regions.size} 区域 · ${scene.width} × ${scene.height} dp")
         FlowRow {
+            TextButton({ preview = key to scene; previewRequest++ },
+                modifier = Modifier.testTag("hud-preset-preview-$key")) { Text("预览") }
             TextButton({
                 previous = PreviousHudLayout(settings.hudSceneLayout)
                 onLoad()
