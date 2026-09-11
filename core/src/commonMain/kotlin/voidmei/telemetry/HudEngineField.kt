@@ -24,7 +24,7 @@ enum class HudEngineField(val id: String, val label: String, val unit: String, v
         MIXTURE -> engine.mixturePercent?.takeIf { it >= 0 }
         RADIATOR -> engine.radiatorPercent?.takeIf { it >= 0 }
         OIL_RADIATOR -> engine.oilRadiatorPercent?.takeIf { it >= 0 }
-        COMPRESSOR -> engine.compressorStage
+        COMPRESSOR -> engine.compressorStage?.takeIf { it >= 1 && it % 1.0 == 0.0 }
         MAGNETO -> engine.magneto
         MANIFOLD -> ManifoldPressureUnit.ATM.fromAtm(engine.manifoldPressureAtm)
         MANIFOLD_INHG -> ManifoldPressureUnit.INHG.fromAtm(engine.manifoldPressureAtm)

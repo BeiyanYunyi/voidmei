@@ -15,6 +15,21 @@ import voidmei.telemetry.*
 class HudEngineValidityGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun unavailableOrFractionalCompressorStagesDoNotDisplayAsRealGears() {
+        var engine by mutableStateOf(hudPreviewFlight().telemetry.engines.first().copy(compressorStage = 2.0))
+        compose.setContent { MaterialTheme { Box(Modifier.size(500.dp, 250.dp)) {
+            HudEnginePanel(listOf(engine), engine.index, fields = listOf(HudEngineField.COMPRESSOR))
+        } } }
+        compose.onNodeWithText("2 ").assertIsDisplayed()
+        for (value in listOf(0.0, -1.0, 1.5, null)) {
+            compose.runOnIdle { engine = engine.copy(compressorStage = value) }
+            compose.onNodeWithText("— ").assertIsDisplayed()
+            compose.onNodeWithText("2 ").assertDoesNotExist()
+        }
+        compose.runOnIdle { engine = engine.copy(compressorStage = 1.0) }
+        compose.onNodeWithText("1 ").assertIsDisplayed()
+    }
+
     @Test fun unavailableControlsClearOldValuesAndRecoverAtZeroOrRichMixture() {
         var engine by mutableStateOf(hudPreviewFlight().telemetry.engines.first().copy(rpmControlPercent = 80.0, mixturePercent = 120.0))
         compose.setContent { MaterialTheme { Box(Modifier.size(500.dp, 250.dp)) {

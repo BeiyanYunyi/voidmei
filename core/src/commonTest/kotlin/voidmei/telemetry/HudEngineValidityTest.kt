@@ -3,6 +3,16 @@ package voidmei.telemetry
 import kotlin.test.*
 
 class HudEngineValidityTest {
+    @Test fun compressorStagesArePositiveIntegersWithoutChangingRawTelemetry() {
+        val base = TelemetryParser.parse("""{"valid":true,"compressor stage 1":0}""",
+            """{"valid":true,"type":"test"}""")!!.engines.single()
+        assertEquals(0.0, base.compressorStage)
+        for (value in listOf(null, -1.0, 0.0, 0.5, 1.5, Double.NaN, Double.POSITIVE_INFINITY))
+            assertNull(HudEngineField.COMPRESSOR.value(base.copy(compressorStage = value)), "Stage $value")
+        for (value in listOf(1.0, 2.0, 3.0))
+            assertEquals(value, HudEngineField.COMPRESSOR.value(base.copy(compressorStage = value)))
+    }
+
     @Test fun unavailableControlsAreUnknownButZeroAndRichMixtureRemainValid() {
         val base = TelemetryParser.parse(
             """{"valid":true,"RPM throttle 1, %":-1,"mixture 1, %":-1}""",
