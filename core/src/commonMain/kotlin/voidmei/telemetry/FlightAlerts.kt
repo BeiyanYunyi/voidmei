@@ -62,6 +62,13 @@ class FlightAlerts {
     private data class VoiceAttempt(val id: Long, val alert: FlightAlert, val timeMs: Long)
     private var nextVoiceAttemptId = 0L
     private var voiceAttempt: VoiceAttempt? = null
+    private fun clearSampleHistory() {
+        compressorSince.clear()
+        lowFuelPressureSince = null
+        previousRadio = null
+        radioRate = null
+        previousFlaps = null
+    }
     fun reset() { compressorSince.clear(); lowFuelPressureSince = null; voiceAttempt = null; spokenControls.clear(); aircraft = null; previousTime = null; lastVoiced.clear(); lastUtterance = null; previousRadio = null; radioRate = null; previousFlaps = null }
 
     /** Undo only the current failed start; keep the global interval to bound retries. */
@@ -87,17 +94,18 @@ class FlightAlerts {
     }
 
     fun update(state: ConnectionState, limits: WingLimits?, nowMs: Long, voiceEnabled: Boolean, disabledVoices: Set<String> = emptySet(), gearLimitKmh: Double? = null, flapLimitKmh: Double? = null, flapModel: FlapLimits? = null, loadLimits: LoadLimits? = null, controlSpeeds: ControlEffectiveSpeeds? = null, stallSpeedKmh: Double? = null, voiceAvailable: (FlightAlert) -> Boolean = { true }, engineRpmLimits: List<EngineRpmLimit> = emptyList(), engineRpmReferences: List<EngineRpmReference> = emptyList(), thermalWarningEngines: Set<Int> = emptySet(), compressorRecommendations: List<CompressorRecommendation> = emptyList()): AlertUpdate {
+        if (state == ConnectionState.Delayed) {
+            clearSampleHistory()
+            voiceAttempt = null
+            return AlertUpdate(emptyList(), null)
+        }
         if (state !is ConnectionState.Flying) { reset(); return AlertUpdate(emptyList(), null) }
         if (aircraft != state.telemetry.aircraft || previousTime?.let { nowMs < it } == true) reset()
         // A slow successful poll is not a new flight. Preserve voice cooldowns and
         // spoken control episodes, but do not infer motion across a sparse interval.
         if (previousTime?.let { nowMs - it > 2500 } == true) {
-            compressorSince.clear()
-            lowFuelPressureSince = null
+            clearSampleHistory()
             previousTime = null
-            previousRadio = null
-            radioRate = null
-            previousFlaps = null
         }
         aircraft = state.telemetry.aircraft
         val elapsed = previousTime?.let { (nowMs - it) / 1000.0 }

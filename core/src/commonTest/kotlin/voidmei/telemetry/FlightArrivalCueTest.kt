@@ -31,4 +31,28 @@ class FlightArrivalCueTest {
         }
         assertNull(AppSettings().alertVoices["start1"])
     }
+
+    @Test fun delayedSamplesDoNotReplayArrivalButRealTransitionsStillDo() {
+        val cue = FlightArrivalCue()
+        assertTrue(cue.update(flight, 0, true))
+        assertFalse(cue.update(ConnectionState.Delayed, 20000, true))
+        assertFalse(cue.update(flight, 20500, true), "Cooldown expiry must not turn recovery into arrival")
+        assertFalse(cue.update(ConnectionState.Delayed, 40000, false))
+        assertFalse(cue.update(flight, 40500, true), "Enabling sound during a delay must not replay arrival")
+        val changed = flight.copy(telemetry = flight.telemetry.copy(aircraft = "second"))
+        cue.update(ConnectionState.Delayed, 50000, true)
+        assertTrue(cue.update(changed, 50500, true))
+        cue.update(ConnectionState.Delayed, 70000, true)
+        cue.update(ConnectionState.Disconnected("timeout"), 71500, true)
+        assertTrue(cue.update(changed, 72000, true))
+        cue.update(ConnectionState.Delayed, 90000, true)
+        cue.update(ConnectionState.WaitingForFlight, 90500, true)
+        assertTrue(cue.update(changed, 91000, true))
+    }
+
+    @Test fun initialDelayedRequestDoesNotConsumeTheFirstArrival() {
+        val cue = FlightArrivalCue()
+        assertFalse(cue.update(ConnectionState.Delayed, 1000, true))
+        assertTrue(cue.update(flight, 1500, true))
+    }
 }

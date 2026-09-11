@@ -54,6 +54,7 @@ class SparseTelemetryAlertsTest {
         for (change in listOf("disconnect", "aircraft", "clock")) {
             val evaluator = FlightAlerts()
             evaluator.update(flight(5.0), null, 10000, true)
+            evaluator.update(ConnectionState.Delayed, null, 10500, true)
             val state = if (change == "aircraft") flight(5.0).let {
                 it.copy(telemetry = it.telemetry.copy(aircraft = "other"))
             } else flight(5.0)
@@ -61,5 +62,30 @@ class SparseTelemetryAlertsTest {
             val result = evaluator.update(state, null, if (change == "clock") 9000 else 12000, true)
             assertEquals(FlightAlert.LOW_FUEL, result.voice, change)
         }
+    }
+
+    @Test fun delayedSamplesClearVisualsAndMotionWithoutClearingFuelCooldown() {
+        val evaluator = FlightAlerts()
+        val flaps = FlapLimits(listOf(FlapLimitPoint(.5, 500.0), FlapLimitPoint(1.0, 300.0)))
+        fun update(time: Long, percent: Double, radio: Double) = evaluator.update(
+            flight(5.0, percent, radio), null, time, true, flapModel = flaps)
+        assertEquals(FlightAlert.LOW_FUEL, update(0, 40.0, 100.0).voice)
+        assertEquals(AlertUpdate(emptyList(), null), evaluator.update(ConnectionState.Delayed, null, 1000, true))
+        val resumed = update(1500, 43.0, 1.0)
+        assertEquals(listOf(FlightAlert.LOW_FUEL), resumed.active)
+        assertNull(resumed.voice)
+        assertNull(update(3000, 43.0, 1.0).voice)
+        assertEquals(FlightAlert.LOW_FUEL, update(60000, 43.0, 1.0).voice)
+    }
+
+    @Test fun delayDoesNotRearmAnAlreadySpokenControlEpisode() {
+        val evaluator = FlightAlerts()
+        fun update(time: Long) = evaluator.update(flight(), null, time, true,
+            controlSpeeds = ControlEffectiveSpeeds(400.0, null, null))
+        assertEquals(FlightAlert.AILERON_EFFECTIVENESS, update(0).voice)
+        evaluator.update(ConnectionState.Delayed, null, 1000, true)
+        val resumed = update(30000)
+        assertEquals(listOf(FlightAlert.AILERON_EFFECTIVENESS), resumed.active)
+        assertNull(resumed.voice)
     }
 }

@@ -7,6 +7,8 @@ class FlightArrivalCue {
     private var lastAttemptMs: Long? = null
 
     fun update(state: ConnectionState, timeMs: Long, enabled: Boolean): Boolean {
+        // A slow in-flight request does not establish a new flight or connection.
+        if (state == ConnectionState.Delayed) return false
         val current = state as? ConnectionState.Flying
         val arrived = current != null && (!flying || aircraft != current.telemetry.aircraft)
         flying = current != null
