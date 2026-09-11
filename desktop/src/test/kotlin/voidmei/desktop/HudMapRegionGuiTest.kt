@@ -49,6 +49,7 @@ class HudMapRegionGuiTest {
         } } }
         compose.onAllNodesWithTag("map-objects-plot").assertCountEquals(2)
         compose.onAllNodesWithText("玩家位置 0.500, 0.500").assertCountEquals(2)
+        compose.onAllNodesWithText("玩家格号：F6").assertCountEquals(2)
         compose.onAllNodesWithText("地图对象 · 3 · 无底图").assertCountEquals(2)
         compose.onAllNodesWithTag("map-objects-plot")[0].performTouchInput { click(center) }
         compose.onAllNodesWithText("点击时对象：", substring = true).assertCountEquals(0)
