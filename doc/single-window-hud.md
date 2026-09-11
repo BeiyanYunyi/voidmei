@@ -957,3 +957,8 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 ## 底图在 HUD 会话内复用
 
 底图缓存提升至 HudPanel 会话，按端点与共享地图会话重置，只保留一张匹配完整 MapBounds 的已验证图片。多个地图区域串行共享下载；短暂遥测延迟暂时隐藏地图后，恢复时可复用图片。地图元数据改变后清空旧缓存并重新验证、下载，失败仍自动重试。真实 HTTP GUI 回归确认增加第二个区域及 Delayed → Flying 不增加图片请求，同时覆盖换图失败时移除旧图、恢复以及等待状态清除显示。桌面单元和地图 GUI 检查通过（/tmp/voidmei-map-cache-final.log，8 秒）；未重建离线包。首次测试命令缺少 xcompmgr 路径，补齐后运行成功。
+
+
+## 底图缓存的重连与端点隔离验证
+
+新增使用真实 HTTP 图片响应、实际 rememberTelemetryMapSession 和 HudPanel 的 GUI 回归。地图边界和 generation 始终相同，服务端图片由红变蓝：初次加载 1 次，短暂 Delayed 恢复后仍为 1 次；Disconnected 后重新 Flying 下载第 2 次并显示蓝图；端点由 127.0.0.1 切到 localhost 后下载第 3 次并显示更新后的红图。像素采样验证实际画面，不只检查请求计数。底图与共享会话相关 GUI 测试通过（/tmp/voidmei-map-cache-session.log，4 秒）。本次无运行代码变更，未重建包。

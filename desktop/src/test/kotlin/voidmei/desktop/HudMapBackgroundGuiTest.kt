@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -25,6 +26,68 @@ import voidmei.config.*
 
 class HudMapBackgroundGuiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun reconnectAndEndpointChangeDiscardCachedImageEvenWithIdenticalMapMetadata() {
+        val info = """{"valid":true,"map_min":[0,0],"map_max":[1000,1000],"map_generation":1}"""
+        val snapshot = MapSnapshot(MapTelemetryParser.info(info)!!, emptyList())
+        fun png(rgb: Int): ByteArray {
+            val image = java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_RGB)
+            for (y in 0..1) for (x in 0..1) image.setRGB(x, y, rgb)
+            return java.io.ByteArrayOutputStream().use { out -> javax.imageio.ImageIO.write(image, "png", out); out.toByteArray() }
+        }
+        val image = AtomicReference(png(0xFF0000))
+        val requests = AtomicInteger()
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+        server.createContext("/map_info.json") { exchange ->
+            val data = info.encodeToByteArray()
+            exchange.sendResponseHeaders(200, data.size.toLong()); exchange.responseBody.use { it.write(data) }
+        }
+        server.createContext("/map.img") { exchange ->
+            requests.incrementAndGet()
+            val data = image.get()
+            exchange.sendResponseHeaders(200, data.size.toLong()); exchange.responseBody.use { it.write(data) }
+        }
+        server.start()
+        var connection by mutableStateOf<ConnectionState>(hudPreviewFlight())
+        var endpoint by mutableStateOf("http://127.0.0.1:${server.address.port}")
+        try {
+            compose.setContent { MaterialTheme { Box(Modifier.size(500.dp)) {
+                val shared = rememberTelemetryMapSession(endpoint, connection, 0) {
+                    kotlinx.coroutines.flow.flowOf(MapConnection.Available(snapshot))
+                }
+                HudPanel(connection, AppSettings(hudSceneLayout = HudSceneLayout(500, 500,
+                    listOf(HudRegion("map", HudRegionContent.MAP, 0, 0, 500, 500)))),
+                    emptyList(), null, mapEndpoint = endpoint, sharedMap = shared) {}
+            } } }
+            fun waitForImage() = compose.waitUntil(5000) {
+                compose.onAllNodesWithContentDescription("地图底图与对象位置方向").fetchSemanticsNodes().isNotEmpty()
+            }
+            fun isRed(): Boolean {
+                val pixels = compose.onNodeWithTag("map-objects-plot").captureToImage().toPixelMap()
+                val pixel = pixels[pixels.width / 4, pixels.height / 4]
+                return pixel.red > pixel.blue
+            }
+            waitForImage()
+            kotlin.test.assertTrue(isRed())
+            assertEquals(1, requests.get())
+            compose.runOnIdle { connection = ConnectionState.Delayed }
+            compose.runOnIdle { connection = hudPreviewFlight() }
+            waitForImage()
+            assertEquals(1, requests.get())
+            compose.runOnIdle { connection = ConnectionState.Disconnected("test") }
+            compose.onNodeWithContentDescription("地图底图与对象位置方向").assertDoesNotExist()
+            image.set(png(0x0000FF))
+            compose.runOnIdle { connection = hudPreviewFlight() }
+            waitForImage()
+            kotlin.test.assertFalse(isRed())
+            assertEquals(2, requests.get())
+            image.set(png(0xFF0000))
+            compose.runOnIdle { endpoint = "http://localhost:${server.address.port}" }
+            waitForImage()
+            kotlin.test.assertTrue(isRed())
+            assertEquals(3, requests.get())
+        } finally { server.stop(0) }
+    }
 
     @Test fun hudLoadsBackgroundRetriesFailuresAndClearsOldMapOnGenerationChange() {
         val fixture = Json.parseToJsonElement(Files.readString(Path.of("../script/mock_scenarios/snapshots/map_wide.json"))).jsonObject
