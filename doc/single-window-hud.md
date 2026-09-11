@@ -597,3 +597,9 @@ HUD 设置始终保留布局预设组件，避免“载入预设 → 返回纵�
 IAS 读数关联已有 STALL_SPEED 告警；若同时存在 IAS_LIMIT，保持超速优先。失速告警不高亮 TAS 或 Mach。首次 GUI 验证发现负 IAS 仍显示为数值并着色（`/tmp/voidmei-stall-ias-highlight.log`），因此共享 HUD 字段对 IAS／TAS／Mach 统一拒绝负值及非有限值，保留有效零值。原始遥测与记录数据不改写，未改变告警计算阈值。
 
 共享 JVM／JS、桌面单元和 IAS／高度告警 GUI 回归通过（`/tmp/voidmei-speed-validity-alerts.log`），覆盖失速高亮、超速优先、解除告警、无效值清除及三种速度边界。本轮未重建 Nix 包，未新增真实游戏验收。
+
+## 速度与高度告警改动整包回归
+
+在 06dd33d 状态完成完整隔离 X11 GUI 回归：117 类、269 项，零失败／错误／跳过（`/tmp/voidmei-hud-alerts-full-gui.log`）。离线包构建通过，包含共享 JVM 和桌面单元构建检查（`/tmp/voidmei-hud-alerts-package-build.log`）。
+
+最新包在 SOFTWARE_FAST 兼容 HUD、十区域、80 ms 刷新及一次 1.5 秒遥测延迟的实际进程场景中通过绘制像素、单窗口稳定、配置保存和正常退出检查，产生 88 对记录行（`/tmp/voidmei-hud-alerts-package-run.log`；产物 `/tmp/voidmei-package-smoke-s9uo_8mx/`）。告警高亮的具体触发与来源由专门 GUI 测试覆盖，整包场景不扩大宣称为全部告警实战验收。本轮未修改运行逻辑，未新增物理 GPU 或真实游戏验证。
