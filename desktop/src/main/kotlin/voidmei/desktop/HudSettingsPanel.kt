@@ -162,11 +162,7 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
             TextButton(modifier = Modifier.testTag("hud-down-${field.id}"), enabled = index < selected.lastIndex, onClick = { move(index + 1) }) { Text("下移") }
         }
     }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), maxItemsInEachRow = 3) {
-        HudField.entries.filterNot { it in selected }.forEach { field ->
-            FilterChip(false, { onChange(settings.copy(hudFields = settings.hudFields + field.id)) }, modifier = Modifier.testTag("hud-add-${field.id}"), label = { Text("+ ${field.label}") })
-        }
-    }
+    HudFieldPicker(selected) { field -> onChange(settings.copy(hudFields = settings.hudFields + field.id)) }
 }
 
 @Composable
