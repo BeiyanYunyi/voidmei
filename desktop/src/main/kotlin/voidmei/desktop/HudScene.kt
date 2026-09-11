@@ -53,6 +53,16 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                             HudAlertRegion(region.title, alerts)
                         } else if (flight != null && region.content == HudRegionContent.MAP) {
                             HudMapObjects(mapEndpoint, sharedMap, region.title)
+                        } else if (flight != null && region.content == HudRegionContent.ATTITUDE) {
+                            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                if (region.title.isNotBlank()) Text(region.title, maxLines = 2,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                Box(Modifier.fillMaxWidth().weight(1f)) {
+                                    AttitudePanel(flight.telemetry, compact = true, model = model,
+                                        earthFixed = settings.hudAttitudeEarthFixed, showAoaLimits = settings.hudAttitudeAoaLimits,
+                                        fillAvailable = true)
+                                }
+                            }
                         } else if (flight != null && region.content == HudRegionContent.COMPASS) {
                             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 if (region.title.isNotBlank()) Text(region.title, maxLines = 2,
@@ -78,8 +88,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                 HudRegionContent.ENGINE -> HudEnginePanel(flight.telemetry.engines, region.engineIndex,
                                     fields = HudEngineField.selected(region.fields ?: settings.hudEngineFields),
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal))
-                                HudRegionContent.ATTITUDE -> AttitudePanel(flight.telemetry, compact = true, model = model,
-                                    earthFixed = settings.hudAttitudeEarthFixed, showAoaLimits = settings.hudAttitudeAoaLimits)
+                                HudRegionContent.ATTITUDE -> Unit
                                 HudRegionContent.MECHANIZATION -> MechanizationPanel(flight.telemetry, model,
                                     settings.hudGear, settings.hudFlaps, settings.hudAirbrake, automaticSweep = true,
                                     alerts = alerts, showFlapBar = settings.hudFlapBar)

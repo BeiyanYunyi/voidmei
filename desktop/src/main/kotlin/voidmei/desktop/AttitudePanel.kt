@@ -23,13 +23,13 @@ import androidx.compose.ui.semantics.stateDescription
 import java.util.Locale
 
 @Composable
-internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model: AircraftAlertModel? = null, earthFixed: Boolean = false, showAoaLimits: Boolean = true) {
+internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model: AircraftAlertModel? = null, earthFixed: Boolean = false, showAoaLimits: Boolean = true, fillAvailable: Boolean = false) {
     val attitude = AttitudeGeometry.fromIndicators(telemetry.pitchDeg, telemetry.rollDeg)
     val heading = AttitudeGeometry.heading(telemetry.headingDeg)
     val marker = AirflowMarker.fromAngles(telemetry.angleOfAttackDeg, telemetry.sideslipAngleDeg)
     val airflowLimits = if (showAoaLimits) AirflowLimits.fromTelemetry(telemetry, model) else emptyList()
     val headingText = heading?.let { String.format(Locale.ROOT, "%03d", kotlin.math.round(it).toInt() % 360) } ?: "—"
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(if (fillAvailable) Modifier.fillMaxSize() else Modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("姿态 · 航向 $headingText°")
         if (attitude == null) {
             Text("姿态数据不可用", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -40,7 +40,9 @@ internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model
         }
         else {
             val horizonAttitude = if (earthFixed) AttitudeGeometry(0.0, 0.0) else attitude
-            Canvas(Modifier.fillMaxWidth().height(if (compact) 110.dp else 190.dp).testTag("attitude-canvas")
+            val canvasModifier = if (fillAvailable) Modifier.fillMaxWidth().weight(1f)
+                else Modifier.fillMaxWidth().height(if (compact) 110.dp else 190.dp)
+            Canvas(canvasModifier.testTag("attitude-canvas")
                 .semantics { stateDescription = if (earthFixed) "地面参考" else "机体参考"
                     contentDescription = (when {
                     marker == null -> "姿态仪，迎角/侧滑十字不可用"
