@@ -4,6 +4,29 @@ import kotlin.test.*
 import voidmei.config.*
 
 class HudFieldTest {
+    @Test fun attitudeReadingsMatchHorizonAndHandleEachMissingAxisIndependently() {
+        val telemetry = TelemetryParser.parse("""{"valid":true}""",
+            """{"valid":true,"aviahorizon_pitch":-13.177,"aviahorizon_roll":-88.9}""")!!
+        fun read(field: HudField, t: Telemetry = telemetry) = field.value(ConnectionState.Flying(t, FlightMetrics()))
+        assertEquals(13.177, read(HudField.PITCH))
+        assertEquals(-88.9, read(HudField.ROLL)!!, 1e-9)
+        assertEquals(13.177, read(HudField.PITCH, telemetry.copy(rollDeg = null)))
+        assertEquals(-88.9, read(HudField.ROLL, telemetry.copy(pitchDeg = null))!!, 1e-9)
+        assertEquals(-180.0, read(HudField.ROLL, telemetry.copy(rollDeg = 540.0)))
+        assertEquals(90.0, read(HudField.PITCH, telemetry.copy(pitchDeg = -90.0)))
+        assertEquals(-90.0, read(HudField.PITCH, telemetry.copy(pitchDeg = 90.0)))
+        assertEquals(0.0, read(HudField.PITCH, telemetry.copy(pitchDeg = -0.0)))
+        for (bad in listOf(null, Double.NaN, Double.POSITIVE_INFINITY)) {
+            assertNull(read(HudField.PITCH, telemetry.copy(pitchDeg = bad)))
+            assertNull(read(HudField.ROLL, telemetry.copy(rollDeg = bad)))
+        }
+        assertNull(read(HudField.PITCH, telemetry.copy(pitchDeg = 90.1)))
+        val settings = AppSettings(hudFields = listOf("pitch", "roll"))
+        assertEquals(settings, SettingsJson.decode(SettingsJson.encode(settings)))
+        assertEquals(listOf(HudField.PITCH, HudField.ROLL), HudField.selected(settings.hudFields))
+        assertFalse("pitch" in HudField.defaults || "roll" in HudField.defaults)
+    }
+
     @Test fun fuelMassShareUsesMatchingBasicMassAndPreservesZero() {
         val t = TelemetryParser.parse("""{"valid":true,"Mfuel, kg":500}""", """{"valid":true,"type":"test"}""")!!
         val p = voidmei.fm.FlightModelParameters(null, null, emptyList(), false, emptyList(), basicMassKg = 1500.0)
