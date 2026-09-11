@@ -9,6 +9,7 @@ NixOS 上可在源码目录运行 `nix run path:.#kotlin -- --no-hud` 启动 Kot
 再从界面开启 HUD。该入口会先用 Gradle 构建应用；默认 `nix run path:.` 仍启动旧版。
 独立 Kotlin 包可用 `nix run path:.#kotlin-offline -- --no-hud` 运行，启动时无需 Gradle 或可写源码目录。
 首次构建仍需下载固定哈希的依赖；运行与迁移限制见上方说明。
+Kotlin 安装包的三平台发布候选与校验流程见 [Kotlin 发布候选](doc/kotlin-preview-release.md)。
 Linux 新配置默认使用兼容 HUD 显示路径，可使用 OpenGL；已有配置保留原选择。
 旧 Kotlin 配置若尚未保存过该选项，也会采用当前平台默认值。
 若开启 HUD 后无响应，可用 `--no-hud` 恢复启动，再启用“HUD 兼容显示”。

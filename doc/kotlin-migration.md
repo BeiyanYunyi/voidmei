@@ -2784,6 +2784,14 @@ FlightRecorder 在两份 CSV 追加并 flush 成功后更新观察器；每个�
 
 日志 `/tmp/voidmei-full-gui-after-performance.log`；XML/HTML 报告副本 `/tmp/voidmei-full-gui-after-performance-results/`。环境为隔离 Xvfb/xcompmgr、SOFTWARE_FAST，不包含独立原生 HUD 指针、热键和托盘任务，也不代表真实游戏或 Windows/macOS 验收。本轮无生产代码变化，未重复构建包。
 
+### Kotlin 三平台发布候选流程
+
+原 Kotlin 工作流新增 workflow_call 入口，手动 Kotlin preview candidate 流程复用同一套三平台测试与构建。仅在全部成功后收集同次运行的 Deb/MSI/DMG，生成 manifest.json、SHA256SUMS 和预览说明。整理脚本校验完整提交号、唯一显式包版本、三平台各一个非空安装包及文件名版本，输出目录不得已存在；安装包不重新构建，哈希针对发布候选中的实际字节。
+
+默认 dry_run=true，仅生成候选 artifact。手动选择 false 后才由独立 contents: write job 创建 draft + prerelease，以 kotlin-版本-preview-提交前缀命名并绑定完整提交号；不自动公开，不触发旧数字标签发行流程，不覆盖已有同名发行。默认 Nix 入口仍为旧版，正式切换仍待整体验收。
+
+`python3 script/test_prepare_kotlin_preview.py` 四项测试通过，覆盖完整制品与哈希、缺包/重包/空包/错误版本、拒绝覆盖既有目录、提交号与版本校验；测试也加入三平台 CI。actionlint 检查原 Kotlin 工作流和新候选工作流通过。该证据验证整理逻辑与工作流静态结构；本轮未推送、触发远程 Actions 或创建 Release，尚未证明远程三平台构建成功。用法见 kotlin-preview-release.md。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。

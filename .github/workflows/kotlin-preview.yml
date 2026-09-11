@@ -1,0 +1,66 @@
+name: Kotlin preview candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Only prepare review artifacts; do not create a release draft'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-package:
+    uses: ./.github/workflows/kotlin.yml
+
+  collect:
+    needs: test-and-package
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.bundle.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: VoidMei-Kotlin-*
+          path: build/kotlin-artifacts
+      - name: Collect installers and checksums
+        id: bundle
+        shell: bash
+        run: |
+          python3 script/prepare_kotlin_preview.py build/kotlin-artifacts build/kotlin-preview --revision "$GITHUB_SHA"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          manifest = json.loads(Path('build/kotlin-preview/manifest.json').read_text())
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as stream:
+              stream.write('tag=' + manifest['tag'] + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VoidMei-Kotlin-preview
+          path: build/kotlin-preview/
+          if-no-files-found: error
+
+  draft:
+    if: ${{ !inputs.dry_run }}
+    needs: collect
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: VoidMei-Kotlin-preview
+          path: preview
+      - name: Create unpublished prerelease draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PREVIEW_TAG: ${{ needs.collect.outputs.tag }}
+        shell: bash
+        run: |
+          gh release create "$PREVIEW_TAG" preview/*.deb preview/*.msi preview/*.dmg preview/manifest.json preview/SHA256SUMS \
+            --target "$GITHUB_SHA" --draft --prerelease --title "VoidMei $PREVIEW_TAG" --notes-file preview/release-notes.md
