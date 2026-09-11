@@ -8,6 +8,28 @@ import java.awt.Rectangle
 import kotlin.test.*
 
 class SettingsStoreTest {
+    @Test fun fullPresetCollectionPersistsWithinDocumentLimitAndRetainsUnknownKeys() = withDirectory { directory ->
+        val path = directory.resolve("settings.json")
+        Files.writeString(path, """{"version":1,"future":{"value":42}}""")
+        val scene = HudSceneLayout(1280, 720, (1..32).map { index ->
+            HudRegion("region-$index", HudRegionContent.FLIGHT, 0, 0, 400, 300,
+                fields = voidmei.telemetry.HudField.entries.map { it.id }, title = "飞行数据".repeat(20), fontScale = 1.5f)
+        })
+        val settings = AppSettings(hudSceneLayout = scene,
+            hudScenePresets = (1..16).associate { "布局 $it" to scene })
+        val store = SettingsStore(path)
+        assertNull(store.load().error)
+        store.save(settings)
+        assertTrue(Files.size(path) <= SettingsStore.MAX_BYTES)
+        val restarted = SettingsStore(path)
+        assertNull(restarted.load().error)
+        assertEquals(settings, restarted.load().settings)
+        restarted.save(settings.copy(voiceVolume = 25))
+        assertEquals(25, SettingsStore(path).load().settings.voiceVolume)
+        val document = kotlinx.serialization.json.Json.parseToJsonElement(Files.readString(path))
+        assertTrue(document.toString().contains("\"future\":{\"value\":42}"))
+    }
+
     @Test fun olderProfileWithoutHudChoiceUsesPlatformDefaultAndRetainsOtherFields() = withDirectory { directory ->
         val path = directory.resolve("settings.json")
         val original = """{"version":1,"hudEnabled":true,"fmDataRoot":"relative-data","future":42}"""

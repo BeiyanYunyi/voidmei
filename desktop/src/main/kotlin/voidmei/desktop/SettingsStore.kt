@@ -47,8 +47,14 @@ class SettingsStore(val file: Path, private val defaults: AppSettings = AppSetti
         // Detect edits made by another process rather than overwriting them.
         val disk = if (Files.notExists(file, LinkOption.NOFOLLOW_LINKS)) null else readDocument()
         check(disk == original) { "配置已被其他进程修改，请重启后再保存" }
-        val text = SettingsJson.encode(settings, original)
-        val encoded = text.toByteArray(Charsets.UTF_8)
+        var text = SettingsJson.encode(settings, original)
+        var encoded = text.toByteArray(Charsets.UTF_8)
+        // Nested layout presets can exceed the document limit through indentation alone.
+        // Keep small profiles readable; compact large ones without discarding unknown keys.
+        if (encoded.size > MAX_BYTES) {
+            text = SettingsJson.encode(settings, original, prettyPrint = false)
+            encoded = text.toByteArray(Charsets.UTF_8)
+        }
         require(encoded.size <= MAX_BYTES) { "配置超过 1 MiB 限制" }
         Files.createDirectories(file.toAbsolutePath().parent)
         val temporary = Files.createTempFile(file.toAbsolutePath().parent, ".settings-", ".tmp")

@@ -228,7 +228,7 @@ object SettingsJson {
         )
     }
 
-    fun encode(settings: AppSettings, previous: String? = null): String {
+    fun encode(settings: AppSettings, previous: String? = null, prettyPrint: Boolean = true): String {
         val fields = previous?.let {
             decode(it) // Refuse malformed or future-version documents before overwriting anything.
             Json.parseToJsonElement(it).jsonObject.toMutableMap()
@@ -298,6 +298,6 @@ object SettingsJson {
         }
         position("mainPosition", settings.mainPosition)
         position("hudPosition", settings.hudPosition)
-        return Json { prettyPrint = true }.encodeToString(JsonObject.serializer(), JsonObject(fields))
+        return Json { this.prettyPrint = prettyPrint }.encodeToString(JsonObject.serializer(), JsonObject(fields))
     }
 }
