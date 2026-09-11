@@ -17,7 +17,7 @@ import voidmei.telemetry.HudEngineField
 internal fun EngineControlBars(engine: Engine, fields: List<HudEngineField>) {
     fields.distinct().forEach { field ->
         val maximum = when (field) {
-            HudEngineField.RPM_CONTROL -> 100
+            HudEngineField.RPM_CONTROL, HudEngineField.RADIATOR, HudEngineField.OIL_RADIATOR -> 100
             HudEngineField.MIXTURE -> 120
             else -> return@forEach
         }

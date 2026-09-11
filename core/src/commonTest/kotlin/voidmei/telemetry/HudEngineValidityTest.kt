@@ -10,10 +10,13 @@ class HudEngineValidityTest {
         assertEquals(-1.0, base.rpmControlPercent)
         assertEquals(-1.0, base.mixturePercent)
         for (value in listOf(null, -1.0, -0.5, Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0.0, 100.0, 120.0)) {
-            val engine = base.copy(rpmControlPercent = value, mixturePercent = value)
+            val engine = base.copy(rpmControlPercent = value, mixturePercent = value,
+                radiatorPercent = value, oilRadiatorPercent = value)
             val expected = value?.takeIf { it.isFinite() && it >= 0 }
             assertEquals(expected, HudEngineField.RPM_CONTROL.value(engine), "RPM control $value")
             assertEquals(expected, HudEngineField.MIXTURE.value(engine), "Mixture $value")
+            assertEquals(expected, HudEngineField.RADIATOR.value(engine), "Radiator $value")
+            assertEquals(expected, HudEngineField.OIL_RADIATOR.value(engine), "Oil radiator $value")
         }
     }
 
