@@ -235,3 +235,21 @@ Main 使用应用层 HudMessageSession，让设置页与所有消息区域共用
 同一路径更新时保留当前完整图片，直到替代图片解码成功后整体发布，不再先清空图片制造短暂空白。解码失败仍清除旧图并提示；更换路径通过原有组合身份重置，不继承旧路径图片。文件属性轮询与每秒检查规则保持。
 
 桌面单元、图片准星与分区 GUI 回归通过（`/tmp/voidmei-crosshair-shared-image.log`，7 秒）。新增受控解码测试让两个消费者共享加载状态，验证首次加载一次、暂停第二次解码时两处旧图保持、完成后两处更新且总共只加载两次；既有文件删除／恢复、坏图片替换、图片拉伸及准星分区回归继续通过。本轮未重建 Nix 包，未新增真实游戏验收。
+
+## 离线包的单窗口分区验收
+
+`script/smoke_kmp_recording.py` 新增 `--hud-scene`，要求开启 HUD、正常退出测试及 1× 显示缩放。临时配置放置飞行、发动机、消息、地图和准星五区，模拟 HTTP 提供相应数据；至少读取三次地图对象和消息后才能结束。测试代理在 HUD 达到配置的 900×600 尺寸后，每 250 ms 检查同一原生 Frame、单窗口数量、可见性和固定边界。退出前截图并检查可见黄色标记，再沿原有路径关闭主窗口、保存位置和停止记录。
+
+最新离线包构建通过（`/tmp/voidmei-scene-package-build.log`）。实际包在隔离 Xvfb/xcompmgr、SOFTWARE_FAST 下以兼容模式和 80 ms 间隔启动，加入第 20 次请求延迟 1.5 秒的场景，最终验收通过（`/tmp/voidmei-scene-package-smoke-final.log`）：87 组配对 CSV 样本、同一文件对、9 次地图对象读取、9 次消息读取（首次零游标，此后事件游标为 1）；窗口稳定检查 34 次，AWT 心跳延迟 0／8／0／0／0 ms，正常退出码 0。
+
+产物目录 `/tmp/voidmei-package-smoke-bm3rjxp5/` 保留启动日志、配置、CSV、报告与 `hud-scene.png`。截图已检查五区读数、消息、格号 F6、准星及不同背景 alpha。首轮监测未区分窗口初始尺寸与配置画布尺寸，后明确从达到目标尺寸开始；另一次数据验收虽通过，截图被设置窗口遮挡，因此在无窗口管理器的隔离环境中增加测试专用前置动作，并加强像素断言后重跑。这个测试不验证实际窗口管理器的置顶行为、真机 GPU 性能或游戏覆盖。
+
+运行示例（需 JDK、Xvfb、xcompmgr 环境）：
+
+```sh
+TMPDIR=/tmp python3 script/test_hud_compositing.py python3 script/smoke_kmp_recording.py \
+  /tmp/voidmei-kotlin-offline --hud-scene --compatible-hud --graceful-exit \
+  --check-ui --renderer SOFTWARE_FAST --poll-interval-ms 80 --delayed-sample
+```
+
+Python 语法检查及既有四项渲染判定测试通过。本轮未触发远程 CI。

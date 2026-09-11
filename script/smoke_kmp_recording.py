@@ -11,11 +11,13 @@ import time
 from smoke_kmp_deb import smoke
 
 
-def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False, hud_renderer=None, poll_interval_ms=100, delayed_sample=False):
+def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False, hud_renderer=None, poll_interval_ms=100, delayed_sample=False, hud_scene=False):
     if delayed_sample and wep:
         raise ValueError("Delayed samples and WEP history use separate smoke scenarios")
     if not isinstance(poll_interval_ms, int) or isinstance(poll_interval_ms, bool) or not 10 <= poll_interval_ms <= 5000:
         raise ValueError("poll interval must be an integer between 10 and 5000 ms")
+    if hud_scene and (not hud or not graceful_exit or display_scale != 1):
+        raise ValueError("HUD scene smoke requires HUD, graceful exit and display scale 1")
     flying = threading.Event()
     flying.set()
     requests = {}
@@ -55,6 +57,13 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                         {"water_temperature": 0, "oil_temperature": 0, "altitude_10k": 0},
                         {"water_temperature": -65535, "head_temperature": None, "oil_temperature": "invalid", "altitude_10k": -65535},
                     )[phase])
+                if hud_scene and self.path == "/map_info.json":
+                    data = {"valid": True, "map_min": [0, 0], "map_max": [20000, 20000],
+                            "map_generation": 1, "grid_steps": [2000, 2000], "grid_zero": [0, 20000]}
+                elif hud_scene and self.path == "/map_obj.json":
+                    data = [{"type": "aircraft", "icon": "Player", "x": .5, "y": .5, "dx": 0, "dy": -1}]
+                elif hud_scene and self.path.startswith("/hudmsg?"):
+                    data = {"events": [{"id": 1, "msg": "Packaged HUD scene message"}], "damage": []}
             body = json.dumps(data).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -69,6 +78,18 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
     def prepare(root):
         settings = {"version": 1, "recordingAutoStart": True, "hudCompatibilityMode": compatible_hud,
                     "hudEnabled": True, "pollIntervalMs": poll_interval_ms}
+        if hud_scene:
+            settings["hudPosition"] = {"x": 40, "y": 40}
+            def region(name, content, x, y, width, height, alpha=.5, fields=None):
+                return dict(id=name, content=content, x=x, y=y, width=width, height=height,
+                            backgroundAlpha=alpha, contentAlpha=1, engineIndex=1, fields=fields, visible=True)
+            settings["hudSceneLayout"] = dict(width=900, height=600, enabled=True, regions=[
+                region("flight", "FLIGHT", 0, 0, 280, 220, .25, ["ias", "altitude"]),
+                region("engine", "ENGINE", 0, 250, 280, 220, .75, ["rpm", "water_temperature"]),
+                region("messages", "MESSAGES", 300, 0, 280, 250),
+                region("map", "MAP", 600, 0, 300, 500),
+                region("crosshair", "CROSSHAIR", 370, 300, 128, 128, 0)])
+            (root / "require-single-hud").touch()
         if tray_background:
             settings["startInTray"] = True
             (root / "require-tray-background").touch()
@@ -100,6 +121,9 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
     def ready(root):
         nonlocal stopped_at
         if delayed_sample and any(requests.get(path, 0) <= 20 for path in ("/state", "/indicators")):
+            return False
+        if hud_scene and (requests.get("/map_obj.json", 0) < 3 or
+                          sum(count for path, count in list(requests.items()) if path.startswith("/hudmsg?")) < 3):
             return False
         files = list((root / "userdata/voidmei/records").glob("*.csv"))
         if len(files) != 2 or any(len(rows(path)) < 5 for path in files):
@@ -138,6 +162,12 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
         saved = json.loads((root / "config/settings-kmp.json").read_text())
         if saved.get("hudCompatibilityMode") is not True or "Presentation: SwingGraphics; full HUD" not in (root / "startup.log").read_text():
             raise RuntimeError("Persisted compatibility setting did not activate the full HUD")
+    if hud_scene:
+        saved = json.loads((root / "config/settings-kmp.json").read_text())
+        if len(saved.get("hudSceneLayout", {}).get("regions", [])) != 5 or not saved["hudSceneLayout"].get("enabled"):
+            raise RuntimeError("Packaged scene configuration was not retained")
+        if "[VoidMei exit test] single HUD stable" not in (root / "startup.log").read_text():
+            raise RuntimeError("Packaged scene did not retain one stable HUD window")
     files = list((root / "userdata/voidmei/records").glob("*.csv"))
     flight_file = next(path for path in files if not path.name.endswith("-engines.csv"))
     engine_file = flight_file.with_name(flight_file.stem + "-engines.csv")
@@ -227,6 +257,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
         raise RuntimeError("Configured poll interval was not preserved")
     report = {"poll_interval_ms_checked": poll_interval_ms, "samples": len(flight), "flight_csv": str(flight_file), "engine_csv": str(engine_file),
               "delayed_sample_checked": delayed_sample,
+              "hud_scene_checked": hud_scene,
               "graceful_exit_checked": graceful_exit,
               "tray_recovery_checked": tray_recovery,
               "tray_background_checked": tray_background,
@@ -248,6 +279,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("package", type=Path)
+    parser.add_argument("--hud-scene", action="store_true", help="Exercise five regions in one HUD; requires --graceful-exit")
     parser.add_argument("--delayed-sample", action="store_true", help="Delay the twentieth HTTP sample by 1.5 seconds; require one continuous recording pair")
     parser.add_argument("--poll-interval-ms", type=int, default=100, help="Configured polling delay, 10–5000 ms")
     parser.add_argument("--timeout", type=float, default=60)
@@ -275,6 +307,8 @@ if __name__ == "__main__":
         parser.error("--delayed-sample and --wep select separate history scenarios")
     if not 1 <= args.timeout <= 300:
         parser.error("timeout must be between 1 and 300 seconds")
+    if args.hud_scene and (args.no_hud or not args.graceful_exit or args.display_scale != 1):
+        parser.error("--hud-scene requires HUD, --graceful-exit and --display-scale=1")
     if args.compatible_hud and args.no_hud:
         parser.error("--compatible-hud requires the HUD")
     if args.display_scale != 1 and not args.graceful_exit:
@@ -283,4 +317,4 @@ if __name__ == "__main__":
         parser.error("--tray-recovery requires --no-hud and --graceful-exit")
     if args.tray_background and (not args.graceful_exit or args.no_hud or args.tray_recovery):
         parser.error("--tray-background requires --graceful-exit and cannot use --no-hud or --tray-recovery")
-    recording_smoke(args.package.resolve(), args.timeout, args.renderer, not args.no_hud, args.check_ui, args.compatible_hud, args.graceful_exit, args.display_scale, args.jet, args.wep, args.wep_dropout, args.tray_recovery, args.tray_background, args.hud_renderer, args.poll_interval_ms, args.delayed_sample)
+    recording_smoke(args.package.resolve(), args.timeout, args.renderer, not args.no_hud, args.check_ui, args.compatible_hud, args.graceful_exit, args.display_scale, args.jet, args.wep, args.wep_dropout, args.tray_recovery, args.tray_background, args.hud_renderer, args.poll_interval_ms, args.delayed_sample, args.hud_scene)
