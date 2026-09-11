@@ -2996,6 +2996,16 @@ HUD 的过载 G 值现在跟随现有 LOAD_LIMIT 告警使用配置的告警色�
 
 完整 `:desktop:guiTest` 通过：68 个类、190 项测试，零失败／错误／跳过，38 秒（`/tmp/voidmei-full-gui-short-window.log`）。环境为隔离 Xvfb/xcompmgr，未重建 Nix 包，不扩大真实游戏验收结论。
 
+### 当前离线包兼容 HUD 整包回归
+
+基于 `98564e8` 构建默认离线 Nix 包通过：`/nix/store/qjfk30qq146ay0qs6p9qby2x7xhsv9lp-voidmei-kotlin-2.0.0`（`/tmp/voidmei-current-hud-package-nix.log`），包含温度通道告警、自适应告警高度及此前遥测延迟状态。
+
+隔离 Xvfb/xcompmgr、本地合成 HTTP 服务下运行真实打包程序，启用兼容 HUD、80 ms 刷新、托盘后台启动和自动记录。100 次 `/state` 与 100 次 `/indicators` 请求产生 100 对飞行／发动机 CSV 样本；温度来源、助推燃油通道、动力响应验证通过。5 次 AWT 心跳延迟为 0、2、0、0、0 ms；后台隐藏主窗口、托盘入口、最终窗口位置保存及录制中正常退出通过，退出码 0。
+
+本次使用强制软件 GL 驱动的隔离显示：启动日志包含主窗口 GL 上下文创建失败，随后回退 SOFTWARE_FAST；兼容 HUD 报告 OPENGL 和 `Presentation: SwingGraphics; full HUD`。外层 X11 日志另有 BadMatch／BadDrawable，不在应用启动日志中；不据此声称无图形诊断错误或物理 NVIDIA 加速通过。测试没有验证真实游戏、物理关闭按钮、音频播放或所有 UI 操作。
+
+运行日志 `/tmp/voidmei-current-hud-package-smoke.log`；启动日志、隔离设置、CSV 与报告副本 `/tmp/voidmei-current-hud-package-artifacts/`。本轮只更新验证记录。
+
 ## 完整替换的验收清单
 
 - [ ] 遥测：所有原始字段、地图与消息端点、单位、缺失值处理、多引擎、断线/重连/换机回归。
