@@ -10,6 +10,19 @@ import voidmei.telemetry.*
 
 @Composable
 internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, onChange: (HudRegion) -> Unit) {
+    if (region.content == HudRegionContent.CONTROLS) {
+        val axes = listOf(HudField.AILERON, HudField.ELEVATOR, HudField.RUDDER)
+        val selected = region.fields ?: axes.map { it.id }
+        Text("显示的操纵面")
+        FlowRow {
+            axes.forEach { field ->
+                FilterChip(field.id in selected, { onChange(region.copy(fields =
+                    if (field.id in selected) selected.filterNot { it == field.id } else selected + field.id)) },
+                    label = { Text(field.label) }, modifier = Modifier.testTag("hud-region-control-${region.id}-${field.id}"))
+            }
+        }
+        return
+    }
     if (region.content == HudRegionContent.ALERTS) {
         val selected = region.fields ?: AlertSeverity.entries.map { it.name.lowercase() }
         Text("告警类别（无匹配告警时隐藏区域）")

@@ -16,6 +16,33 @@ import voidmei.config.*
 class HudControlsGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun editorSelectsAxesIndependentlyAndPreservesUnknownIds() {
+        val one = HudRegion("one", HudRegionContent.CONTROLS, 0, 0, 400, 260, fields = listOf("aileron", "future"))
+        var scene by mutableStateOf(HudSceneLayout(800, 260, listOf(one, one.copy(id = "two", x = 400, fields = listOf("rudder")))))
+        compose.setContent { MaterialTheme { Column {
+            HudRegionFieldsSettings(scene.regions.first(), AppSettings()) { region ->
+                scene = scene.copy(regions = scene.regions.map { if (it.id == region.id) region else it })
+            }
+            Box(Modifier.size(800.dp, 260.dp)) { HudPanel(hudPreviewFlight(), AppSettings(hudSceneLayout = scene), emptyList(), null) {} }
+        } } }
+        compose.onNodeWithTag("hud-control-aileron").assertIsDisplayed()
+        compose.onNodeWithTag("hud-control-rudder").assertIsDisplayed()
+        compose.onNodeWithTag("hud-control-elevator").assertDoesNotExist()
+        compose.onNodeWithTag("hud-region-control-one-aileron").performClick()
+        compose.onNodeWithText("未选择操纵面").assertIsDisplayed()
+        compose.onNodeWithTag("hud-control-aileron").assertDoesNotExist()
+        compose.onNodeWithTag("hud-control-rudder").assertIsDisplayed()
+        compose.onNodeWithTag("hud-region-control-one-elevator").performClick()
+        compose.onNodeWithText("升降舵 20.0%").assertIsDisplayed()
+        compose.runOnIdle {
+            assertEquals(listOf("future", "elevator"), scene.regions.first().fields)
+            assertEquals(scene, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = scene))).hudSceneLayout)
+            scene = scene.copy(regions = scene.regions.map { if (it.id == "one") it.copy(fields = null) else it })
+        }
+        compose.onNodeWithTag("hud-control-aileron").assertIsDisplayed()
+        compose.onAllNodesWithTag("hud-control-rudder").assertCountEquals(2)
+    }
+
     @Test fun signedControlPositionsMoveAcrossScaleAndMissingInputClearsMarker() {
         val scene = HudSceneLayout(440, 300, listOf(HudRegion("controls", HudRegionContent.CONTROLS, 0, 0, 440, 300)))
         var flight by mutableStateOf(hudPreviewFlight().let { it.copy(telemetry = it.telemetry.copy(

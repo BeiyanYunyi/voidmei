@@ -41,6 +41,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                     HudRegionContent.ENGINE -> settings.hudEngineFields
                     HudRegionContent.MECHANIZATION -> HudMechanizationField.inherited(settings)
                     HudRegionContent.MESSAGES -> HudMessageKind.entries.map { it.name.lowercase() }
+                    HudRegionContent.CONTROLS -> listOf("aileron", "elevator", "rudder")
                     HudRegionContent.ALERTS -> AlertSeverity.entries.map { it.name.lowercase() }
                     else -> settings.hudFields
                 }
@@ -111,7 +112,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                 HudRegionContent.MAP -> Unit
                                 HudRegionContent.CROSSHAIR -> Unit
                                 HudRegionContent.COMPASS -> Unit
-                                HudRegionContent.CONTROLS -> ControlSurfacePanel(flight.telemetry)
+                                HudRegionContent.CONTROLS -> ControlSurfacePanel(flight.telemetry, region.fields)
                             }
                         }
                         HudScrollIndicator(scroll, Modifier.matchParentSize())
