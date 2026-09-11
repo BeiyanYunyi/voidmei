@@ -1,6 +1,8 @@
 package voidmei.desktop
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -14,6 +16,27 @@ import kotlin.test.assertTrue
 
 class HudEngineFieldsGuiTest {
     @get:Rule val compose = createComposeRule()
+
+    @Test fun engineSearchAndOrderingRemainReachableInShortSettingsWindow() {
+        var ids by mutableStateOf(HudEngineField.defaults)
+        compose.setContent { MaterialTheme {
+            Column(Modifier.size(600.dp, 300.dp).verticalScroll(rememberScrollState())) {
+                HudEngineFieldSettings(ids) { ids = it }
+            }
+        } }
+        val search = compose.onNodeWithTag("hud-engine-field-search")
+        search.assertIsNotDisplayed()
+        search.performScrollTo().performTextInput("推进 KW")
+        compose.onNodeWithTag("hud-engine-field-thrust_power").performScrollTo().performClick()
+        compose.runOnIdle { kotlin.test.assertEquals(HudEngineField.defaults + "thrust_power", ids) }
+        compose.onNodeWithTag("hud-engine-up-thrust_power").performScrollTo().performClick()
+        compose.runOnIdle {
+            kotlin.test.assertEquals("thrust_power", ids[ids.lastIndex - 1])
+            kotlin.test.assertEquals(HudEngineField.defaults.last(), ids.last())
+        }
+        compose.onNodeWithTag("hud-engine-field-search-clear").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-engine-field-propulsive_efficiency").performScrollTo().assertIsDisplayed()
+    }
 
     @Test fun fieldSearchMatchesNamesIdsAndUnitsWithoutChangingSelection() {
         var ids by mutableStateOf(listOf("rpm", "future_field"))

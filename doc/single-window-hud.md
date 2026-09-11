@@ -925,3 +925,10 @@ Python 四项脚本回归、默认 Kotlin 离线包构建及 SOFTWARE_FAST 兼�
 包级 HUD 场景改为发送一条长消息和一条较早的短消息，将消息区域 `messageMaxLines` 设为 2，并检查正常退出后此设置及命名预设保留。最新 Kotlin 离线包 `/nix/store/gl24rbfxfij90dq6m0bfmiajpb7xg5rg-voidmei-kotlin-2.0.0` 构建成功，兼容 HUD、SOFTWARE_FAST、80 ms 轮询和延迟样本场景通过。实际截图确认新消息显示两行并以省略号结束，随后“事件 #1 · Previous”仍完整可见；此显示结论来自截图检查，脚本自动断言覆盖配置持久化。
 
 34 次窗口采样保持同一个 1040×600 HUD；86 对飞行／发动机 CSV、既有仪表像素、位置保存和退出码 0 检查通过。七项 Python 冒烟辅助测试通过。构建日志 `/tmp/voidmei-message-package-build.log`，运行日志 `/tmp/voidmei-message-package-run.log`，截图与报告 `/tmp/voidmei-package-smoke-wsskjv19`。测试环境为隔离 Xvfb/xcompmgr 与模拟 HTTP，未进行真实游戏或物理 GPU 验收。
+
+
+## 消息显示与发动机字段设置集成回归
+
+截至 `b923d05` 的生产代码，桌面单元检查及完整 GUI 回归通过：128 个类、306 项 GUI 测试，零失败、错误或跳过，54 秒完成（`/tmp/voidmei-message-settings-full.log`）。覆盖近期消息限行、消息配色、预览溢出提示及发动机字段搜索与原有 HUD／配置功能的共同运行。
+
+随后补充 600×300 dp 设置区域的长列表测试：初始采用全部默认发动机字段，滚动到搜索框，以中文与单位组合查找推进功率，添加后上移，再清除搜索并访问其他候选字段。三项发动机字段 GUI 测试通过（`/tmp/voidmei-engine-search-short.log`，2 秒）；该新增用例不包含在前述 306 项完整运行中。此次未重建离线包或扩展真实游戏验收范围。
