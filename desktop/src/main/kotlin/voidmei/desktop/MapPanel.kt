@@ -67,17 +67,19 @@ internal fun MapPanel(endpoint: String, flying: Boolean, shared: kotlinx.corouti
 private data class MapSelection(val obj: MapObject, val distanceM: Double?)
 
 @Composable
-internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = null) {
+internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = null,
+    interactive: Boolean = true, side: androidx.compose.ui.unit.Dp = 320.dp) {
     val distanceScale = MapScale.fromBounds(snapshot.bounds)
     var selection by remember(snapshot.bounds) { mutableStateOf<MapSelection?>(null) }
     val currentSnapshot by rememberUpdatedState(snapshot)
     var plotSize by remember { mutableStateOf(IntSize.Zero) }
-    Text("地图对象示意 · ${snapshot.objects.size} 个对象 · 每秒更新 · 点击点状对象查看详情")
+    Text("地图对象示意 · ${snapshot.objects.size} 个对象 · 每秒更新" + if (interactive) " · 点击点状对象查看详情" else "")
     val gridLines = remember(snapshot.bounds) { MapGrid.lines(snapshot.bounds) }
     Text("玩家格号：${MapGrid.playerCell(snapshot) ?: "—"}", style = MaterialTheme.typography.bodySmall)
     if (gridLines == null) Text("地图网格不可用", style = MaterialTheme.typography.bodySmall)
     val grid = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-    Canvas(Modifier.size(320.dp).onSizeChanged { plotSize = it }.clipToBounds().pointerInput(snapshot.bounds) {
+    Canvas(Modifier.size(side).onSizeChanged { plotSize = it }.clipToBounds().pointerInput(snapshot.bounds, interactive) {
+        if (!interactive) return@pointerInput
         detectTapGestures { tap ->
             val current = currentSnapshot
             val viewport = MapViewport.fit(current.bounds, size.width.toDouble(), size.height.toDouble())
@@ -119,12 +121,12 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
                 drawCircle(marker, (if (player) 5 else 3).dp.toPx(), center)
             }
         }
-            selection?.obj?.position?.let { point ->
+            selection?.takeIf { interactive }?.obj?.position?.let { point ->
                 drawCircle(Color.White, 8.dp.toPx(), project(point), style = Stroke(2.dp.toPx()))
             }
         }
     }
-    selection?.let { selected ->
+    selection?.takeIf { interactive }?.let { selected ->
         Text("点击时对象：${selected.obj.type ?: "类型未知"} · ${selected.obj.icon ?: "图标未知"}")
         Text("点击时到玩家的平面距离：${selected.distanceM?.let { String.format(java.util.Locale.ROOT, "%.0f m", it) } ?: "未知"}")
         Text("白圈保留点击时位置；对象没有稳定编号，不自动跟踪。", style = MaterialTheme.typography.bodySmall)
@@ -134,7 +136,7 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
         val distance = if (scale.metres >= 1000) "${(scale.metres / 1000).toString().removeSuffix(".0")} km"
             else "${scale.metres.toString().removeSuffix(".0")} m"
         Text("距离标尺：$distance", style = MaterialTheme.typography.bodySmall)
-        Canvas(Modifier.size(320.dp, 16.dp).testTag("map-distance-scale").semantics { contentDescription = "距离标尺 $distance" }) {
+        Canvas(Modifier.size(side, 16.dp).testTag("map-distance-scale").semantics { contentDescription = "距离标尺 $distance" }) {
             val viewport = MapViewport.fit(snapshot.bounds, plotSize.width.toDouble(), plotSize.height.toDouble()) ?: return@Canvas
             val length = (viewport.width * scale.widthFraction).toFloat()
             val y = size.height / 2

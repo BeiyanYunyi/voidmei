@@ -62,6 +62,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     alerts = alerts, showFlapBar = settings.hudFlapBar)
                                 HudRegionContent.ALERTS -> Unit
                                 HudRegionContent.MESSAGES -> HudRecentMessages(messages)
+                                HudRegionContent.MAP -> HudMapObjects(mapEndpoint, sharedMap, region.height)
                             }
                         }
                         HudScrollIndicator(scroll, Modifier.matchParentSize())

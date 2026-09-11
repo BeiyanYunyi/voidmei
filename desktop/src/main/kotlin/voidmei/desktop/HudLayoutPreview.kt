@@ -56,6 +56,8 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
     onRegionMove: ((String, Int, Int) -> Unit)? = null,
     onRegionResize: ((String, Int, Int) -> Unit)? = null) {
     val flight = remember(warnings, missing) { hudPreviewFlight(warnings, missing) }
+    val map = remember(missing) { kotlinx.coroutines.flow.MutableStateFlow<MapConnection>(
+        if (missing) MapConnection.Waiting else MapConnection.Available(hudPreviewMap())) }
     val model = remember { hudPreviewModel() }
     val thermal = remember(flight, model) { EngineThermalMonitor().update(flight, model, 0) }
     val alerts = remember(flight, model, thermal) {
@@ -68,7 +70,7 @@ internal fun HudLayoutPreview(settings: AppSettings, warnings: Boolean = false, 
                 drawRect(if ((x + y) % 2 == 0) Color(0xFF39434D) else Color(0xFF252D35),
                     Offset(x * step, y * step), Size(step, step))
         }
-        HudPanel(flight, settings, alerts, model, thermal = thermal,
+        HudPanel(flight, settings, alerts, model, thermal = thermal, sharedMap = map,
             messages = HudMessageState(if (missing) emptyList() else listOf(
                 HudMessage(HudMessageKind.EVENT, 1, "示例事件消息"), HudMessage(HudMessageKind.DAMAGE, 1, "示例损伤消息"))),
             connectionLabel = "示例数据与模型 · 可在设置窗口继续调整") {

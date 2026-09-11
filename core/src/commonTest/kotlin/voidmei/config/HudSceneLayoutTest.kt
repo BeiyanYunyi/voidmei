@@ -3,6 +3,15 @@ package voidmei.config
 import kotlin.test.*
 
 class HudSceneLayoutTest {
+    @Test fun mapRegionCanBeRepeatedAndPersistedWithIndependentAppearance() {
+        val scene = HudSceneLayout.initial(AppSettings()).addRegion(HudRegionContent.MAP).addRegion(HudRegionContent.MAP)
+        val maps = scene.regions.filter { it.content == HudRegionContent.MAP }
+        assertEquals(2, maps.size)
+        assertNotEquals(maps[0].id, maps[1].id)
+        assertEquals(500, maps[0].height)
+        assertEquals(scene, SettingsJson.decode(SettingsJson.encode(AppSettings(hudSceneLayout = scene))).hudSceneLayout)
+    }
+
     @Test fun hiddenRegionsPersistAndOldConfigurationsRemainVisible() {
         val region = HudRegion("engine", HudRegionContent.ENGINE, 20, 30, 200, 150,
             .25f, .75f, 2, listOf("rpm", "future_field"), visible = false)
