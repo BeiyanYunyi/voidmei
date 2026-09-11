@@ -102,6 +102,12 @@ jobs:
             ${{ runner.temp }}/voidmei-package-smoke/**/recording-report.json
             ${{ runner.temp }}/voidmei-package-smoke/**/records/*.csv
             ${{ runner.temp }}/voidmei-package-smoke/**/settings-kmp.json
+      - name: Record installer build metadata
+        shell: bash
+        env:
+          BUILD_PLATFORM: ${{ runner.os == 'Linux' && 'linux' || runner.os == 'Windows' && 'windows' || 'macos' }}
+          BUILD_ARCHITECTURE: ${{ runner.arch }}
+        run: python script/kotlin_package_metadata.py desktop/build/compose/binaries/main --revision "$GITHUB_SHA" --platform "$BUILD_PLATFORM" --architecture "$BUILD_ARCHITECTURE"
       - uses: actions/upload-artifact@v4
         with:
           name: VoidMei-Kotlin-${{ matrix.os }}

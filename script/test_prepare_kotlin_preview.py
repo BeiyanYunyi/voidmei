@@ -6,6 +6,7 @@ import tempfile
 import unittest
 
 from prepare_kotlin_preview import prepare, PLATFORMS
+from kotlin_package_metadata import record
 
 
 class PreviewTest(unittest.TestCase):
@@ -19,11 +20,12 @@ class PreviewTest(unittest.TestCase):
         self.build.write_text('packageVersion = "2.0.0"')
         self.sha = "1234567890abcdef" * 2 + "12345678"
         self.files = []
-        for runner, (_, extension) in PLATFORMS.items():
+        for runner, (platform, extension) in PLATFORMS.items():
             path = self.artifacts / ("VoidMei-Kotlin-" + runner) / extension[1:] / ("VoidMei-2.0.0" + extension)
             path.parent.mkdir(parents=True)
             path.write_bytes((runner + " installer fixture").encode())
             self.files.append(path)
+            record(path.parent.parent, self.build, self.sha, platform, "ARM64" if platform == "macos" else "X64")
 
     def run_prepare(self):
         return prepare(self.artifacts, self.output, self.build, self.sha)
@@ -68,6 +70,18 @@ class PreviewTest(unittest.TestCase):
         self.sha = "master"
         with self.assertRaises(ValueError): self.run_prepare()
         self.assertEqual([sentinel], list(self.output.iterdir()))
+
+    def test_mixed_revision_architecture_and_modified_installers_are_rejected(self):
+        metadata = self.files[0].parent.parent / "kotlin-build.json"
+        original = json.loads(metadata.read_text())
+        for key, invalid in [("revision", "a" * 40), ("version", "1.0.0"), ("platform", "macos"), ("architecture", "unknown"), ("sha256", "0" * 64)]:
+            metadata.write_text(json.dumps(dict(original, **{key: invalid})))
+            with self.assertRaises(ValueError): self.run_prepare()
+            self.assertFalse(self.output.exists())
+        metadata.write_text(json.dumps(original))
+        self.files[0].write_bytes(b"changed package")
+        with self.assertRaises(ValueError): self.run_prepare()
+        self.assertFalse(self.output.exists())
 
     def test_version_must_be_single_and_explicit(self):
         for source in ['packageVersion = version', 'packageVersion = "2.0.0"\npackageVersion = "3.0.0"']:

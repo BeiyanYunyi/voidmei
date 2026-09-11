@@ -8,10 +8,10 @@
 
 - 三个平台的安装包，直接复制同一次工作流中已测试的构建制品，不重新编译。
 - `SHA256SUMS`：安装包 SHA-256 校验和。
-- `manifest.json`：版本、完整源码提交号、原安装包文件名、平台、大小和哈希。
+- `manifest.json`：版本、完整源码提交号、原安装包文件名、平台、构建 runner 架构、大小和哈希。
 - `release-notes.md`：预览说明及迁移文档位置。
 
-版本来自 `desktop/build.gradle.kts` 的 `packageVersion`。缺少平台、一个平台出现多个安装包、空文件、文件名版本不符或无法读取唯一版本时失败，不生成可发布的成功制品。安装包名称中的平台不代表固定 CPU 架构；架构由该次矩阵 runner 与实际安装包决定。
+版本来自 `desktop/build.gradle.kts` 的 `packageVersion`。缺少平台、一个平台出现多个安装包、空文件、文件名版本不符或无法读取唯一版本时失败，不生成可发布的成功制品。每个构建 job 上传 kotlin-build.json，记录该 job 的提交号、版本、runner 架构及安装包哈希。汇总端要求元数据与所选提交及实际文件一致；输出安装包文件名包含架构。架构是构建 runner 的声明，尚未独立解析安装包内部二进制验证。
 
 下载 artifact 并解压后，可在其目录执行 `sha256sum -c SHA256SUMS`。安装包不包含 FM 数据；设置和目前已知限制见同一提交的 [试用步骤](kotlin-quick-start.md) 与 [迁移记录](kotlin-migration.md)。
 
