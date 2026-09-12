@@ -55,6 +55,7 @@ object TelemetryParser {
             sideslipAngleDeg = state.number("AoS, deg"),
             rollRateDegPerSecond = state.number("Wx, deg/s"),
             fuelPressureRaw = indicators.number("fuel_pressure")?.takeIf { it >= 0 },
+            oilPressureRaw = indicators.number("oil_pressure")?.takeIf { it >= 0 },
             waterTemperatureRaw = indicators.number("water_temperature")?.takeIf { it > -65534 },
             headTemperatureRaw = indicators.number("head_temperature")?.takeIf { it > -65534 },
             oilTemperatureRaw = indicators.number("oil_temperature")?.takeIf { it > -65534 },

@@ -56,6 +56,8 @@ data class Telemetry(
     val altimeterRaw: Double? = null,
     val boosterFuelKg: Double? = null,
     val boosterFuelCapacityKg: Double? = null,
+    /** Unnumbered cockpit gauge; units and engine association are not established. */
+    val oilPressureRaw: Double? = null,
 )
 
 sealed interface ConnectionState {

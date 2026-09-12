@@ -16,6 +16,7 @@ enum class RecordedField(val id: String, val label: String) {
     ENDURANCE("endurance_s", "续航估计 (s)"), POWER("total_power_hp", "总功率 (hp)"),
     THRUST("total_thrust_kgf", "总推力 (kgf)"), THRUST_POWER("thrust_power_kw", "推力功率 (kW)"),
     FUEL_PRESSURE("fuel_pressure_raw", "燃油压力原值（仪表单位）"),
+    OIL_PRESSURE("oil_pressure_raw", "滑油压力原值（仪表单位）"),
     SIDESLIP("sideslip_deg", "侧滑角 (°)"), ROLL_RATE("roll_rate_degps", "滚转角速度 (°/s)"),
     WATER_TEMPERATURE_RAW("water_temperature_raw", "水温仪表原值（仪表单位）"),
     HEAD_TEMPERATURE_RAW("head_temperature_raw", "缸温仪表原值（仪表单位）"),

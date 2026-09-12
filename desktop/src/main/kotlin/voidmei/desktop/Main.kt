@@ -356,6 +356,7 @@ fun main(args: Array<String>) {
                                 AttitudePanel(flight.telemetry, model = modelForAlerts)
                                 Text("发动机", style = MaterialTheme.typography.titleLarge)
                                 Text("燃油压力仪表（原值） ${flight.telemetry.fuelPressureRaw.display()}")
+                                Text("滑油压力仪表（原值） ${flight.telemetry.oilPressureRaw.display()}（单位及发动机归属未确定）")
                                 if (flight.telemetry.engines.size > 1 && flight.telemetry.fuelPressureRaw != null)
                                     Text("压力仪表未标明引擎编号，多引擎低压判定暂不可用。", style = MaterialTheme.typography.bodySmall)
                                 val compressorAdvice = CompressorAdvice.recommendations(flight.telemetry,
@@ -607,6 +608,9 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         if (compact) FuelEstimateStatusPanel(flight, fields)
         if (compact) WepFuelStatusPanel(flight, fields, model)
         if (compact) MassEstimateStatusPanel(flight, fields, model)
+        if (compact && HudField.OIL_PRESSURE_RAW in fields) Text(
+            "滑油压力为座舱仪表原值；单位及发动机归属未确定。",
+            style = MaterialTheme.typography.bodySmall, color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
         if (compact && HudField.FUEL_PRESSURE_RAW in fields) Text(
             "燃油压力来自未编号座舱仪表，单位及发动机归属未确定。",
             style = MaterialTheme.typography.bodySmall, color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))

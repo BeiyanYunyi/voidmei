@@ -46,6 +46,7 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
     WEP_TIME("wep_time", "WEP 续航上限（分:秒）", "", 0),
     FUEL_LOSS_RATE("fuel_loss_rate", "燃油减少率估计", "kg/min", 1),
     FUEL_PRESSURE_RAW("fuel_pressure_raw", "燃油压力原值", "仪表单位", 2),
+    OIL_PRESSURE_RAW("oil_pressure_raw", "滑油压力原值", "仪表单位", 2),
     PITCH("pitch", "俯仰（抬头为正）", "°", 1),
     ROLL("roll", "横滚", "°", 1),
     GEAR("gear", "起落架", "%", 1),
@@ -164,6 +165,7 @@ enum class HudField(val id: String, val label: String, val unit: String, val dec
         ENDURANCE -> flight.metrics.fuelEnduranceSeconds?.div(60)
         FUEL_LOSS_RATE -> flight.metrics.fuelConsumptionKgPerMinute?.takeIf { it >= 0 }
         FUEL_PRESSURE_RAW -> flight.telemetry.fuelPressureRaw?.takeIf { it >= 0 }
+        OIL_PRESSURE_RAW -> flight.telemetry.oilPressureRaw?.takeIf { it >= 0 }
         ACCELERATION -> flight.metrics.accelerationMps2
         TURN_RATE -> flight.metrics.estimatedTurnRateDegps
         TURN_RADIUS -> flight.metrics.estimatedTurnRadiusM
