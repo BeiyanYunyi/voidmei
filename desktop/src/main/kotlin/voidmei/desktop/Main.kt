@@ -243,10 +243,8 @@ fun main(args: Array<String>) {
             }
         }
 
-        Window(onCloseRequest = { closeApp() }, title = "VoidMei · Kotlin", state = mainState, visible = mainVisible) {
-            LaunchedEffect(mainVisible, mainRestoreRequest) {
-                if (mainVisible && mainRestoreRequest > 0) restoreDesktopWindow(window)
-            }
+        RestorableDesktopWindow(onCloseRequest = { closeApp() }, title = "VoidMei · Kotlin",
+            state = mainState, visible = mainVisible, restoreRequest = mainRestoreRequest) {
             val renderer = rememberRendererDiagnostics(window)
             var showRenderer by remember { mutableStateOf(false) }
             CompositionLocalProvider(LocalReadingNumberFont provides remember(settings.numberFont) { resolveHudNumberFont(settings.numberFont).family },

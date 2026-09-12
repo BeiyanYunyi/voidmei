@@ -4,6 +4,25 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopTrayTest {
+    @Test fun trayLeftClickRestoresButContextMenuAndMiddleClickDoNot() {
+        java.awt.EventQueue.invokeAndWait {
+            var shows = 0
+            val listener = TrayShowMouseListener { shows++ }
+            val source = java.awt.Canvas()
+            fun click(button: Int, count: Int = 1, popup: Boolean = false) =
+                listener.mouseClicked(java.awt.event.MouseEvent(source,
+                    java.awt.event.MouseEvent.MOUSE_CLICKED, 0, 0, 0, 0, count, popup, button))
+            click(java.awt.event.MouseEvent.BUTTON1)
+            assertEquals(1, shows, "A single left click must restore the window")
+            click(java.awt.event.MouseEvent.BUTTON1, count = 2)
+            assertEquals(2, shows)
+            click(java.awt.event.MouseEvent.BUTTON2)
+            click(java.awt.event.MouseEvent.BUTTON3, popup = true)
+            click(java.awt.event.MouseEvent.BUTTON1, popup = true)
+            assertEquals(2, shows, "Opening the context menu must not restore the window")
+        }
+    }
+
     @Test fun nativeAvailabilityEventsRestoreAccessAndIgnoreDisposedCallbacks() {
         val states = mutableListOf<Boolean>()
         val listener = TrayAvailabilityListener {

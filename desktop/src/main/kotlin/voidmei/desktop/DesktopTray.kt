@@ -1,6 +1,8 @@
 package voidmei.desktop
 
 import java.awt.*
+import java.awt.event.MouseAdapter
+import java.awt.event.MouseEvent
 import java.awt.image.BufferedImage
 
 internal interface DesktopTray : AutoCloseable {
@@ -29,9 +31,13 @@ internal fun installDesktopTray(onShow: () -> Unit, onHud: () -> Unit, onExit: (
     val icon = TrayIcon(image, "VoidMei", menu).apply {
         isImageAutoSize = true
         addActionListener { onShow() }
+        addMouseListener(TrayShowMouseListener(onShow))
     }
     val tray = SystemTray.getSystemTray()
+    val previousFrames = Frame.getFrames().toSet()
     tray.add(icon)
+    val eventBridge = try { X11TrayEventBridge.install(previousFrames) }
+        catch (error: Throwable) { tray.remove(icon); throw error }
     val availability = TrayAvailabilityListener(onAvailability)
     tray.addPropertyChangeListener("systemTray", availability)
     val messages = TrayMessages({ title, message -> icon.displayMessage(title, message, TrayIcon.MessageType.INFO) },
@@ -42,8 +48,16 @@ internal fun installDesktopTray(onShow: () -> Unit, onHud: () -> Unit, onExit: (
             messages.close()
             availability.close()
             tray.removePropertyChangeListener("systemTray", availability)
+            eventBridge?.close()
             tray.remove(icon)
         }
+    }
+}
+
+/** AWT action events alone do not handle a normal single click on the tray icon. */
+internal class TrayShowMouseListener(private val onShow: () -> Unit) : MouseAdapter() {
+    override fun mouseClicked(event: MouseEvent) {
+        if (event.button == MouseEvent.BUTTON1 && !event.isPopupTrigger) onShow()
     }
 }
 

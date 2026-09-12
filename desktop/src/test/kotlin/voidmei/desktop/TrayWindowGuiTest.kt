@@ -2,6 +2,7 @@ package voidmei.desktop
 
 import java.awt.EventQueue
 import java.awt.Frame
+import java.awt.event.MouseEvent
 import org.junit.Test
 import kotlin.test.*
 
@@ -20,19 +21,22 @@ class TrayWindowGuiTest {
                 window.isVisible = false
                 val beforeRaises = raises
                 val beforeFocus = focusRequests
-                restoreDesktopWindow(window)
+                val trayClick = TrayShowMouseListener { restoreDesktopWindow(window) }
+                fun clickTray() = trayClick.mouseClicked(MouseEvent(window, MouseEvent.MOUSE_CLICKED,
+                    0, 0, 0, 0, 1, false, MouseEvent.BUTTON1))
+                clickTray()
                 assertTrue(window.isVisible)
                 assertTrue(raises > beforeRaises)
                 assertTrue(focusRequests > beforeFocus)
                 val visibleRaises = raises
-                restoreDesktopWindow(window)
+                clickTray()
                 assertTrue(raises > visibleRaises, "An already visible window must also be raised")
                 window.extendedState = Frame.ICONIFIED
-                restoreDesktopWindow(window)
+                clickTray()
                 assertEquals(0, window.extendedState and Frame.ICONIFIED)
                 window.dispose()
                 val disposedRaises = raises
-                restoreDesktopWindow(window)
+                clickTray()
                 assertFalse(window.isDisplayable)
                 assertEquals(disposedRaises, raises)
             } finally { window.dispose() }
