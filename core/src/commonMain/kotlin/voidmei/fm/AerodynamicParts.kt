@@ -6,7 +6,7 @@ enum class AerodynamicPartKind(val label: String) {
 }
 data class AerodynamicPart(val kind: AerodynamicPartKind, val sourcePath: String, val sweepRatio: Double?,
     val cdMin: Double?, val cl0: Double?, val alphaLow: Double?, val alphaHigh: Double?, val clLow: Double?, val clHigh: Double?)
-data class AerodynamicPartsResult(val parts: List<AerodynamicPart>, val issues: List<String>)
+data class AerodynamicPartsResult(val parts: List<AerodynamicPart>, val issues: List<String>, val sourcePaths: Set<String> = parts.map { it.sourcePath }.toSet())
 
 object AerodynamicPartsExtractor {
     fun extract(document: BlkBlock): AerodynamicPartsResult {
@@ -54,6 +54,6 @@ object AerodynamicPartsExtractor {
                 number(c.block, c.path, "alphaCritLow"), number(c.block, c.path, "alphaCritHigh"),
                 number(c.block, c.path, "ClCritLow"), number(c.block, c.path, "ClCritHigh"))
         }
-        return AerodynamicPartsResult(parts, issues.distinct())
+        return AerodynamicPartsResult(parts, issues.distinct(), candidates.map { it.path }.toSet())
     }
 }

@@ -31,8 +31,8 @@ class LegacyModelCategoryTest {
                 (item a :target ${category.target} :type switch :value true)
                 (item b :target ${category.target} :type switch :value false))""") }
         }
-        val parsed = read("showDrag", "switch", "true")
+        val parsed = read("unknownModelCategory", "switch", "true")
         assertTrue(parsed.modelSectionChoices.isEmpty())
-        assertEquals("showDrag", parsed.unmigrated.single().target)
+        assertEquals("unknownModelCategory", parsed.unmigrated.single().target)
     }
 }

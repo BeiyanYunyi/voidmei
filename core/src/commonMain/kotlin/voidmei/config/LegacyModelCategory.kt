@@ -16,5 +16,6 @@ enum class LegacyModelCategory(val target: String, val label: String, val sectio
     FIN_PART("showFin", "Fin（旧垂尾开关）", ModelDetailSection.FIN_PART, "按来源显示器件原始参数；迎角未扣安装角，别名与后掠配置分开展示。"),
     STAB_PART("showStab", "Stab（旧平尾开关）", ModelDetailSection.STAB_PART, "按来源显示器件原始参数；迎角未扣安装角，别名与后掠配置分开展示。"),
     MAXIMUM_LIFT("showMaxLiftLoad", "千米过载", ModelDetailSection.MAXIMUM_LIFT, "显示 350 IAS 下基于失速模型的升力过载参考；使用明确燃油质量，不沿用旧简化数字，不表示结构限制或 1000 米状态。"),
-    LIFT_PARAMETERS("showLift", "升力参数", ModelDetailSection.LIFT_PARAMETERS, "按来源显示几何面积、翼展和效率因数，派生面积复用当前失速模型；缺失分量不补零，不跨后掠配置拼接。")
+    LIFT_PARAMETERS("showLift", "升力参数", ModelDetailSection.LIFT_PARAMETERS, "按来源显示几何面积、翼展和效率因数，派生面积复用当前失速模型；缺失分量不补零，不跨后掠配置拼接。"),
+    DRAG("showDrag", "阻力参数", ModelDetailSection.DRAG, "按来源显示阻力面积、诱导阻力因数、半油质量参考和散热器原始系数；缺失不补零，质量归一化值不表示实际加速度。")
 }
