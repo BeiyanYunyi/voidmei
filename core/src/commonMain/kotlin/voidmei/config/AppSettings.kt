@@ -24,6 +24,7 @@ data class AppSettings(
     val modelWindowHotkey: String = "Ctrl+Shift+M",
     val modelWindowAlwaysOnTop: Boolean = true,
     val fmDataRoot: String = "data",
+    val offlineModels: OfflineModelPreferences = OfflineModelPreferences(),
     val recordingDirectory: String = "records",
     val voiceEnabled: Boolean = false,
     val hudFields: List<String> = HudField.defaults,
@@ -221,6 +222,7 @@ object SettingsJson {
             hiddenModelSections = root["hiddenModelSections"]?.jsonArray?.map { value ->
                 value.jsonPrimitive.let { require(it.isString); ModelDetailSection.valueOf(it.content) }
             }?.toSet() ?: emptySet(),
+            offlineModels = root["offlineModels"]?.let(OfflineModelPreferences::fromJson) ?: defaults.offlineModels,
             fmDataRoot = root["fmDataRoot"]?.jsonPrimitive?.content ?: defaults.fmDataRoot,
             recordingDirectory = root["recordingDirectory"]?.jsonPrimitive?.content ?: defaults.recordingDirectory,
             voiceEnabled = root["voiceEnabled"]?.jsonPrimitive?.boolean ?: defaults.voiceEnabled,
@@ -287,6 +289,7 @@ object SettingsJson {
         fields["hudFontScale"] = JsonPrimitive(settings.hudFontScale)
         fields["hudWidthDp"] = JsonPrimitive(settings.hudWidthDp)
         fields["hudEngineIndex"] = settings.hudEngineIndex?.let(::JsonPrimitive) ?: JsonNull
+        fields["offlineModels"] = settings.offlineModels.toJson()
         fields["hiddenModelSections"] = JsonArray(settings.hiddenModelSections.sortedBy { it.ordinal }.map { JsonPrimitive(it.name) })
         fields["fmDataRoot"] = JsonPrimitive(settings.fmDataRoot)
         fields["recordingDirectory"] = JsonPrimitive(settings.recordingDirectory)

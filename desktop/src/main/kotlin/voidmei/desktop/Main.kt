@@ -516,7 +516,9 @@ fun main(args: Array<String>) {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OfflineModelPanel(settings.fmDataRoot, settings.hiddenModelSections) { settings = settings.copy(hiddenModelSections = it) }
+                        OfflineModelPanel(settings.fmDataRoot, settings.hiddenModelSections,
+                            preferences = settings.offlineModels, onPreferences = { settings = settings.copy(offlineModels = it) },
+                            onHiddenSections = { settings = settings.copy(hiddenModelSections = it) })
                     }
                 }
             }
