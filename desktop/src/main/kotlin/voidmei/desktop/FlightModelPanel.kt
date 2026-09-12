@@ -93,6 +93,7 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
                 Text("当前 IAS 下表内最大襟翼开度 ${parameters.flapLimits?.maximumPercentAt(telemetry?.iasKmh).display()} %")
                 Text("模型起落架速度限制 ${parameters.gearLimitKmh.display()} km/h")
             }
+            if (ModelDetailSection.THERMAL_RECOVERY !in hiddenSections) ModelThermalRecoveryPanel(parameters.engineThermals)
             if (ModelDetailSection.WEP_FUEL !in hiddenSections) ModelWepFuelPanel(parameters.wepFuel)
             if (ModelDetailSection.INERTIA !in hiddenSections) ModelInertiaPanel(parameters.inertia)
             if (ModelDetailSection.CONTROLS !in hiddenSections) {

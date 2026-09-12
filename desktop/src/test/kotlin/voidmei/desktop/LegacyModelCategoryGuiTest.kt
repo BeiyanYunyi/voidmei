@@ -21,7 +21,8 @@ class LegacyModelCategoryGuiTest {
             (item w :target showWeight :type switch :value false)
             (item s :target showCritSpeed :type switch :value true)
             (item i :target showInertia :type switch :value false)
-            (item n :target showNitro :type switch :value false))""")
+            (item n :target showNitro :type switch :value false)
+            (item h :target showHeatRecovery :type switch :value false))""")
         val original = AppSettings(hiddenModelSections = setOf(ModelDetailSection.FLIGHT_LIMITS, ModelDetailSection.STALL, ModelDetailSection.RAW))
         var current by mutableStateOf(original)
         compose.setContent { MaterialTheme { Column(Modifier.size(800.dp, 650.dp).verticalScroll(rememberScrollState())) {
@@ -35,6 +36,7 @@ class LegacyModelCategoryGuiTest {
         compose.onNodeWithTag("legacy-model-sections").performScrollTo().performClick()
         compose.onNodeWithText("临界速度 → 速度与迎角限制：显示（将应用）").assertExists()
         compose.onNodeWithText(LegacyModelCategory.SPEED.note).assertExists()
+        compose.onNodeWithText("耐热恢复 → 耐热恢复：隐藏（将应用）").assertExists()
         compose.onNodeWithText("加力信息 → 加力燃料：隐藏（将应用）").assertExists()
         compose.onNodeWithText("转动惯量 → 转动惯量：隐藏（将应用）").assertExists()
         compose.onNodeWithText("应用预览设置").assertIsEnabled()
@@ -42,6 +44,6 @@ class LegacyModelCategoryGuiTest {
         compose.onNodeWithText("应用预览设置").assertIsNotEnabled()
         compose.onNodeWithTag("legacy-model-sections").performScrollTo().performClick()
         click("应用预览设置")
-        compose.runOnIdle { assertEquals(original.copy(hiddenModelSections = setOf(ModelDetailSection.WEIGHT, ModelDetailSection.STALL, ModelDetailSection.RAW, ModelDetailSection.INERTIA, ModelDetailSection.WEP_FUEL)), current) }
+        compose.runOnIdle { assertEquals(original.copy(hiddenModelSections = setOf(ModelDetailSection.WEIGHT, ModelDetailSection.STALL, ModelDetailSection.RAW, ModelDetailSection.INERTIA, ModelDetailSection.WEP_FUEL, ModelDetailSection.THERMAL_RECOVERY)), current) }
     }
 }
