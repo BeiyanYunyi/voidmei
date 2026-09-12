@@ -46,6 +46,7 @@ data class FlightModelParameters(
     val wepFuel: WepFuelModel? = null,
     val sweptStructuralLoad: SweptStructuralLoadModel? = null,
     val controlPowerLoss: ControlPowerLoss = ControlPowerLoss(),
+    val inertia: ModelInertia? = null,
 ) {
     fun loadLimits(fuelKg: Double?, sweep: Double?): LoadLimits? =
         if (sweptStructuralLoad != null) sweptStructuralLoad.limits(fuelKg, sweep) else structuralLoad?.limits(fuelKg)
@@ -183,9 +184,11 @@ object FlightModelExtractor {
             model.wepIssue?.let { issues += "${instance.binding.instance}: WEP 增压器换挡模型不可用：$it" }
             instance.binding.telemetryIndex to model
         }.toMap()
+        val inertia = ModelInertiaExtractor.extract(document)
+        issues += inertia.issues
         val powerLoss = ControlPowerLoss(number("AileronPowerLoss"), number("ElevatorPowerLoss"), number("RudderPowerLoss"))
         return FlightModelParameters(emptyMass,
             number("Mass.MaxFuelMass0", "MaxFuelMass0", positive = true), wings, variable, issues.distinct(), gearLimit, flaps.limits, structuralLoad, controlSpeeds, stallSpeed.model, stallSpeed.issue, bindings.bindings, rpm.limits, rpm.references, thermal.engines, compressors, fuel, basicMass, wepFuel = WepFuelExtractor.extract(document), sweptStructuralLoad = sweptLoad?.model,
-            controlPowerLoss = powerLoss)
+            controlPowerLoss = powerLoss, inertia = inertia.inertia)
     }
 }

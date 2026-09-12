@@ -93,6 +93,7 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
                 Text("当前 IAS 下表内最大襟翼开度 ${parameters.flapLimits?.maximumPercentAt(telemetry?.iasKmh).display()} %")
                 Text("模型起落架速度限制 ${parameters.gearLimitKmh.display()} km/h")
             }
+            if (ModelDetailSection.INERTIA !in hiddenSections) ModelInertiaPanel(parameters.inertia)
             if (ModelDetailSection.CONTROLS !in hiddenSections) {
                 ModelControlPowerLoss(parameters.controlPowerLoss)
                 Text("舵效衰减速度：副翼 ${parameters.controlSpeeds.aileronKmh.display()} · 升降舵 ${parameters.controlSpeeds.elevatorKmh.display()} · 方向舵 ${parameters.controlSpeeds.rudderKmh.display()} km/h")
