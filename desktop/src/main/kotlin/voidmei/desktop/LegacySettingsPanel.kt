@@ -194,9 +194,11 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             val selectedPowerSizeTarget = powerSizeTarget?.takeIf { id -> engineRegions.any { it.id == id } }
             var controlStyleTarget by remember(imported, currentScene) { mutableStateOf<String?>(null) }
             val selectedControlStyleTarget = controlStyleTarget?.takeIf { id -> engineRegions.any { it.id == id } }
+            var importModelWindows by remember(imported) { mutableStateOf(false) }
+            var showImportedModelWindows by remember(imported) { mutableStateOf(false) }
             var importModelHotkey by remember(imported) { mutableStateOf(false) }
             var importModelSections by remember(imported) { mutableStateOf(false) }
-            val selected = imported.copy(importModelHotkey = importModelHotkey, importModelSections = importModelSections, engineAircraftFuelRegionId = selectedEngineFuelTarget, engineControlStyleRegionId = selectedControlStyleTarget, powerTextSizesRegionId = selectedPowerSizeTarget, engineFontTargets = selectedEngineFontTargets, engineRegionsToCreate = engineCreations, enginePositionTargets = selectedEnginePositionTargets, enginePanelTargets = selectedEnginePanelTargets, engineColumnsRegionId = selectedEngineColumnsTarget, importAttitudeSize = sizeSelected && sizeReady, legacyDpiScale = dpi, importHudRegionBorders = importBorders && borderMatches.isNotEmpty(), importFlightTextSizes = importSizes && flightRegion != null, importFlightLabelFont = importFont && flightRegion != null, importFlightReadingColumns = importColumns && flightRegion != null,
+            val selected = imported.copy(importModelWindows = importModelWindows, showImportedModelWindows = showImportedModelWindows, importModelHotkey = importModelHotkey, importModelSections = importModelSections, engineAircraftFuelRegionId = selectedEngineFuelTarget, engineControlStyleRegionId = selectedControlStyleTarget, powerTextSizesRegionId = selectedPowerSizeTarget, engineFontTargets = selectedEngineFontTargets, engineRegionsToCreate = engineCreations, enginePositionTargets = selectedEnginePositionTargets, enginePanelTargets = selectedEnginePanelTargets, engineColumnsRegionId = selectedEngineColumnsTarget, importAttitudeSize = sizeSelected && sizeReady, legacyDpiScale = dpi, importHudRegionBorders = importBorders && borderMatches.isNotEmpty(), importFlightTextSizes = importSizes && flightRegion != null, importFlightLabelFont = importFont && flightRegion != null, importFlightReadingColumns = importColumns && flightRegion != null,
                 importHudPositions = positionsReady && importPositions && (matched.isNotEmpty() || (createMissing && canCreate)),
                 createMissingHudRegions = positionsReady && createMissing && canCreate, legacyScreenSize = screenSize,
                 importHudRegionVisibility = importVisibility && visibleMatches.isNotEmpty())
@@ -407,6 +409,21 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             }
             imported.hudCompassHeadingUp?.let {
                 Text("罗盘坐标系：${if (it) "航向朝上" else "北向朝上"}；姿态图：${if (it) "地面参考" else "机体参考"}。")
+            }
+            imported.modelWindows?.let { enabled ->
+                Row {
+                    Checkbox(importModelWindows, { importModelWindows = it }, modifier = Modifier.testTag("legacy-model-windows"))
+                    Text("迁移旧模型窗口总开关：${if (enabled) "启用" else "关闭"}")
+                }
+                if (enabled) {
+                    Row {
+                        Checkbox(showImportedModelWindows, { showImportedModelWindows = it }, enabled = importModelWindows,
+                            modifier = Modifier.testTag("legacy-model-windows-show"))
+                        Text("导入后立即显示模型浮窗")
+                    }
+                    Text("启用喷气推力窗口联动与无模型热键时的 10 秒关闭策略；默认先隐藏，之后手动或使用已启用的热键打开。保留当前监听开关，不自动注册热键；旧按键可另选迁移。")
+                    Text("延迟策略使用有效起落架、明确 TAS 和任一发动机油门，排除未知输入；不复刻旧平滑速度与模糊油门读取。")
+                } else Text("关闭模型浮窗、喷气推力窗口联动及模型热键监听；保留按键、位置、置顶和模型分类偏好。")
             }
             imported.modelHotkey?.let { binding ->
                 Row {
