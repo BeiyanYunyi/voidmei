@@ -13,8 +13,8 @@ from smoke_kmp_deb import smoke
 
 
 def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=False, compatible_hud=False, graceful_exit=False, display_scale=1, jet=False, wep=False, wep_dropout=False, tray_recovery=False, tray_background=False, hud_renderer=None, poll_interval_ms=100, delayed_sample=False, hud_scene=False):
-    if delayed_sample and wep:
-        raise ValueError("Delayed samples and WEP history use separate smoke scenarios")
+    if delayed_sample and wep_dropout:
+        raise ValueError("Delayed samples and missing-throttle samples must run separately")
     if not isinstance(poll_interval_ms, int) or isinstance(poll_interval_ms, bool) or not 10 <= poll_interval_ms <= 5000:
         raise ValueError("poll interval must be an integer between 10 and 5000 ms")
     if hud_scene and (not hud or not graceful_exit or display_scale != 1):
@@ -65,6 +65,7 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                     if hud_scene:
                         data.update({"compass": 90, "aviahorizon_pitch": -15, "aviahorizon_roll": 10})
                     phase = (requests[self.path] - 1) % 3
+                    data.update({"oil_pressure": (2.75, 0, -65535)[phase], "oil_pressure1": 42})
                     data.update((
                         {"water_temperature": 100, "head_temperature": 200, "oil_temperature": -20, "altitude_10k": 4921.26},
                         {"water_temperature": 0, "oil_temperature": 0, "altitude_10k": 0},
@@ -268,6 +269,11 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
                               (None, None, None): None}[temperatures]
         if altimeter != expected_altimeter or float(sample["altitude_m"]) != 1500:
             raise RuntimeError("Altimeter raw value changed or contaminated metre altitude at sample %d" % index)
+        oil_pressure = float(sample["oil_pressure_raw"]) if sample["oil_pressure_raw"] else None
+        expected_oil_pressure = {(100.0, 200.0, -20.0): 2.75, (0.0, None, 0.0): 0.0,
+                                (None, None, None): None}[temperatures]
+        if oil_pressure != expected_oil_pressure:
+            raise RuntimeError("Oil pressure raw value changed or borrowed a numbered gauge at sample %d" % index)
         wep_mass = float(sample["wep_fuel_upper_kg"]) if sample["wep_fuel_upper_kg"] else None
         wep_time = float(sample["wep_time_upper_s"]) if sample["wep_time_upper_s"] else None
         if wep:
@@ -302,11 +308,19 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
     if wep:
         if len(wep_values) < 3 or wep_values[0][1] - wep_values[-1][1] < 0.1:
             raise RuntimeError("Packaged FM did not produce a decreasing WEP fuel bound")
+        delayed_wep_gaps = 0
         for run in wep_runs:
             for (start_ms, start_mass), (end_ms, end_mass) in zip(run, run[1:]):
+                if delayed_sample and end_ms - start_ms >= 1000:
+                    delayed_wep_gaps += 1
+                    if start_mass >= 9.9 or abs(end_mass - start_mass) > 0.001:
+                        raise RuntimeError("Telemetry delay refilled WEP fuel or extrapolated unknown consumption")
+                    continue
                 expected_mass = max(0, start_mass - (end_ms - start_ms) / 1000 * 0.5)
                 if end_mass > start_mass or abs(expected_mass - end_mass) > 0.05:
                     raise RuntimeError("WEP consumption disagrees with elapsed recorded time")
+        if delayed_sample and delayed_wep_gaps != 1:
+            raise RuntimeError("Expected one observed WEP sampling gap")
         if wep_dropout:
             runs = [run for run in wep_runs if run]
             if wep_missing_throttle != 3 or len(runs) != 2 or runs[1][0][1] != 10.0:
@@ -322,12 +336,14 @@ def recording_smoke(package, timeout, renderer="OPENGL", hud=True, check_ui=Fals
         raise RuntimeError("Configured poll interval was not preserved")
     report = {"poll_interval_ms_checked": poll_interval_ms, "samples": len(flight), "flight_csv": str(flight_file), "engine_csv": str(engine_file),
               "delayed_sample_checked": delayed_sample,
+              "wep_delayed_history_checked": wep and delayed_sample,
               "hud_scene_checked": hud_scene,
               "graceful_exit_checked": graceful_exit,
               "tray_recovery_checked": tray_recovery,
               "tray_background_checked": tray_background,
               "temperature_sources_checked": True,
               "altimeter_source_checked": True,
+              "oil_pressure_source_checked": True,
               "engine_response_checked": True,
               "booster_channels_checked": True,
               "wep_fm_checked": wep,
@@ -368,8 +384,8 @@ if __name__ == "__main__":
         parser.error("--wep-dropout requires --wep")
     if args.wep and args.jet:
         parser.error("--wep and --jet select separate synthetic engine scenarios")
-    if args.delayed_sample and args.wep:
-        parser.error("--delayed-sample and --wep select separate history scenarios")
+    if args.delayed_sample and args.wep_dropout:
+        parser.error("--delayed-sample and --wep-dropout select separate interruption scenarios")
     if not 1 <= args.timeout <= 300:
         parser.error("timeout must be between 1 and 300 seconds")
     if args.hud_scene and (args.no_hud or not args.graceful_exit or args.display_scale != 1):
