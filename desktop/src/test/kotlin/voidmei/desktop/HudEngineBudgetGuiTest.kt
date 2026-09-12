@@ -88,15 +88,15 @@ class HudEngineBudgetGuiTest {
         compose.runOnIdle { telemetry = telemetry.copy(engines = telemetry.engines.map {
             if (it.index == 2) it.copy(waterTemperatureC = null) else it
         }) }
-        compose.onNodeWithText("当前无可用的 2 号发动机计时预算。", substring = true).assertExists()
-        compose.onNodeWithText("缺少有效水温（°C）。", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("当前无可用的 2 号发动机计时预算。", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("缺少有效水温（°C）。", substring = true).assertDoesNotExist()
         compose.onNodeWithText("当前无可用的 1 号发动机计时预算。", substring = true).assertDoesNotExist()
         compose.onNodeWithText("0.0–10.0 s").assertExists()
         compose.runOnIdle { telemetry = telemetry.copy(engines = telemetry.engines.map {
             if (it.index == 2) it.copy(waterTemperatureC = 90.0) else it
         }) }
         compose.onNodeWithText("缺少有效水温（°C）。", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("当前温度未进入模型计时档位。", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("当前温度未进入模型计时档位。", substring = true).assertDoesNotExist()
         compose.runOnIdle { telemetry = telemetry.copy(engines = telemetry.engines.map {
             if (it.index == 2) it.copy(waterTemperatureC = 110.0) else it
         }) }
@@ -106,7 +106,7 @@ class HudEngineBudgetGuiTest {
         compose.onNodeWithText("0.0–10.0 s").assertDoesNotExist()
         compose.onNodeWithText("0.0–400.0 s").assertDoesNotExist()
         compose.onAllNodesWithText("— s").assertCountEquals(2)
-        compose.onNodeWithText("缺少 1 号发动机温度模型。", substring = true).assertExists()
-        compose.onNodeWithText("缺少 2 号发动机温度模型。", substring = true).assertExists()
+        compose.onNodeWithText("缺少 1 号发动机温度模型。", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("缺少 2 号发动机温度模型。", substring = true).assertDoesNotExist()
     }
 }

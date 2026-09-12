@@ -123,6 +123,8 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
         FilterChip(settings.hudAirbrake, { onChange(settings.copy(hudAirbrake = !settings.hudAirbrake)) }, label = { Text("减速板") })
     }
     Text("选中字段按下方顺序显示。估算值需要足够的有效遥测。", style = MaterialTheme.typography.bodySmall)
+    Text("耐热时估计：热预算区间包含未知初始损耗，按采样温度估算，不是实际剩余寿命。需要匹配的发动机温度模型与有效摄氏温度；无活动计时档位或数据缺失时显示 —。", style = MaterialTheme.typography.bodySmall)
+    Text("WEP 燃料／可用时间为估算上限：连接前已用量未知，按模型容量扣除观察到的消耗。断流后重新估算，不表示实际补满；未观测到 WEP 消耗时续航未知，模型或数据缺失时显示 —。", style = MaterialTheme.typography.bodySmall)
     val selected = HudField.selected(settings.hudFields)
     if (settings.hudAttitude) FilterChip(settings.hudAttitudeAoaLimits,
         { onChange(settings.copy(hudAttitudeAoaLimits = !settings.hudAttitudeAoaLimits)) },

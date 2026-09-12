@@ -601,10 +601,8 @@ internal fun FlightPanel(flight: ConnectionState.Flying, compact: Boolean = fals
         key(t.aircraft, if (compact) altitudeMode else null) {
             FlightReadings(rows, compact, warnings, if (compact) fields.indices.filter { fields[it].id in hiddenLabels }.toSet() else emptySet(), unitRanges)
         }
-        if (compact && HudField.HEAT_TOLERANCE in fields) ThermalBudgetStatusPanel(flight, model, thermal)
         if (compact && HudField.SEP in fields) SepStatusPanel(flight, pollingIntervalMs)
         if (compact) FuelEstimateStatusPanel(flight, fields)
-        if (compact) WepFuelStatusPanel(flight, fields, model)
         if (compact) MassEstimateStatusPanel(flight, fields, model)
         if (compact && HudField.OIL_PRESSURE_RAW in fields) Text(
             "滑油压力为座舱仪表原值；单位及发动机归属未确定。",

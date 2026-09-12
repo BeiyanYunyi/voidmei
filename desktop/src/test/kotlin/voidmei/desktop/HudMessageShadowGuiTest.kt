@@ -40,10 +40,10 @@ class HudMessageShadowGuiTest {
         }
         val heading = compose.onNodeWithText("发动机 #1")
         val reason = compose.onNodeWithText("推进功率：缺少有效 TAS、本发动机有效推力")
-        val thermal = compose.onNodeWithTag("hud-thermal-budget-status")
-        listOf(heading, reason, thermal).forEach { check(it, true) }
+        compose.onNodeWithTag("hud-thermal-budget-status").assertDoesNotExist()
+        listOf(heading, reason).forEach { check(it, true) }
         compose.runOnIdle { settings = settings.copy(hudShadeColor = null) }
-        listOf(heading, reason, thermal).forEach { check(it, false) }
+        listOf(heading, reason).forEach { check(it, false) }
         compose.runOnIdle {
             settings = settings.copy(hudShadeColor = "#00FF00")
             flight = flight.copy(telemetry = flight.telemetry.copy(engines = emptyList()))

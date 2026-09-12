@@ -45,7 +45,7 @@ class HudThermalWarningGuiTest {
                 c.green < .2f && if (warning) c.red > .8f && c.blue < .2f else c.blue > .8f && c.red < .2f
             } })
         }
-        compose.onNodeWithText("热预算区间包含未知初始损耗，按采样温度估算，不是实际剩余寿命。").assertIsDisplayed()
+        compose.onNodeWithText("热预算区间包含未知初始损耗，按采样温度估算，不是实际剩余寿命。").assertDoesNotExist()
         check("40.0 °C", false)
         check("95.0 °C", true)
         check("0.0–300.0 s", true) // 299.99 s is below the limit despite display rounding.
@@ -60,9 +60,9 @@ class HudThermalWarningGuiTest {
         compose.runOnIdle { stale = true }
         check("110.0 °C", false) // A changed model invalidates the old observation.
         check("— s", false)
-        compose.onNodeWithText("当前无可用的 1 号发动机计时预算。", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("当前无可用的 1 号发动机计时预算。", substring = true).assertDoesNotExist()
         compose.runOnIdle { telemetry = original.copy(aircraft = "other") }
-        compose.onNodeWithText("缺少 1 号发动机温度模型。", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("缺少 1 号发动机温度模型。", substring = true).assertDoesNotExist()
         check("110.0 °C", false)
         compose.runOnIdle { telemetry = original.copy(engines = original.engines.map { it.copy(waterTemperatureC = null) }) }
         check("— °C", false)

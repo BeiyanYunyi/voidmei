@@ -110,8 +110,6 @@ private fun HudPanelContent(
                         warnings = engineReadingWarnings(it, index, model, alerts, thermal),
                         heatBudget = thermal?.hudBudget(it, model, index),
                         powerPercent = it.enginePowerPercentReading(index, model), tasKmh = it.telemetry.tasKmh)
-                    if (HudEngineField.HEAT_BUDGET.id in settings.hudEngineFields)
-                        ThermalBudgetStatusPanel(it, model, thermal, index)
                     CompressorStageBar(it, index, model, settings.hudEngineFields)
                     HudCompressorAdvice(it, index, model, settings.hudEngineFields)
                 } }
