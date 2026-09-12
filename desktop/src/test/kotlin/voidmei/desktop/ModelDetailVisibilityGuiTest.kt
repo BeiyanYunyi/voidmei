@@ -33,6 +33,7 @@ class ModelDetailVisibilityGuiTest {
                     onDataRoot = {}, hiddenSections = hidden, onHiddenSections = { hidden = it })
             } } }
             compose.waitUntil(10000) { published != null }
+            compose.onNodeWithText("升力与几何参数").assertExists()
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true).assertExists()
             compose.onNodeWithTag("model-section-WEIGHT").performScrollTo().performClick()
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true).assertDoesNotExist()
@@ -60,6 +61,7 @@ class ModelDetailVisibilityGuiTest {
             compose.onNodeWithText("模型 VNE", substring = true).assertDoesNotExist()
             compose.runOnIdle { assertSame(previous, published); assertEquals(before, calls) }
             compose.onNodeWithTag("model-sections-all").performScrollTo().performClick()
+            compose.onNodeWithText("升力与几何参数").assertExists()
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true).assertExists()
             compose.onNodeWithText("副翼 AileronPowerLoss：0.500").assertExists()
             compose.onNodeWithText("俯仰 P：3.000").assertExists()

@@ -103,6 +103,7 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
                 if (section !in hiddenSections) ModelAerodynamicPartsPanel(kind, parameters.aerodynamicParts)
             }
             if (ModelDetailSection.MAXIMUM_LIFT !in hiddenSections) ModelMaximumLiftPanel(parameters)
+            if (ModelDetailSection.LIFT_PARAMETERS !in hiddenSections) ModelLiftParametersPanel(parameters)
             if (ModelDetailSection.INERTIA !in hiddenSections) ModelInertiaPanel(parameters.inertia)
             if (ModelDetailSection.CONTROLS !in hiddenSections) {
                 ModelControlPowerLoss(parameters.controlPowerLoss)

@@ -28,7 +28,8 @@ class LegacyModelCategoryGuiTest {
             (item p2 :target showFuselage :type switch :value false)
             (item p3 :target showFin :type switch :value false)
             (item p4 :target showStab :type switch :value false)
-            (item l :target showMaxLiftLoad :type switch :value false))""")
+            (item l :target showMaxLiftLoad :type switch :value false)
+            (item lift :target showLift :type switch :value false))""")
         val original = AppSettings(hiddenModelSections = setOf(ModelDetailSection.FLIGHT_LIMITS, ModelDetailSection.STALL, ModelDetailSection.RAW))
         var current by mutableStateOf(original)
         compose.setContent { MaterialTheme { Column(Modifier.size(800.dp, 650.dp).verticalScroll(rememberScrollState())) {
@@ -52,6 +53,6 @@ class LegacyModelCategoryGuiTest {
         compose.onNodeWithText("应用预览设置").assertIsNotEnabled()
         compose.onNodeWithTag("legacy-model-sections").performScrollTo().performClick()
         click("应用预览设置")
-        compose.runOnIdle { assertEquals(original.copy(hiddenModelSections = setOf(ModelDetailSection.WEIGHT, ModelDetailSection.STALL, ModelDetailSection.RAW, ModelDetailSection.INERTIA, ModelDetailSection.WEP_FUEL, ModelDetailSection.THERMAL_RECOVERY, ModelDetailSection.CLEAN_PART, ModelDetailSection.FULL_PART, ModelDetailSection.FUSELAGE_PART, ModelDetailSection.FIN_PART, ModelDetailSection.STAB_PART, ModelDetailSection.MAXIMUM_LIFT)), current) }
+        compose.runOnIdle { assertEquals(original.copy(hiddenModelSections = setOf(ModelDetailSection.WEIGHT, ModelDetailSection.STALL, ModelDetailSection.RAW, ModelDetailSection.INERTIA, ModelDetailSection.WEP_FUEL, ModelDetailSection.THERMAL_RECOVERY, ModelDetailSection.CLEAN_PART, ModelDetailSection.FULL_PART, ModelDetailSection.FUSELAGE_PART, ModelDetailSection.FIN_PART, ModelDetailSection.STAB_PART, ModelDetailSection.MAXIMUM_LIFT, ModelDetailSection.LIFT_PARAMETERS)), current) }
     }
 }

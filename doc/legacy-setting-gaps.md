@@ -1,6 +1,6 @@
 # Java 配置剩余差异清单
 
-2026-09-12，使用当前 KMP `LegacySettingsReader` 读取仓库自带 `ui_layout.cfg`。返回 **30 条未迁移记录、25 个不同标识（含 target 和面板属性名）**；`fontSize` 在多个面板出现。此数字表示该文件的配置导入差异，不能直接解释成 25 个未实现功能，也不覆盖用户自定义文件中的全部格式。
+2026-09-12，使用当前 KMP `LegacySettingsReader` 读取仓库自带 `ui_layout.cfg`。返回 **29 条未迁移记录、24 个不同标识（含 target 和面板属性名）**；`fontSize` 在多个面板出现。此数字表示该文件的配置导入差异，不能直接解释成 24 个未实现功能，也不覆盖用户自定义文件中的全部格式。
 
 ## 按实际含义推进
 
@@ -12,7 +12,7 @@
 | 姿态旧颜色选项 | `attitudeIndicatorUseNumColor` | 在当前 Java `AttitudeOverlay` 中只给 `transParentWhite` 赋值，未找到绘制读取。先核实有效行为，不添加无效果开关来缩短清单。 |
 | FM 原始信息窗口 | `enableFMPrint`、`displayFmKey` | Kotlin 已有原始字段筛选面板（`ModelFieldsPanel`）；旧独立窗口开关及显示键还需核对行为后迁移。 |
 | 模型选择和曲线状态 | `selectedFM0`、`selectedFM1`、`powerCurveSpeed`、`powerCurveWep` | 需核对旧机型标识、路径以及曲线输入的含义，明确如何恢复到当前模型会话。 |
-| 模型分类显示 | `showLift`、`showDrag` | 当前有 19 类模型详情显示选择，支持 14 类旧显示意图迁移。五类器件参数已按来源与后掠配置分别展示，迎角是未扣安装角的原值；Fin／Stab 路由保留旧字段组名称并明确路径。旧“千米过载”已可选映射为明确 IAS／质量工况的升力过载估算，不复用旧简式。剩余升力、阻力两类需继续核对质量、面积和单位；显示开关可迁移不等于旧数值完全一致。 |
+| 模型分类显示 | `showDrag` | 当前有 20 类模型详情显示选择，支持 15 类旧显示意图迁移。五类器件参数按来源显示原始值；升力参数区分几何面积与已验证失速模型的有效面积，缺失不补零、不跨后掠配置借值。旧“千米过载”映射为明确 IAS／质量工况的升力过载参考。剩余阻力分类需核对面积、效率因数、构型与质量归一化；显示开关可迁移不等于旧数值完全一致。 |
 | 全局语音包选择 | `globalVoicePack` | Java 的选择动作批量修改单条语音配置；Kotlin 已有语音 ZIP 安装和单条语音迁移。不能把保存的全局选择直接覆盖已迁移的单条选择。 |
 | 绘制与调试 | `AAEnable`、`enableLayoutDebug` | Java 的渲染选项／MiniHUD 布局调试与 Compose 后端不同，需对照实际功能，不直接映射为软件渲染或用户 HUD 开关。 |
 | 操作按钮 | `openComparison`、`openPowerCurve`、`importConfig`、`factoryReset` | 这些是操作入口，不是读取旧配置时应自动执行的动作。比较、导入及恢复默认已有 Kotlin 入口，应单独验收对应功能。 |
@@ -31,7 +31,7 @@ nix develop path:. --command gradle -Pvoidmei.systemNode=true :desktop:createDis
 nix develop path:. --command java --class-path 'core/build/libs/core-jvm.jar:desktop/build/compose/binaries/main/app/VoidMei/lib/app/*' script/fixtures/LegacySettingsInventory.java ui_layout.cfg
 ```
 
-本轮使用当前 `core/build/libs/core-jvm.jar`，并从已经构建的独立包提供 Kotlin 运行依赖执行工具，结果位于 `/tmp/voidmei-maximum-lift-inventory.tsv`，统计日志 `/tmp/voidmei-maximum-lift-inventory.log`。这些临时路径不作为仓库的永久数据源，生产代码或旧配置改变后应重新生成。
+本轮使用当前 `core/build/libs/core-jvm.jar`，并从已经构建的独立包提供 Kotlin 运行依赖执行工具，结果位于 `/tmp/voidmei-lift-geometry-inventory.tsv`，统计日志 `/tmp/voidmei-lift-geometry-inventory.log`。这些临时路径不作为仓库的永久数据源，生产代码或旧配置改变后应重新生成。
 
 ## 当前集成验证
 
