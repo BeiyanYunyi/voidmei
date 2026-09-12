@@ -23,6 +23,7 @@ internal fun JetThrustCurvePanel(model: JetThrustModel) {
     var heightFraction by rememberSaveable(model) { mutableStateOf(0f) }
     var speedFraction by rememberSaveable(model) { mutableStateOf(0f) }
     TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起推力曲线" else "展开推力曲线") }
+    JetAltitudeComparisonPanel(model)
     if (!expanded) return
     val altitude = model.altitudesM.first() * (1 - heightFraction.toDouble()) + model.altitudesM.last() * heightFraction.toDouble()
     val speed = model.velocitiesKmh.first() * (1 - speedFraction.toDouble()) + model.velocitiesKmh.last() * speedFraction.toDouble()
