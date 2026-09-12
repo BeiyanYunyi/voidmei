@@ -17,6 +17,7 @@ data class AppSettings(
     val hudPosition: WindowPosition? = null,
     val modelWindowPosition: WindowPosition? = null,
     val modelWindowEnabled: Boolean = false,
+    val modelWindowHotkeyEnabled: Boolean = false,
     val modelWindowAlwaysOnTop: Boolean = true,
     val fmDataRoot: String = "data",
     val recordingDirectory: String = "records",
@@ -205,6 +206,7 @@ object SettingsJson {
             } ?: defaults.hudWidthDp,
             mainPosition = position("mainPosition"), hudPosition = position("hudPosition"),
             modelWindowPosition = position("modelWindowPosition"),
+            modelWindowHotkeyEnabled = root["modelWindowHotkeyEnabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.modelWindowHotkeyEnabled,
             modelWindowEnabled = root["modelWindowEnabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.modelWindowEnabled,
             modelWindowAlwaysOnTop = root["modelWindowAlwaysOnTop"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.modelWindowAlwaysOnTop,
             hiddenModelSections = root["hiddenModelSections"]?.jsonArray?.map { value ->
@@ -325,6 +327,7 @@ object SettingsJson {
         position("mainPosition", settings.mainPosition)
         position("hudPosition", settings.hudPosition)
         position("modelWindowPosition", settings.modelWindowPosition)
+        fields["modelWindowHotkeyEnabled"] = JsonPrimitive(settings.modelWindowHotkeyEnabled)
         fields["modelWindowEnabled"] = JsonPrimitive(settings.modelWindowEnabled)
         fields["modelWindowAlwaysOnTop"] = JsonPrimitive(settings.modelWindowAlwaysOnTop)
         return Json { this.prettyPrint = prettyPrint }.encodeToString(JsonObject.serializer(), JsonObject(fields))

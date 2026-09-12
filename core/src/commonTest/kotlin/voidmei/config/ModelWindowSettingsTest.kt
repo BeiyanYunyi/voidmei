@@ -5,14 +5,14 @@ import kotlin.test.*
 class ModelWindowSettingsTest {
     @Test fun windowPreferencesRoundTripAndStayIndependentOfHudLayout() {
         val defaults = SettingsJson.decode("""{"version":1}""")
-        assertFalse(defaults.modelWindowEnabled); assertTrue(defaults.modelWindowAlwaysOnTop)
+        assertFalse(defaults.modelWindowHotkeyEnabled); assertFalse(defaults.modelWindowEnabled); assertTrue(defaults.modelWindowAlwaysOnTop)
         assertNull(defaults.modelWindowPosition)
-        val configured = defaults.copy(modelWindowEnabled = true, modelWindowAlwaysOnTop = false, modelWindowPosition = WindowPosition(120f, 80f))
+        val configured = defaults.copy(modelWindowHotkeyEnabled = true, modelWindowEnabled = true, modelWindowAlwaysOnTop = false, modelWindowPosition = WindowPosition(120f, 80f))
         assertEquals(configured, SettingsJson.decode(SettingsJson.encode(configured)))
         assertEquals(configured, configured.withHudLayout(AppSettings()))
     }
     @Test fun invalidBooleanAndPositionValuesAreRejected() {
-        for (key in listOf("modelWindowEnabled", "modelWindowAlwaysOnTop")) {
+        for (key in listOf("modelWindowHotkeyEnabled", "modelWindowEnabled", "modelWindowAlwaysOnTop")) {
             assertFails { SettingsJson.decode("""{"$key":"true"}""") }
             assertFails { SettingsJson.decode("""{"$key":1}""") }
         }

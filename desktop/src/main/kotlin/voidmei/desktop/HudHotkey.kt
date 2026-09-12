@@ -20,24 +20,26 @@ internal interface HotkeyBackend {
 /** One session per enabled interval. Call start/close on the same IO coroutine. */
 internal class HudHotkey(
     private val backend: HotkeyBackend = NativeHotkeyBackend(),
+    private val modelToggle: (() -> Unit)? = null,
     private val toggle: () -> Unit,
 ) : AutoCloseable {
     @Volatile private var active = false
     private var started = false
     private var closed = false
-    private var hDown = false
+    private val pressed = mutableSetOf<Int>()
     internal val listener = object : NativeKeyListener {
         override fun nativeKeyPressed(event: NativeKeyEvent) {
-            if (!active || event.keyCode != NativeKeyEvent.VC_H) return
-            if (hDown) return
-            hDown = true
+            if (!active || event.keyCode !in setOf(NativeKeyEvent.VC_H, NativeKeyEvent.VC_M)) return
+            if (!pressed.add(event.keyCode)) return
             val modifiers = event.modifiers
             if (modifiers and NativeInputEvent.CTRL_MASK != 0 &&
                 modifiers and NativeInputEvent.SHIFT_MASK != 0 &&
-                modifiers and (NativeInputEvent.ALT_MASK or NativeInputEvent.META_MASK) == 0) toggle()
+                modifiers and (NativeInputEvent.ALT_MASK or NativeInputEvent.META_MASK) == 0) {
+                if (event.keyCode == NativeKeyEvent.VC_H) toggle() else modelToggle?.invoke()
+            }
         }
         override fun nativeKeyReleased(event: NativeKeyEvent) {
-            if (event.keyCode == NativeKeyEvent.VC_H) hDown = false
+            pressed.remove(event.keyCode)
         }
     }
 

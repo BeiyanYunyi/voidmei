@@ -16,25 +16,31 @@ class NativeHotkeyTest {
         }
         val robot = Robot().apply { autoDelay = 35 }
         val count = AtomicInteger()
+        val models = AtomicInteger()
         repeat(2) { iteration ->
             val event = CountDownLatch(1)
-            HudHotkey { count.incrementAndGet(); event.countDown() }.use { session ->
+            val modelEvent = CountDownLatch(1)
+            HudHotkey(modelToggle = { models.incrementAndGet(); modelEvent.countDown() }) { count.incrementAndGet(); event.countDown() }.use { session ->
                 session.start()
                 assertTrue(GlobalScreen.isNativeHookRegistered())
                 try {
                     robot.keyPress(KeyEvent.VK_CONTROL)
                     robot.keyPress(KeyEvent.VK_SHIFT)
                     robot.keyPress(KeyEvent.VK_H)
+                    robot.keyPress(KeyEvent.VK_M)
                     robot.delay(900) // Cross the X11 repeat delay while keeping the chord held.
                 } finally {
+                    robot.keyRelease(KeyEvent.VK_M)
                     robot.keyRelease(KeyEvent.VK_H)
                     robot.keyRelease(KeyEvent.VK_SHIFT)
                     robot.keyRelease(KeyEvent.VK_CONTROL)
                 }
+                assertTrue(modelEvent.await(5, TimeUnit.SECONDS), "No model callback")
                 assertTrue(event.await(5, TimeUnit.SECONDS), "No callback on registration ${iteration + 1}")
             }
             assertFalse(GlobalScreen.isNativeHookRegistered())
             assertEquals(iteration + 1, count.get())
+            assertEquals(iteration + 1, models.get())
         }
     }
 }

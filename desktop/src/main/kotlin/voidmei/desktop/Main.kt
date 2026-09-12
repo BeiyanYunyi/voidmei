@@ -83,10 +83,14 @@ fun main(args: Array<String>) {
         var offlineModels by remember { mutableStateOf(false) }
         var hotkeyError by remember { mutableStateOf<String?>(null) }
         var hotkeyActive by remember { mutableStateOf(false) }
-        LaunchedEffect(settings.hudHotkeyEnabled) {
+        LaunchedEffect(settings.hudHotkeyEnabled || settings.modelWindowHotkeyEnabled) {
             hotkeyError = null
-            if (settings.hudHotkeyEnabled) {
-                val session = HudHotkey {
+            if (settings.hudHotkeyEnabled || settings.modelWindowHotkeyEnabled) {
+                val session = HudHotkey(modelToggle = {
+                    launch {
+                        if (settings.modelWindowHotkeyEnabled && !closing) settings = settings.copy(modelWindowEnabled = !settings.modelWindowEnabled)
+                    }
+                }) {
                     launch {
                         if (settings.hudHotkeyEnabled && !closing) settings = settings.copy(hudEnabled = !settings.hudEnabled)
                     }
@@ -289,7 +293,7 @@ fun main(args: Array<String>) {
                             endpointError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Switch(settings.hudHotkeyEnabled, { settings = settings.copy(hudHotkeyEnabled = it) })
-                                Text("Ctrl + Shift + H 切换 HUD" + if (hotkeyActive) " · 已启用" else "")
+                                Text("Ctrl + Shift + H 切换 HUD" + if (hotkeyActive && settings.hudHotkeyEnabled) " · 已启用" else "")
                             }
                             hotkeyError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -422,6 +426,10 @@ fun main(args: Array<String>) {
                             SectionHeading(MainSection.MODEL, anchors)
                             TextButton(enabled = !closing, onClick = { offlineModels = true }) { Text("打开离线模型查看") }
                             ModelWindowControls(settings, enabled = !closing) { settings = it }
+                            if (settings.modelWindowHotkeyEnabled) {
+                                Text(if (hotkeyActive) "模型浮窗热键已启用" else "模型浮窗热键未就绪")
+                                hotkeyError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                            }
                             FlightModelPanel(flight?.telemetry, settings.fmDataRoot, onModel = { _, _ -> }, session = flightModel, hiddenSections = settings.hiddenModelSections,
                                 onHiddenSections = { settings = settings.copy(hiddenModelSections = it) }, onDataRoot = {
                                 settings = settings.copy(fmDataRoot = it)

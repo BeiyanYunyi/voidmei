@@ -69,6 +69,35 @@ class HudHotkeyTest {
         assertEquals(0, backend.stops)
     }
 
+    @Test fun bothActionsShareOneRegistrationAndTrackPressedKeysIndependently() {
+        val backend = Backend()
+        var hud = 0
+        var model = 0
+        val session = HudHotkey(backend, modelToggle = { model++ }) { hud++ }
+        session.start()
+        val m = event(key = NativeKeyEvent.VC_M)
+        backend.listener.nativeKeyPressed(event())
+        backend.listener.nativeKeyPressed(m)
+        backend.listener.nativeKeyPressed(event())
+        backend.listener.nativeKeyPressed(m)
+        assertEquals(1, hud); assertEquals(1, model); assertEquals(1, backend.starts)
+        backend.listener.nativeKeyReleased(m)
+        backend.listener.nativeKeyPressed(m)
+        assertEquals(1, hud); assertEquals(2, model)
+        for (modifiers in listOf(0, NativeInputEvent.CTRL_MASK, chord or NativeInputEvent.ALT_MASK, chord or NativeInputEvent.META_MASK)) {
+            backend.listener.nativeKeyReleased(m)
+            backend.listener.nativeKeyPressed(event(modifiers, NativeKeyEvent.VC_M))
+        }
+        assertEquals(2, model)
+        backend.listener.nativeKeyReleased(m)
+        backend.listener.nativeKeyPressed(event(chord or NativeInputEvent.CAPS_LOCK_MASK, NativeKeyEvent.VC_M))
+        assertEquals(3, model)
+        session.close()
+        backend.listener.nativeKeyReleased(m)
+        backend.listener.nativeKeyPressed(m)
+        assertEquals(3, model); assertEquals(1, backend.stops)
+    }
+
     @Test fun bundledNativeLibraryCanBeExtractedOutsideInstallDirectory() {
         val library = HotkeyLibraryLocator().libraries.next()
         try {

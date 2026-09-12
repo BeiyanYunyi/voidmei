@@ -40,6 +40,7 @@ class ModelFloatingWindowGuiTest {
                     onClose = { settings = settings.copy(modelWindowEnabled = false) }, onChange = { settings = it })
             }
             compose.waitUntil(10000) { session?.alertModel != null }
+            compose.waitUntil(5000) { compose.onAllNodesWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).fetchSemanticsNodes().size == 1 }
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).assertExists()
             val native = Frame.getFrames().single { it.title == "VoidMei · 当前模型" && it.isDisplayable }
             assertTrue(native.isAlwaysOnTop)
@@ -49,6 +50,7 @@ class ModelFloatingWindowGuiTest {
             compose.onNodeWithTag("model-window-close", useUnmergedTree = true).performScrollTo().performClick()
             compose.waitUntil(5000) { !native.isDisplayable }
             compose.runOnIdle { assertNotNull(session?.alertModel); settings = settings.copy(modelWindowEnabled = true) }
+            compose.waitUntil(5000) { compose.onAllNodesWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).fetchSemanticsNodes().size == 1 }
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).assertExists()
             assertEquals(before, extracts.get())
             compose.runOnIdle { aircraft = null }
@@ -64,6 +66,7 @@ class ModelFloatingWindowGuiTest {
         compose.setContent { MaterialTheme { Column { ModelWindowControls(settings) { settings = it } } } }
         compose.onNodeWithTag("model-window-enabled").performClick()
         compose.onNodeWithTag("model-window-on-top").performClick()
-        compose.runOnIdle { assertEquals(initial.copy(modelWindowEnabled = true, modelWindowAlwaysOnTop = false), settings) }
+        compose.onNodeWithTag("model-window-hotkey").performClick()
+        compose.runOnIdle { assertEquals(initial.copy(modelWindowHotkeyEnabled = true, modelWindowEnabled = true, modelWindowAlwaysOnTop = false), settings) }
     }
 }
