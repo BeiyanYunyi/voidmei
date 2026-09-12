@@ -8,9 +8,9 @@
 | --- | --- | --- |
 | 各窗口字号、字体和列数 | `fontSize`、`fontName`、`hudColumns` | Kotlin 已支持 1–16 列，旧 `flightInfoColumn` 可选迁移至第一个飞行读数分区；动力面板 `hudColumns` 可选迁移至用户明确选定的发动机分区。飞行／发动机分区已支持独立读数字体，旧飞行 `:font`／`flightInfoFontC` 可选迁移；动力／控制面板 `:font` 及动力面板历史 `fontName` 已支持可选迁移到明确指定区域的标签字体。剩余旧键具有面板作用域，字号偏移还涉及窗口和图形尺寸。需要按所属面板解析，再映射字号和列数，不能把多个 `fontSize` 合并成一个值。 |
 | 动力与引擎控制独立窗口 | `engineInfoSwitch`、`enableEngineControl` | 旧窗口与当前 FLIGHT／ENGINE 分区结构不同，已提供发动机“动力读数／引擎控制”独立字段预设，可手动分成两个区域；发动机分区已可独立启用整机燃油百分比与水平燃油条。两个显示开关已支持显式选择不同发动机分区后迁移；两个旧窗口的位置也可显式选择不同发动机分区后迁移；导入预览已支持明确选择新建两个区域并套用字段预设；标签字体与动力表格字号已支持可选迁移；已增加可独立保存的横排／竖排／混合布局与表格显示选项，新建控制区域默认无表格混合仪表布局；已支持独立控制条长度与厚度；旧控制字号已可选转换为条长、厚度和文字样式；窗口尺寸、旧间距及整机／逐发动机读数差异仍待补齐，不能据此宣称窗口已对齐。 |
-| 姿态窗口刷新 | `attitudeIndicatorFreqMs` | 独立窗口刷新频率与当前遥测轮询不同，需核对节流策略。外框宽高已经支持按原屏幕与 DPI 可选换算；内部图形排布仍有差异。 |
+| 姿态窗口刷新 | `attitudeIndicatorFreqMs` | Java `AttitudeOverlay.onFlightData()` 按事件时间节流后投递 `drawTick()`，当前 KMP 姿态分区直接消费飞行状态；需新增显示节流，不能映射成遥测轮询频率。外框宽高已经支持按原屏幕与 DPI 可选换算；内部图形排布仍有差异。 |
 | 姿态旧颜色选项 | `attitudeIndicatorUseNumColor` | 在当前 Java `AttitudeOverlay` 中只给 `transParentWhite` 赋值，未找到绘制读取。先核实有效行为，不添加无效果开关来缩短清单。 |
-| FM 原始信息窗口 | `enableFMPrint`、`displayFmKey` | Kotlin 已有原始字段筛选面板（`ModelFieldsPanel`）；旧独立窗口开关及显示键还需核对行为后迁移。 |
+| FM 模型信息浮窗 | `enableFMPrint`、`displayFmKey` | Java 在 `Controller` 注册独立模型数据浮窗，且同一开关控制喷气推力图；全局热键切换浮窗。Kotlin 已有模型详情与原始字段筛选，但尚无等价独立模型浮窗。不能映射成原始字段分类显示；新增热键需先整合现有 `NativeHotkeyBackend` 的独占钩子生命周期。 |
 | 模型选择和曲线状态 | `selectedFM0`、`selectedFM1`、`powerCurveSpeed`、`powerCurveWep` | 需核对旧机型标识、路径以及曲线输入的含义，明确如何恢复到当前模型会话。 |
 | 模型分类显示 | 16 个旧分类开关均已有可选迁移入口 | 当前有 21 类模型详情显示选择。器件参数保留原始来源与角度，升力参数区分几何和有效面积，阻力参数显示 CdS、诱导因数、半油质量参考及散热器原始系数；旧“千米过载”采用明确 IAS／质量工况。仍需继续核对安装角修正及实际模型兼容性；开关迁移不等于旧数值完全一致。 |
 | 全局语音包选择 | `globalVoicePack` | Java 的选择动作批量修改单条语音配置；Kotlin 已有语音 ZIP 安装和单条语音迁移。不能把保存的全局选择直接覆盖已迁移的单条选择。 |
@@ -35,7 +35,7 @@ nix develop path:. --command java --class-path 'core/build/libs/core-jvm.jar:des
 
 ## 当前集成验证
 
-生产源码 `8ea750f5` 共享 JVM 571、JS 568、桌面单元 151、完整 GUI 393 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-model-details-integrated.log`。独立包 `/tmp/voidmei-kmp-model-details` 已通过隔离 Linux 启动、保存渲染器设置、AWT 心跳及正常退出验证，报告 `/tmp/voidmei-package-smoke-d2wfwska/report.json`。实际游戏与跨平台验证仍未完成。
+生产源码 `5027abb5` 共享 JVM 584、JS 581、桌面单元 151、完整 GUI 181 类 398 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-aero-integrated.log`。独立包 `/tmp/voidmei-kmp-aero-details` 已通过隔离 Linux 启动、保存渲染器设置、AWT 心跳、窗口位置保存及正常退出验证，报告 `/tmp/voidmei-package-smoke-3madh4iu/report.json`。实际游戏与跨平台验证仍未完成。
 
 ## 历史集成验证
 
