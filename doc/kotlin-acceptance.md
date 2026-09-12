@@ -2,6 +2,14 @@
 
 2026-09-12，根据当前工作区源码及本机执行结果核对。此页区分已有实现、尚未实现与尚未验证；不以测试总数代表完整替换。
 
+## 控制布局与燃油迁移集成验收（2026-09-12）
+
+对生产源码提交 `c72b64a7` 运行完整共享／桌面／GUI 检查并构建独立 Nix 包，覆盖此前尚未一起打包的混合布局、表格开关、仪表精度、控制条尺寸、旧控制字号换算、整机燃油及旧燃油开关目标迁移。共享 JVM 560、JS 557、桌面单元 151、完整 GUI 169 类 383 项通过，无失败、错误或跳过。未变化的 Gradle 任务允许复用已验证结果；完整 GUI 任务实际执行，日志 `/tmp/voidmei-control-fuel-integrated.log`。
+
+独立包 `/tmp/voidmei-kmp-control-fuel` 指向 `/nix/store/h69vlr2a3lsv67sfqlya6wc3pv0s1257-voidmei-kotlin-2.0.0`，构建日志 `/tmp/voidmei-control-fuel-package.log`。隔离 X11 整包验证报告 `/tmp/voidmei-package-smoke-lvn4ot4y/report.json` 确认主窗口及兼容 HUD 读取保存的 SOFTWARE_FAST 偏好、AWT 心跳、设置保留、窗口位置保存及正常退出码 0。日志 `/tmp/voidmei-control-fuel-smoke.log`。这证明当前 Linux 主机上的上述行为，不证明真实游戏、全部界面响应、语音播放、物理关闭按钮或 Windows／macOS 行为。
+
+使用当前共享 jar 和最新包依赖重新执行旧配置清点，仍为 44 条记录、39 个不同标识；结果 `/tmp/voidmei-control-fuel-inventory.tsv` 与 `/tmp/voidmei-control-fuel-inventory.log`。本次没有新增业务功能；剩余差异仍按清单继续推进。
+
 ## 旧控制燃油开关的分区迁移（2026-09-12）
 
 `disableEngineInfoLFuel` 现在除了原有全局飞行燃油字段迁移，还提供可选的发动机分区目标，将显示／隐藏状态写入 `showAircraftFuel`。默认不选择目标；支持现有分区及本次新建的引擎控制区域。预览列出目标当前状态与即将应用的状态，并说明原有飞行字段迁移仍会应用。保留其他分区、发动机编号、字段、布局、表格和图形开关。

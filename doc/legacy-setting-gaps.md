@@ -31,11 +31,11 @@ nix develop path:. --command gradle -Pvoidmei.systemNode=true :desktop:createDis
 nix develop path:. --command java --class-path 'core/build/libs/core-jvm.jar:desktop/build/compose/binaries/main/app/VoidMei/lib/app/*' script/fixtures/LegacySettingsInventory.java ui_layout.cfg
 ```
 
-本轮使用当前 `core/build/libs/core-jvm.jar`，并从已经构建的独立包提供 Kotlin 运行依赖执行工具，结果位于 `/tmp/voidmei-engine-layout-inventory.tsv`，统计日志 `/tmp/voidmei-engine-layout-inventory.log`。这些临时路径不作为仓库的永久数据源，生产代码或旧配置改变后应重新生成。
+本轮使用当前 `core/build/libs/core-jvm.jar`，并从已经构建的独立包提供 Kotlin 运行依赖执行工具，结果位于 `/tmp/voidmei-control-fuel-inventory.tsv`，统计日志 `/tmp/voidmei-control-fuel-inventory.log`。这些临时路径不作为仓库的永久数据源，生产代码或旧配置改变后应重新生成。
 
 ## 当前集成验证
 
-当前源码共享 JVM 551、JS 548、桌面单元 151、完整 GUI 369 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-engine-layout-integrated.log`。独立包 `/tmp/voidmei-kmp-engine-layout` 已通过隔离 Linux 启动、保存渲染器设置、AWT 心跳及正常退出验证，报告 `/tmp/voidmei-package-smoke-4fff38oe/report.json`。实际游戏与跨平台验证仍未完成。
+生产源码 `c72b64a7` 共享 JVM 560、JS 557、桌面单元 151、完整 GUI 383 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-control-fuel-integrated.log`。独立包 `/tmp/voidmei-kmp-control-fuel` 已通过隔离 Linux 启动、保存渲染器设置、AWT 心跳及正常退出验证，报告 `/tmp/voidmei-package-smoke-lvn4ot4y/report.json`。实际游戏与跨平台验证仍未完成。
 
 ## 历史集成验证
 
