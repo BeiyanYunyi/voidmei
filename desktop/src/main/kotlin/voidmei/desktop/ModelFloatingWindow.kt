@@ -26,7 +26,7 @@ internal fun ModelWindowControls(settings: AppSettings, enabled: Boolean = true,
     Row {
         Switch(settings.modelWindowHotkeyEnabled, { onChange(settings.copy(modelWindowHotkeyEnabled = it)) }, enabled = enabled,
             modifier = Modifier.testTag("model-window-hotkey"))
-        Text("${settings.modelWindowHotkey} 切换模型浮窗")
+        Text("${voidmei.config.ModelHotkey.parse(settings.modelWindowHotkey).display} 切换模型浮窗")
     }
     ModelHotkeyEditor(settings, enabled, onChange)
     Text("与主窗口共享当前机型、燃油方案和分类选择；关闭浮窗不退出应用。开启状态与位置会保存。", style = MaterialTheme.typography.bodySmall)

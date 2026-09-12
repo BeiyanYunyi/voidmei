@@ -10,6 +10,7 @@ import voidmei.config.*
 @Composable
 internal fun ModelHotkeyEditor(settings: AppSettings, enabled: Boolean, onChange: (AppSettings) -> Unit) {
     val current = ModelHotkey.parse(settings.modelWindowHotkey)
+    var query by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var error by remember(settings.modelWindowHotkey) { mutableStateOf<String?>(null) }
     fun update(binding: ModelHotkey) {
@@ -18,9 +19,12 @@ internal fun ModelHotkeyEditor(settings: AppSettings, enabled: Boolean, onChange
     }
     FlowRow {
         Box {
-            OutlinedButton(onClick = { expanded = true }, enabled = enabled, modifier = Modifier.testTag("model-hotkey-key")) { Text("按键：${current.key.name}") }
+            OutlinedButton(onClick = { query = ""; expanded = true }, enabled = enabled, modifier = Modifier.testTag("model-hotkey-key")) { Text("按键：${current.key.label}") }
             DropdownMenu(expanded, { expanded = false }) {
-                ModelHotkeyKey.entries.forEach { key -> DropdownMenuItem(text = { Text(key.name) },
+                OutlinedTextField(query, { query = it }, singleLine = true, label = { Text("搜索按键") }, modifier = Modifier.testTag("model-hotkey-search"))
+                val matches = ModelHotkeyKey.entries.filter { it.matches(query) }
+                if (matches.isEmpty()) Text("没有匹配的按键")
+                matches.forEach { key -> DropdownMenuItem(text = { Text(key.label) },
                     onClick = { expanded = false; update(current.copy(key = key)) }, modifier = Modifier.testTag("model-hotkey-key-${key.name}")) }
             }
         }
@@ -29,5 +33,5 @@ internal fun ModelHotkeyEditor(settings: AppSettings, enabled: Boolean, onChange
         FilterChip(current.alt, { update(current.copy(alt = !current.alt)) }, enabled = enabled, label = { Text("Alt") }, modifier = Modifier.testTag("model-hotkey-alt"))
     }
     error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-    Text("选择 A–Z 或 F1–F12，可不加修饰键；单键也会在其他应用输入时触发。修改后立即使用新组合。", style = MaterialTheme.typography.bodySmall)
+    Text("支持字母、数字、F1–F24、方向和编辑键，可搜索中英文名称；可不加修饰键；单键也会在其他应用输入时触发。修改后立即使用新组合。", style = MaterialTheme.typography.bodySmall)
 }

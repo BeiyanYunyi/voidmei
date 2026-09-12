@@ -411,7 +411,7 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             imported.modelHotkey?.let { binding ->
                 Row {
                     Checkbox(importModelHotkey, { importModelHotkey = it }, modifier = Modifier.testTag("legacy-model-hotkey"))
-                    Text(if (binding.isEmpty()) "迁移旧模型热键：禁用" else "迁移旧模型热键：$binding（单键）")
+                    Text(if (binding.isEmpty()) "迁移旧模型热键：禁用" else "迁移旧模型热键：${voidmei.config.ModelHotkey.parse(binding).display}（单键）")
                 }
                 Text("仅迁移按键或禁用意图；不会自动启用全局监听，也不会打开浮窗。旧浮窗总开关与喷气图关联尚未迁移。")
             }

@@ -16,6 +16,8 @@ class NativeHotkeyTest {
         val count = AtomicInteger()
         val first = CountDownLatch(1)
         val second = CountDownLatch(1)
+        val third = CountDownLatch(1)
+        val fourth = CountDownLatch(1)
         val robot = Robot().apply { autoDelay = 35 }
         fun press(key: Int, alt: Boolean = false) {
             try {
@@ -27,7 +29,7 @@ class NativeHotkeyTest {
             }
         }
         HudHotkey(modelBinding = { binding.get() }, modelToggle = {
-            if (count.incrementAndGet() == 1) first.countDown() else second.countDown()
+            when (count.incrementAndGet()) { 1 -> first.countDown(); 2 -> second.countDown(); 3 -> third.countDown(); 4 -> fourth.countDown() }
         }) {}.use { session ->
             session.start()
             press(KeyEvent.VK_P)
@@ -38,6 +40,14 @@ class NativeHotkeyTest {
             assertTrue(second.await(5, TimeUnit.SECONDS))
             robot.delay(150)
             assertEquals(2, count.get())
+            binding.set(voidmei.config.ModelHotkey.parse("Ctrl+DIGIT1"))
+            try { robot.keyPress(KeyEvent.VK_CONTROL); press(KeyEvent.VK_1) }
+            finally { robot.keyRelease(KeyEvent.VK_CONTROL) }
+            assertTrue(third.await(5, TimeUnit.SECONDS), "No digit callback")
+            binding.set(voidmei.config.ModelHotkey.parse("LEFT"))
+            press(KeyEvent.VK_LEFT)
+            assertTrue(fourth.await(5, TimeUnit.SECONDS), "No arrow callback")
+            assertEquals(4, count.get())
             assertTrue(GlobalScreen.isNativeHookRegistered())
         }
         assertFalse(GlobalScreen.isNativeHookRegistered())

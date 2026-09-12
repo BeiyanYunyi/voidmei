@@ -9,8 +9,20 @@ class ModelHotkeyTest {
             val settings = AppSettings(modelWindowHotkey = value)
             assertEquals(settings, SettingsJson.decode(SettingsJson.encode(settings)))
         }
-        for (value in listOf("Ctrl+Shift+H", "Shift+Ctrl+M", "Ctrl+Ctrl+M", "Meta+P", "F13", "", "p"))
+        for (value in listOf("Ctrl+Shift+H", "Shift+Ctrl+M", "Ctrl+Ctrl+M", "Meta+P", "F25", "", "p"))
             assertFails { AppSettings(modelWindowHotkey = value) }
+    }
+    @Test fun expandedKeysHaveUniqueCodesAndSearchableLabels() {
+        assertEquals(ModelHotkeyKey.entries.size, ModelHotkeyKey.entries.map { it.nativeCode }.distinct().size)
+        assertTrue(ModelHotkeyKey.DELETE.matches("删除"))
+        assertTrue(ModelHotkeyKey.DELETE.matches("delete"))
+        assertTrue(ModelHotkeyKey.PAGE_UP.matches("page up"))
+        assertEquals("Ctrl+1", ModelHotkey.parse("Ctrl+DIGIT1").display)
+        for (key in ModelHotkeyKey.entries) {
+            val parsed = LegacySettingsReader.read("""(panel p (item k :target displayFmKey :type hotkey :value ${key.nativeCode}))""")
+            assertEquals(key.name, parsed.modelHotkey)
+            assertTrue(parsed.unmigrated.isEmpty())
+        }
     }
     @Test fun legacyImportRequiresSelectionAndNeverEnablesListener() {
         fun read(value: Int) = LegacySettingsReader.read("""(panel p (item k :target displayFmKey :type hotkey :value $value))""")

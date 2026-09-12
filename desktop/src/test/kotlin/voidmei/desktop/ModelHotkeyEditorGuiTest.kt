@@ -29,6 +29,21 @@ class ModelHotkeyEditorGuiTest {
         compose.onNodeWithTag("model-hotkey-shift").performClick()
         compose.runOnIdle { assertEquals("P", settings.modelWindowHotkey); assertFalse(settings.modelWindowHotkeyEnabled) }
     }
+    @Test fun searchFindsChineseLabelsHandlesEmptyResultsAndResetsOnReopen() {
+        var settings by mutableStateOf(AppSettings())
+        compose.setContent { MaterialTheme { Column { ModelHotkeyEditor(settings, true) { settings = it } } } }
+        compose.onNodeWithTag("model-hotkey-key").performClick()
+        compose.onNodeWithTag("model-hotkey-search").performTextInput("不存在的按键")
+        compose.onNodeWithText("没有匹配的按键").assertExists()
+        compose.onNodeWithTag("model-hotkey-search").performTextReplacement("删除")
+        compose.onNodeWithTag("model-hotkey-key-DELETE").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("Ctrl+Shift+DELETE", settings.modelWindowHotkey) }
+        compose.onNodeWithTag("model-hotkey-key").performClick()
+        compose.onNodeWithTag("model-hotkey-search").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.EditableText, androidx.compose.ui.text.AnnotatedString("")))
+        compose.onNodeWithTag("model-hotkey-search").performTextInput("DIGIT1")
+        compose.onNodeWithTag("model-hotkey-key-DIGIT1").performScrollTo().performClick()
+        compose.runOnIdle { assertEquals("Ctrl+Shift+DIGIT1", settings.modelWindowHotkey) }
+    }
     @Test fun previewRequiresOptInAndDoesNotEnableListening() {
         val parsed = LegacySettingsReader.read("""(panel p (item x :target displayFmKey :type hotkey :value 25))""")
         var settings = AppSettings()

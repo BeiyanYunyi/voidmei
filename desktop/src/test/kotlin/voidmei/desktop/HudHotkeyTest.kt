@@ -100,7 +100,7 @@ class HudHotkeyTest {
 
     @Test fun customBindingUpdatesWithoutReregisteringAndCodesMatchNativeLibrary() {
         for (key in voidmei.config.ModelHotkeyKey.entries)
-            assertEquals(NativeKeyEvent::class.java.getField("VC_${key.name}").getInt(null), key.nativeCode)
+            assertEquals(NativeKeyEvent::class.java.getField("VC_${key.nativeName}").getInt(null), key.nativeCode)
         val backend = Backend()
         var binding = voidmei.config.ModelHotkey.parse("P")
         var model = 0
