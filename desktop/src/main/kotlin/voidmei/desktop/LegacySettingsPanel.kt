@@ -194,8 +194,9 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             val selectedPowerSizeTarget = powerSizeTarget?.takeIf { id -> engineRegions.any { it.id == id } }
             var controlStyleTarget by remember(imported, currentScene) { mutableStateOf<String?>(null) }
             val selectedControlStyleTarget = controlStyleTarget?.takeIf { id -> engineRegions.any { it.id == id } }
+            var importModelHotkey by remember(imported) { mutableStateOf(false) }
             var importModelSections by remember(imported) { mutableStateOf(false) }
-            val selected = imported.copy(importModelSections = importModelSections, engineAircraftFuelRegionId = selectedEngineFuelTarget, engineControlStyleRegionId = selectedControlStyleTarget, powerTextSizesRegionId = selectedPowerSizeTarget, engineFontTargets = selectedEngineFontTargets, engineRegionsToCreate = engineCreations, enginePositionTargets = selectedEnginePositionTargets, enginePanelTargets = selectedEnginePanelTargets, engineColumnsRegionId = selectedEngineColumnsTarget, importAttitudeSize = sizeSelected && sizeReady, legacyDpiScale = dpi, importHudRegionBorders = importBorders && borderMatches.isNotEmpty(), importFlightTextSizes = importSizes && flightRegion != null, importFlightLabelFont = importFont && flightRegion != null, importFlightReadingColumns = importColumns && flightRegion != null,
+            val selected = imported.copy(importModelHotkey = importModelHotkey, importModelSections = importModelSections, engineAircraftFuelRegionId = selectedEngineFuelTarget, engineControlStyleRegionId = selectedControlStyleTarget, powerTextSizesRegionId = selectedPowerSizeTarget, engineFontTargets = selectedEngineFontTargets, engineRegionsToCreate = engineCreations, enginePositionTargets = selectedEnginePositionTargets, enginePanelTargets = selectedEnginePanelTargets, engineColumnsRegionId = selectedEngineColumnsTarget, importAttitudeSize = sizeSelected && sizeReady, legacyDpiScale = dpi, importHudRegionBorders = importBorders && borderMatches.isNotEmpty(), importFlightTextSizes = importSizes && flightRegion != null, importFlightLabelFont = importFont && flightRegion != null, importFlightReadingColumns = importColumns && flightRegion != null,
                 importHudPositions = positionsReady && importPositions && (matched.isNotEmpty() || (createMissing && canCreate)),
                 createMissingHudRegions = positionsReady && createMissing && canCreate, legacyScreenSize = screenSize,
                 importHudRegionVisibility = importVisibility && visibleMatches.isNotEmpty())
@@ -406,6 +407,13 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             }
             imported.hudCompassHeadingUp?.let {
                 Text("罗盘坐标系：${if (it) "航向朝上" else "北向朝上"}；姿态图：${if (it) "地面参考" else "机体参考"}。")
+            }
+            imported.modelHotkey?.let { binding ->
+                Row {
+                    Checkbox(importModelHotkey, { importModelHotkey = it }, modifier = Modifier.testTag("legacy-model-hotkey"))
+                    Text(if (binding.isEmpty()) "迁移旧模型热键：禁用" else "迁移旧模型热键：$binding（单键）")
+                }
+                Text("仅迁移按键或禁用意图；不会自动启用全局监听，也不会打开浮窗。旧浮窗总开关与喷气图关联尚未迁移。")
             }
             imported.hudAttitudeRefreshMs?.let { Text("HUD 姿态显示间隔：$it ms；应用于 HUD 姿态图及独立姿态分区，不改变遥测、记录和告警频率。") }
             imported.hudAttitudeNorthPointer?.let {

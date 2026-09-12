@@ -18,6 +18,7 @@ data class AppSettings(
     val modelWindowPosition: WindowPosition? = null,
     val modelWindowEnabled: Boolean = false,
     val modelWindowHotkeyEnabled: Boolean = false,
+    val modelWindowHotkey: String = "Ctrl+Shift+M",
     val modelWindowAlwaysOnTop: Boolean = true,
     val fmDataRoot: String = "data",
     val recordingDirectory: String = "records",
@@ -75,6 +76,7 @@ data class AppSettings(
     val hiddenModelSections: Set<ModelDetailSection> = emptySet(),
 ) {
     init {
+        ModelHotkey.parse(modelWindowHotkey)
         require(readingColors.keys.all { it in setOf("label", "value", "warning", "shade", "unit") } && readingColors.values.all { parseHexColor(it) != null })
         require(numberFont == null || (numberFont.isNotBlank() && numberFont.length <= 200 && numberFont.none { it.isISOControl() }))
         require(textFont == null || (textFont.isNotBlank() && textFont.length <= 200 && textFont.none { it.isISOControl() }))
@@ -206,6 +208,7 @@ object SettingsJson {
             } ?: defaults.hudWidthDp,
             mainPosition = position("mainPosition"), hudPosition = position("hudPosition"),
             modelWindowPosition = position("modelWindowPosition"),
+            modelWindowHotkey = root["modelWindowHotkey"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.modelWindowHotkey,
             modelWindowHotkeyEnabled = root["modelWindowHotkeyEnabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.modelWindowHotkeyEnabled,
             modelWindowEnabled = root["modelWindowEnabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.modelWindowEnabled,
             modelWindowAlwaysOnTop = root["modelWindowAlwaysOnTop"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.modelWindowAlwaysOnTop,
@@ -327,6 +330,7 @@ object SettingsJson {
         position("mainPosition", settings.mainPosition)
         position("hudPosition", settings.hudPosition)
         position("modelWindowPosition", settings.modelWindowPosition)
+        fields["modelWindowHotkey"] = JsonPrimitive(settings.modelWindowHotkey)
         fields["modelWindowHotkeyEnabled"] = JsonPrimitive(settings.modelWindowHotkeyEnabled)
         fields["modelWindowEnabled"] = JsonPrimitive(settings.modelWindowEnabled)
         fields["modelWindowAlwaysOnTop"] = JsonPrimitive(settings.modelWindowAlwaysOnTop)

@@ -10,6 +10,39 @@ import kotlin.test.*
 
 /** Only run with VOIDMEI_TEST_ISOLATED_X11=1 on a dedicated Xvfb display. */
 class NativeHotkeyTest {
+    @Test fun customKeysCanChangeDuringNativeSession() {
+        check(System.getenv("VOIDMEI_TEST_ISOLATED_X11") == "1")
+        val binding = java.util.concurrent.atomic.AtomicReference(voidmei.config.ModelHotkey.parse("P"))
+        val count = AtomicInteger()
+        val first = CountDownLatch(1)
+        val second = CountDownLatch(1)
+        val robot = Robot().apply { autoDelay = 35 }
+        fun press(key: Int, alt: Boolean = false) {
+            try {
+                if (alt) robot.keyPress(KeyEvent.VK_ALT)
+                robot.keyPress(key)
+            } finally {
+                robot.keyRelease(key)
+                if (alt) robot.keyRelease(KeyEvent.VK_ALT)
+            }
+        }
+        HudHotkey(modelBinding = { binding.get() }, modelToggle = {
+            if (count.incrementAndGet() == 1) first.countDown() else second.countDown()
+        }) {}.use { session ->
+            session.start()
+            press(KeyEvent.VK_P)
+            assertTrue(first.await(5, TimeUnit.SECONDS))
+            binding.set(voidmei.config.ModelHotkey.parse("Alt+F1"))
+            press(KeyEvent.VK_P)
+            press(KeyEvent.VK_F1, alt = true)
+            assertTrue(second.await(5, TimeUnit.SECONDS))
+            robot.delay(150)
+            assertEquals(2, count.get())
+            assertTrue(GlobalScreen.isNativeHookRegistered())
+        }
+        assertFalse(GlobalScreen.isNativeHookRegistered())
+    }
+
     @Test fun nativeInputWorksAfterUnregisterAndReregister() {
         check(System.getenv("VOIDMEI_TEST_ISOLATED_X11") == "1") {
             "Run this test on an isolated Xvfb display with VOIDMEI_TEST_ISOLATED_X11=1"

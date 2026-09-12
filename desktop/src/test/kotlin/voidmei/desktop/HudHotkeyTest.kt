@@ -98,6 +98,25 @@ class HudHotkeyTest {
         assertEquals(3, model); assertEquals(1, backend.stops)
     }
 
+    @Test fun customBindingUpdatesWithoutReregisteringAndCodesMatchNativeLibrary() {
+        for (key in voidmei.config.ModelHotkeyKey.entries)
+            assertEquals(NativeKeyEvent::class.java.getField("VC_${key.name}").getInt(null), key.nativeCode)
+        val backend = Backend()
+        var binding = voidmei.config.ModelHotkey.parse("P")
+        var model = 0
+        var hud = 0
+        HudHotkey(backend, modelToggle = { model++ }, modelBinding = { binding }) { hud++ }.use { session ->
+            session.start()
+            backend.listener.nativeKeyPressed(event(0, NativeKeyEvent.VC_P))
+            backend.listener.nativeKeyReleased(event(0, NativeKeyEvent.VC_P))
+            binding = voidmei.config.ModelHotkey.parse("Alt+F1")
+            backend.listener.nativeKeyPressed(event(0, NativeKeyEvent.VC_P))
+            backend.listener.nativeKeyPressed(event(NativeInputEvent.ALT_MASK, NativeKeyEvent.VC_F1))
+            backend.listener.nativeKeyPressed(event())
+            assertEquals(2, model); assertEquals(1, hud); assertEquals(1, backend.starts)
+        }
+    }
+
     @Test fun bundledNativeLibraryCanBeExtractedOutsideInstallDirectory() {
         val library = HotkeyLibraryLocator().libraries.next()
         try {

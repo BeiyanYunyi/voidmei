@@ -83,10 +83,11 @@ fun main(args: Array<String>) {
         var offlineModels by remember { mutableStateOf(false) }
         var hotkeyError by remember { mutableStateOf<String?>(null) }
         var hotkeyActive by remember { mutableStateOf(false) }
+        val modelHotkeyBinding by rememberUpdatedState(voidmei.config.ModelHotkey.parse(settings.modelWindowHotkey))
         LaunchedEffect(settings.hudHotkeyEnabled || settings.modelWindowHotkeyEnabled) {
             hotkeyError = null
             if (settings.hudHotkeyEnabled || settings.modelWindowHotkeyEnabled) {
-                val session = HudHotkey(modelToggle = {
+                val session = HudHotkey(modelBinding = { modelHotkeyBinding }, modelToggle = {
                     launch {
                         if (settings.modelWindowHotkeyEnabled && !closing) settings = settings.copy(modelWindowEnabled = !settings.modelWindowEnabled)
                     }

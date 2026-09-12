@@ -6,6 +6,7 @@ import com.github.kwhat.jnativehook.NativeLibraryLocator
 import com.github.kwhat.jnativehook.NativeSystem
 import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener
+import voidmei.config.ModelHotkey
 import java.io.File
 import java.nio.file.Files
 import java.util.Locale
@@ -21,6 +22,7 @@ internal interface HotkeyBackend {
 internal class HudHotkey(
     private val backend: HotkeyBackend = NativeHotkeyBackend(),
     private val modelToggle: (() -> Unit)? = null,
+    private val modelBinding: () -> ModelHotkey = { ModelHotkey.parse("Ctrl+Shift+M") },
     private val toggle: () -> Unit,
 ) : AutoCloseable {
     @Volatile private var active = false
@@ -29,14 +31,19 @@ internal class HudHotkey(
     private val pressed = mutableSetOf<Int>()
     internal val listener = object : NativeKeyListener {
         override fun nativeKeyPressed(event: NativeKeyEvent) {
-            if (!active || event.keyCode !in setOf(NativeKeyEvent.VC_H, NativeKeyEvent.VC_M)) return
+            if (!active) return
+            val binding = modelBinding()
+            if (event.keyCode != NativeKeyEvent.VC_H && event.keyCode != binding.key.nativeCode) return
             if (!pressed.add(event.keyCode)) return
             val modifiers = event.modifiers
-            if (modifiers and NativeInputEvent.CTRL_MASK != 0 &&
-                modifiers and NativeInputEvent.SHIFT_MASK != 0 &&
-                modifiers and (NativeInputEvent.ALT_MASK or NativeInputEvent.META_MASK) == 0) {
-                if (event.keyCode == NativeKeyEvent.VC_H) toggle() else modelToggle?.invoke()
-            }
+            val ctrl = modifiers and NativeInputEvent.CTRL_MASK != 0
+            val shift = modifiers and NativeInputEvent.SHIFT_MASK != 0
+            val alt = modifiers and NativeInputEvent.ALT_MASK != 0
+            val meta = modifiers and NativeInputEvent.META_MASK != 0
+            if (!meta && ctrl && shift && !alt && event.keyCode == NativeKeyEvent.VC_H) toggle()
+            if (!meta && ctrl == binding.ctrl && shift == binding.shift && alt == binding.alt &&
+                event.keyCode == binding.key.nativeCode && !binding.conflictsWithHud) modelToggle?.invoke()
+
         }
         override fun nativeKeyReleased(event: NativeKeyEvent) {
             pressed.remove(event.keyCode)
