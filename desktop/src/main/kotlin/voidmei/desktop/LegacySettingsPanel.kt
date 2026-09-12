@@ -79,7 +79,7 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             var importPositions by remember(imported, currentScene) { mutableStateOf(false) }
             var createMissing by remember(imported, currentScene) { mutableStateOf(false) }
             var engineCreationKeys by remember(imported, currentScene) { mutableStateOf(emptySet<String>()) }
-            val engineSourceKeys = ((if (imported.engineControlStyle != null) setOf("enableEngineControl") else emptySet()) + imported.enginePanelFonts.keys + imported.enginePanelVisibility.keys + imported.enginePanelPositions.keys +
+            val engineSourceKeys = ((if (imported.engineControlStyle != null || imported.engineAircraftFuel != null) setOf("enableEngineControl") else emptySet()) + imported.enginePanelFonts.keys + imported.enginePanelVisibility.keys + imported.enginePanelPositions.keys +
                 (if (imported.engineReadingColumns != null || imported.powerTextSizes != null) setOf("engineInfoSwitch") else emptySet())).sorted()
             val engineCandidates = if (currentScene != null && currentScene.regions.size < 32)
                 engineSourceKeys.associateWith { currentScene.legacyEngineRegion(it) } else emptyMap()
@@ -177,8 +177,10 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             var importFont by remember(imported, currentScene) { mutableStateOf(false) }
             var importColumns by remember(imported, currentScene) { mutableStateOf(false) }
             val flightRegion = positioned?.regions?.firstOrNull { it.content == HudRegionContent.FLIGHT }
+            var engineFuelTarget by remember(imported, currentScene) { mutableStateOf<String?>(null) }
             var engineColumnsTarget by remember(imported, currentScene) { mutableStateOf<String?>(null) }
             val engineRegions = positioned?.regions.orEmpty().filter { it.content == HudRegionContent.ENGINE }
+            val selectedEngineFuelTarget = engineFuelTarget?.takeIf { id -> engineRegions.any { it.id == id } }
             val selectedEngineColumnsTarget = engineColumnsTarget?.takeIf { id -> engineRegions.any { it.id == id } }
             var enginePanelTargets by remember(imported, currentScene) { mutableStateOf(emptyMap<String, String>()) }
             val selectedEnginePanelTargets = enginePanelTargets.filterValues { id -> engineRegions.any { it.id == id } }
@@ -192,7 +194,7 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             val selectedPowerSizeTarget = powerSizeTarget?.takeIf { id -> engineRegions.any { it.id == id } }
             var controlStyleTarget by remember(imported, currentScene) { mutableStateOf<String?>(null) }
             val selectedControlStyleTarget = controlStyleTarget?.takeIf { id -> engineRegions.any { it.id == id } }
-            val selected = imported.copy(engineControlStyleRegionId = selectedControlStyleTarget, powerTextSizesRegionId = selectedPowerSizeTarget, engineFontTargets = selectedEngineFontTargets, engineRegionsToCreate = engineCreations, enginePositionTargets = selectedEnginePositionTargets, enginePanelTargets = selectedEnginePanelTargets, engineColumnsRegionId = selectedEngineColumnsTarget, importAttitudeSize = sizeSelected && sizeReady, legacyDpiScale = dpi, importHudRegionBorders = importBorders && borderMatches.isNotEmpty(), importFlightTextSizes = importSizes && flightRegion != null, importFlightLabelFont = importFont && flightRegion != null, importFlightReadingColumns = importColumns && flightRegion != null,
+            val selected = imported.copy(engineAircraftFuelRegionId = selectedEngineFuelTarget, engineControlStyleRegionId = selectedControlStyleTarget, powerTextSizesRegionId = selectedPowerSizeTarget, engineFontTargets = selectedEngineFontTargets, engineRegionsToCreate = engineCreations, enginePositionTargets = selectedEnginePositionTargets, enginePanelTargets = selectedEnginePanelTargets, engineColumnsRegionId = selectedEngineColumnsTarget, importAttitudeSize = sizeSelected && sizeReady, legacyDpiScale = dpi, importHudRegionBorders = importBorders && borderMatches.isNotEmpty(), importFlightTextSizes = importSizes && flightRegion != null, importFlightLabelFont = importFont && flightRegion != null, importFlightReadingColumns = importColumns && flightRegion != null,
                 importHudPositions = positionsReady && importPositions && (matched.isNotEmpty() || (createMissing && canCreate)),
                 createMissingHudRegions = positionsReady && createMissing && canCreate, legacyScreenSize = screenSize,
                 importHudRegionVisibility = importVisibility && visibleMatches.isNotEmpty())
@@ -237,6 +239,17 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             }
             LegacyEngineVisibilitySettings(imported.enginePanelVisibility, engineRegions, selectedEnginePanelTargets) {
                 enginePanelTargets = it
+            }
+            imported.engineAircraftFuel?.let { visible ->
+                Text("迁移引擎控制中的整机燃油：${if (visible) "显示" else "隐藏"}")
+                Text("仅修改所选发动机分区的整机燃油开关；原有飞行燃油字段迁移仍会应用。发动机编号、读数表格和图形开关保持当前设置。")
+                if (engineRegions.isEmpty()) Text("请先创建发动机分区，或在上方选择新建引擎控制区域。")
+                LegacyEngineTargetPicker(engineRegions, selectedEngineFuelTarget, "legacy-engine-fuel", "不迁移分区燃油") {
+                    engineFuelTarget = it
+                }
+                engineRegions.firstOrNull { it.id == selectedEngineFuelTarget }?.let { region ->
+                    Text("${region.title.ifBlank { region.id }}：整机燃油${if (region.showAircraftFuel) "显示" else "隐藏"} → ${if (visible) "显示" else "隐藏"}（将应用）")
+                }
             }
             imported.engineReadingColumns?.let { columns ->
                 Text("迁移动力信息列数：$columns 列")

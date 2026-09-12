@@ -47,7 +47,7 @@ nix develop path:. --command java --class-path 'core/build/libs/core-jvm.jar:des
 
 ## 引擎控制布局的后续依据
 
-`EngineControlOverlay.initGaugeFields()` 实际采用混合方向：油门、桨距控制、动力量为竖条；混合比、散热器、增压器和燃油为横条。`drawGauges()` 的条长为 `4 * fontsize`，厚度为 `fontsize >> 1`，横条行距为 `fontsize + (fontsize >> 2)`。Kotlin 现已提供混合布局，按上述方向绘制对应逐发动机控制条；整机燃油现可在发动机分区独立启用，保持水平条并明确整机归属。旧字号现已支持逻辑尺寸与文字样式换算；后续仍需处理间距、逐像素 DPI 取整及旧燃油开关的自动迁移，混合方向本身不代表整个旧窗口已经复刻。
+`EngineControlOverlay.initGaugeFields()` 实际采用混合方向：油门、桨距控制、动力量为竖条；混合比、散热器、增压器和燃油为横条。`drawGauges()` 的条长为 `4 * fontsize`，厚度为 `fontsize >> 1`，横条行距为 `fontsize + (fontsize >> 2)`。Kotlin 现已提供混合布局，按上述方向绘制对应逐发动机控制条；整机燃油现可在发动机分区独立启用，保持水平条并明确整机归属；旧燃油开关已支持显式选择现有或新建发动机分区后迁移。旧字号现已支持逻辑尺寸与文字样式换算；后续仍需处理间距、逐像素 DPI 取整，混合方向本身不代表整个旧窗口已经复刻。
 
 ## 字号差异的具体依据
 
