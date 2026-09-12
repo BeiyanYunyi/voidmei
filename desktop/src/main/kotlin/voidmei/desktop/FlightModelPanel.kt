@@ -88,6 +88,7 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
                 Text("模型空重 ${parameters.emptyMassKg.display()} kg · 燃油容量 ${parameters.maximumFuelMassKg.display()} kg")
             }
             if (ModelDetailSection.FLAPS !in hiddenSections) {
+                ModelFlapLimitsTable(parameters.flapLimits)
                 Text("当前襟翼开度的模型速度限制 ${parameters.flapLimits?.speedAt(telemetry?.flapsPercent).display()} km/h")
                 Text("当前 IAS 下表内最大襟翼开度 ${parameters.flapLimits?.maximumPercentAt(telemetry?.iasKmh).display()} %")
                 Text("模型起落架速度限制 ${parameters.gearLimitKmh.display()} km/h")

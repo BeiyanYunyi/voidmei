@@ -22,7 +22,7 @@ class ModelDetailVisibilityGuiTest {
         val root = Files.createTempDirectory("voidmei-model-sections")
         val directory = Files.createDirectories(root.resolve("aces/gamedata/flightmodels/fm")).parent
         Files.writeString(directory.resolve("test.blkx"), "fmFile:t=\"fm/test.blk\"")
-        Files.writeString(directory.resolve("fm/test.blkx"), "Mass { EmptyMass:r=2500 }")
+        Files.writeString(directory.resolve("fm/test.blkx"), "Mass { EmptyMass:r=2500 }\nFlapsDestructionIndSpeedP:p4=0.5,500,1,300")
         val telemetry = TelemetryParser.parse("""{"valid":true}""", """{"valid":true,"type":"test"}""")!!
         var hidden by mutableStateOf(emptySet<ModelDetailSection>())
         var published: FlightModelParameters? = null
@@ -37,15 +37,18 @@ class ModelDetailVisibilityGuiTest {
             compose.onNodeWithTag("model-section-WEIGHT").performScrollTo().performClick()
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true).assertDoesNotExist()
             compose.onNodeWithText("模型 VNE", substring = true).assertExists()
+            compose.onNodeWithTag("model-flap-limit-table").assertExists()
             val previous = published
             val before = calls
             compose.runOnIdle { hidden = ModelDetailSection.entries.toSet() }
             compose.onNodeWithTag("model-field-list").assertDoesNotExist()
+            compose.onNodeWithTag("model-flap-limit-table").assertDoesNotExist()
             compose.onNodeWithText("模型 VNE", substring = true).assertDoesNotExist()
             compose.runOnIdle { assertSame(previous, published); assertEquals(before, calls) }
             compose.onNodeWithTag("model-sections-all").performScrollTo().performClick()
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true).assertExists()
             compose.onNodeWithTag("model-field-list").assertExists()
+            compose.onNodeWithTag("model-flap-limit-table").assertExists()
             compose.runOnIdle { assertTrue(hidden.isEmpty()); assertSame(previous, published) }
         } finally {
             Files.walk(root).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach(Files::delete) }
