@@ -35,7 +35,7 @@ nix develop path:. --command java --class-path 'core/build/libs/core-jvm.jar:des
 
 ## 当前集成验证
 
-生产源码 `c72b64a7` 共享 JVM 560、JS 557、桌面单元 151、完整 GUI 383 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-control-fuel-integrated.log`。独立包 `/tmp/voidmei-kmp-control-fuel` 已通过隔离 Linux 启动、保存渲染器设置、AWT 心跳及正常退出验证，报告 `/tmp/voidmei-package-smoke-lvn4ot4y/report.json`。实际游戏与跨平台验证仍未完成。
+生产源码 `8ea750f5` 共享 JVM 571、JS 568、桌面单元 151、完整 GUI 393 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-model-details-integrated.log`。独立包 `/tmp/voidmei-kmp-model-details` 已通过隔离 Linux 启动、保存渲染器设置、AWT 心跳及正常退出验证，报告 `/tmp/voidmei-package-smoke-d2wfwska/report.json`。实际游戏与跨平台验证仍未完成。
 
 ## 历史集成验证
 

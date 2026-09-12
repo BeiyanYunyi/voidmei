@@ -2,6 +2,14 @@
 
 2026-09-12，根据当前工作区源码及本机执行结果核对。此页区分已有实现、尚未实现与尚未验证；不以测试总数代表完整替换。
 
+## 模型详情增量完整集成验收（2026-09-12）
+
+对生产源码 `8ea750f5` 完成完整回归及最新独立包构建，包含模型分类、曲线状态保留、旧分类选择迁移、襟翼节点表、三舵 PowerLoss、转动惯量、共享加力燃料和耐热恢复。共享 JVM 571、JS 568、桌面单元 151、完整 GUI 177 类 393 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-model-details-integrated.log`。未变化的 Gradle 任务可复用已有结果，完整 GUI 任务实际执行。
+
+独立包 `/tmp/voidmei-kmp-model-details` 指向 `/nix/store/rfddwv9h1d3x6vamrlkh38cd4qwkivwh-voidmei-kotlin-2.0.0`，构建日志 `/tmp/voidmei-model-details-package.log`。隔离 X11 整包报告 `/tmp/voidmei-package-smoke-d2wfwska/report.json` 确认主窗口与兼容 HUD 使用保存的 SOFTWARE_FAST 偏好、AWT 心跳、设置和窗口位置保存、正常退出码 0，日志 `/tmp/voidmei-model-details-smoke.log`。检查仅覆盖当前 Linux 主机的上述路径，不证明真实游戏、全部界面响应、语音播放、物理关闭按钮、多显示器或 Windows／macOS 行为。
+
+剩余配置差异仍为 36 条记录、31 个标识，8 个旧模型分类尚待补齐。已核对下一批五个气动器件的旧展示字段为 CdMin、Cl0、alphaCritLow／High、ClCritLow／High；无襟翼／满襟翼具有 NoFlaps／FullFlaps 与 FlapsPolar0／1 别名，后续需区分来源和可变后掠配置，不能用无作用域的搜索结果或缺失补零代替。
+
 ## 耐热恢复模型分类（2026-09-12）
 
 新增独立“耐热恢复”分类及 `showHeatRecovery` 可选迁移。按逐发动机有效档位显示 WorkTime / RecoverTime，单位为工作预算秒／恢复秒（s/s），提供参与档位数和可展开的逐档位比值。只让已知有限非负工作时长、有限正恢复时长参与平均；零工作时长计为零，缺失和零恢复时长不补零。采用有效档位算术平均，先除以数量再求和以避免大有限数求和溢出，不将其用于实时剩余寿命或恢复速度。
