@@ -1,6 +1,6 @@
 # Java 配置剩余差异清单
 
-2026-09-12，使用当前 KMP `LegacySettingsReader` 读取仓库自带 `ui_layout.cfg`。返回 **44 条未迁移记录、39 个不同标识（含 target 和面板属性名）**；`fontSize` 在多个面板出现。此数字表示该文件的配置导入差异，不能直接解释成 39 个未实现功能，也不覆盖用户自定义文件中的全部格式。
+2026-09-12，使用当前 KMP `LegacySettingsReader` 读取仓库自带 `ui_layout.cfg`。返回 **39 条未迁移记录、34 个不同标识（含 target 和面板属性名）**；`fontSize` 在多个面板出现。此数字表示该文件的配置导入差异，不能直接解释成 39 个未实现功能，也不覆盖用户自定义文件中的全部格式。
 
 ## 按实际含义推进
 
@@ -12,7 +12,7 @@
 | 姿态旧颜色选项 | `attitudeIndicatorUseNumColor` | 在当前 Java `AttitudeOverlay` 中只给 `transParentWhite` 赋值，未找到绘制读取。先核实有效行为，不添加无效果开关来缩短清单。 |
 | FM 原始信息窗口 | `enableFMPrint`、`displayFmKey` | Kotlin 已有原始字段筛选面板（`ModelFieldsPanel`）；旧独立窗口开关及显示键还需核对行为后迁移。 |
 | 模型选择和曲线状态 | `selectedFM0`、`selectedFM1`、`powerCurveSpeed`、`powerCurveWep` | 需核对旧机型标识、路径以及曲线输入的含义，明确如何恢复到当前模型会话。 |
-| 模型分类显示 | `showWeight`、`showCritSpeed`、`showGLoadLimits`、`showFlapLimits`、`showControlEffectiveness`、`showNitro`、`showHeatRecovery`、`showMaxLiftLoad`、`showInertia`、`showLift`、`showDrag`、`showNoFlapsWing`、`showFullFlapsWing`、`showFuselage`、`showFin`、`showStab` | 当前已有可保存的 10 类模型详情显示选择与原始字段筛选，实时和离线页面共用，但尚未映射这些旧分类选择。逐项对照显示内容、单位、缺失数据和选择状态。 |
+| 模型分类显示 | `showNitro`、`showHeatRecovery`、`showMaxLiftLoad`、`showInertia`、`showLift`、`showDrag`、`showNoFlapsWing`、`showFullFlapsWing`、`showFuselage`、`showFin`、`showStab` | 当前已有可保存的 10 类模型详情显示选择与原始字段筛选，实时和离线页面共用。重量、临界速度、过载、襟翼、舵效五类显示意图已支持可选迁移；本行其余 11 类尚未映射。旧襟翼数据点表、锁舵因数等内容仍需补齐，不能从显示开关可迁移推导内容完全一致。逐项对照显示内容、单位、缺失数据和选择状态。 |
 | 全局语音包选择 | `globalVoicePack` | Java 的选择动作批量修改单条语音配置；Kotlin 已有语音 ZIP 安装和单条语音迁移。不能把保存的全局选择直接覆盖已迁移的单条选择。 |
 | 绘制与调试 | `AAEnable`、`enableLayoutDebug` | Java 的渲染选项／MiniHUD 布局调试与 Compose 后端不同，需对照实际功能，不直接映射为软件渲染或用户 HUD 开关。 |
 | 操作按钮 | `openComparison`、`openPowerCurve`、`importConfig`、`factoryReset` | 这些是操作入口，不是读取旧配置时应自动执行的动作。比较、导入及恢复默认已有 Kotlin 入口，应单独验收对应功能。 |
@@ -31,7 +31,7 @@ nix develop path:. --command gradle -Pvoidmei.systemNode=true :desktop:createDis
 nix develop path:. --command java --class-path 'core/build/libs/core-jvm.jar:desktop/build/compose/binaries/main/app/VoidMei/lib/app/*' script/fixtures/LegacySettingsInventory.java ui_layout.cfg
 ```
 
-本轮使用当前 `core/build/libs/core-jvm.jar`，并从已经构建的独立包提供 Kotlin 运行依赖执行工具，结果位于 `/tmp/voidmei-control-fuel-inventory.tsv`，统计日志 `/tmp/voidmei-control-fuel-inventory.log`。这些临时路径不作为仓库的永久数据源，生产代码或旧配置改变后应重新生成。
+本轮使用当前 `core/build/libs/core-jvm.jar`，并从已经构建的独立包提供 Kotlin 运行依赖执行工具，结果位于 `/tmp/voidmei-legacy-model-categories-inventory.tsv`，统计日志 `/tmp/voidmei-legacy-model-categories-inventory.log`。这些临时路径不作为仓库的永久数据源，生产代码或旧配置改变后应重新生成。
 
 ## 当前集成验证
 

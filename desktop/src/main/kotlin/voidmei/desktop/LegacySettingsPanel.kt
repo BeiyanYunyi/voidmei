@@ -194,10 +194,26 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             val selectedPowerSizeTarget = powerSizeTarget?.takeIf { id -> engineRegions.any { it.id == id } }
             var controlStyleTarget by remember(imported, currentScene) { mutableStateOf<String?>(null) }
             val selectedControlStyleTarget = controlStyleTarget?.takeIf { id -> engineRegions.any { it.id == id } }
-            val selected = imported.copy(engineAircraftFuelRegionId = selectedEngineFuelTarget, engineControlStyleRegionId = selectedControlStyleTarget, powerTextSizesRegionId = selectedPowerSizeTarget, engineFontTargets = selectedEngineFontTargets, engineRegionsToCreate = engineCreations, enginePositionTargets = selectedEnginePositionTargets, enginePanelTargets = selectedEnginePanelTargets, engineColumnsRegionId = selectedEngineColumnsTarget, importAttitudeSize = sizeSelected && sizeReady, legacyDpiScale = dpi, importHudRegionBorders = importBorders && borderMatches.isNotEmpty(), importFlightTextSizes = importSizes && flightRegion != null, importFlightLabelFont = importFont && flightRegion != null, importFlightReadingColumns = importColumns && flightRegion != null,
+            var importModelSections by remember(imported) { mutableStateOf(false) }
+            val selected = imported.copy(importModelSections = importModelSections, engineAircraftFuelRegionId = selectedEngineFuelTarget, engineControlStyleRegionId = selectedControlStyleTarget, powerTextSizesRegionId = selectedPowerSizeTarget, engineFontTargets = selectedEngineFontTargets, engineRegionsToCreate = engineCreations, enginePositionTargets = selectedEnginePositionTargets, enginePanelTargets = selectedEnginePanelTargets, engineColumnsRegionId = selectedEngineColumnsTarget, importAttitudeSize = sizeSelected && sizeReady, legacyDpiScale = dpi, importHudRegionBorders = importBorders && borderMatches.isNotEmpty(), importFlightTextSizes = importSizes && flightRegion != null, importFlightLabelFont = importFont && flightRegion != null, importFlightReadingColumns = importColumns && flightRegion != null,
                 importHudPositions = positionsReady && importPositions && (matched.isNotEmpty() || (createMissing && canCreate)),
                 createMissingHudRegions = positionsReady && createMissing && canCreate, legacyScreenSize = screenSize,
                 importHudRegionVisibility = importVisibility && visibleMatches.isNotEmpty())
+            if (imported.modelSectionChoices.isNotEmpty()) {
+                Row(Modifier.fillMaxWidth().toggleable(value = importModelSections, role = Role.Checkbox,
+                    onValueChange = { importModelSections = it }).testTag("legacy-model-sections"),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Checkbox(importModelSections, onCheckedChange = null)
+                    Text("迁移模型显示分类")
+                }
+                Text("仅迁移文件中出现的分类开关；实时和离线模型页共用。保留其他分类，不改变模型计算、告警或比较参数。")
+                voidmei.config.LegacyModelCategory.entries.forEach { category ->
+                    imported.modelSectionChoices[category.section]?.let { visible ->
+                        Text("${category.label} → ${category.section.label}：${if (visible) "显示" else "隐藏"}（${if (importModelSections) "将应用" else "未选择"}）")
+                        Text(category.note)
+                    }
+                }
+            }
             if (imported.hudRegionVisibility.isNotEmpty()) {
                 Row(Modifier.fillMaxWidth().toggleable(value = importVisibility, enabled = visibleMatches.isNotEmpty(),
                     role = Role.Checkbox, onValueChange = { importVisibility = it }),
@@ -336,7 +352,7 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
                 }
                 Text("仅修改第一个姿态分区的外框。尺寸限制在画布内且不小于 80 × 40 dp，必要时位置移回边缘。新版内边距、标题与图形排布保持原样，不是旧姿态图的像素级复刻；边框开关可另选迁移。")
             }
-            if (!selected.hasChanges) Text(if (imported.hudPositions.isEmpty() && imported.hudRegionVisibility.isEmpty() && imported.engineControlStyle == null && imported.powerTextSizes == null && imported.enginePanelFonts.isEmpty() && imported.enginePanelPositions.isEmpty() && imported.enginePanelVisibility.isEmpty() && imported.engineReadingColumns == null && imported.flightReadingColumns == null && imported.flightLabelFont == null && imported.flightTextSizes == null && imported.hudRegionBorders.isEmpty() && imported.attitudeSize == null)
+            if (!selected.hasChanges) Text(if (imported.modelSectionChoices.isEmpty() && imported.hudPositions.isEmpty() && imported.hudRegionVisibility.isEmpty() && imported.engineControlStyle == null && imported.powerTextSizes == null && imported.enginePanelFonts.isEmpty() && imported.enginePanelPositions.isEmpty() && imported.enginePanelVisibility.isEmpty() && imported.engineReadingColumns == null && imported.flightReadingColumns == null && imported.flightLabelFont == null && imported.flightTextSizes == null && imported.hudRegionBorders.isEmpty() && imported.attitudeSize == null)
                 "此文件没有可应用的设置。" else "此文件没有已选择的可应用设置。")
             if (imported.hudEngineFieldChoices.isNotEmpty()) {
                 Text("引擎控制开关应用到全局发动机读数字段；保留当前发动机编号、面板开关及分区独立字段。尚未开启发动机读数时，请在 HUD 设置中选择发动机编号。")
