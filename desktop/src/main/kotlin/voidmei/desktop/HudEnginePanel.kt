@@ -33,11 +33,12 @@ internal fun engineReadingWarnings(flight: ConnectionState.Flying, index: Int, m
 
 @Composable
 internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean = true, fields: List<HudEngineField> = HudEngineField.selected(HudEngineField.defaults),
-    warnings: Map<HudEngineField, String> = emptyMap(), showInstruments: Boolean = true,
-    heatBudget: ThermalBudgetRange? = null, powerPercent: PowerPercentReading? = null, tasKmh: Double? = null, hiddenLabels: List<String> = emptyList()) {
-    @Composable fun label(text: String, small: Boolean = false) {
-        val style = if (small) MaterialTheme.typography.bodySmall else androidx.compose.material3.LocalTextStyle.current
-        if (compact) HudOverlayText(text, style = style, color = LocalReadingColors.current.label
+    warnings: Map<HudEngineField, String> = emptyMap(), showInstruments: Boolean = true, showReadings: Boolean = true,
+    heatBudget: ThermalBudgetRange? = null, powerPercent: PowerPercentReading? = null, tasKmh: Double? = null, hiddenLabels: List<String> = emptyList(), controlsLayout: voidmei.config.EngineControlsLayout = voidmei.config.EngineControlsLayout.HORIZONTAL) {
+    @Composable fun label(text: String, small: Boolean = false, warning: Boolean = false) {
+        val base = if (small) MaterialTheme.typography.bodySmall else androidx.compose.material3.LocalTextStyle.current
+        val style = if (compact) engineLabelStyle(base) else base
+        if (compact) HudOverlayText(text, style = style, color = if (warning) LocalReadingColors.current.warning ?: MaterialTheme.colorScheme.error else LocalReadingColors.current.label
             ?: if (small) androidx.compose.ui.graphics.Color(0xFF9EB1C0) else androidx.compose.material3.LocalContentColor.current)
         else Text(text, style = style)
     }
@@ -63,19 +64,30 @@ internal fun HudEnginePanel(engines: List<Engine>, index: Int, compact: Boolean 
                 warnings[field]?.takeIf { if (field == HudEngineField.HEAT_BUDGET) heatBudget?.roundForDisplay() != null
                     else field.value(engine) != null }?.let { row to it }
             }.toMap()
-            FlightReadings(rows, compact = compact, warningRows = warningRows,
+            val tableVisible = !compact || showReadings
+            if (tableVisible) FlightReadings(rows, compact = compact, warningRows = warningRows,
                 hiddenLabels = if (compact) fields.indices.filter { fields[it].id in hiddenLabels }.toSet() else emptySet(), unitRanges = readings.mapIndexedNotNull { index, reading ->
                 val unit = reading.third
                 if (unit.isEmpty()) null else index to (rows[index].second.length - unit.length until rows[index].second.length)
             }.toMap())
+            if (!tableVisible) {
+                warningRows.forEach { (row, warning) -> label("${fields[row].label}：$warning", small = true, warning = true) }
+                if (fields.isNotEmpty() && fields.none { field -> when (field) {
+                    HudEngineField.FM_POWER_PERCENT -> powerPercent?.percent?.isFinite() == true
+                    HudEngineField.HEAT_BUDGET -> heatBudget != null
+                    else -> field.value(engine, tasKmh) != null
+                } }) label("暂无所选发动机读数", small = true)
+            }
             fields.distinct().forEach { field ->
                 propulsionUnavailableReason(field, engine, tasKmh)?.let { reason ->
                     label("${field.label}：$reason", small = true)
                 }
             }
-            if (compact && showInstruments && HudEngineField.THROTTLE in fields)
+            if (compact && showInstruments && controlsLayout == voidmei.config.EngineControlsLayout.HORIZONTAL && HudEngineField.THROTTLE in fields) {
+                if (!tableVisible) HudEngineField.THROTTLE.value(engine)?.let { label("油门：${readingNumber(it, 0)} %", small = true) }
                 ThrottleBar(HudEngineField.THROTTLE.value(engine), index, "hud-engine-throttle-$index")
-            if (compact && showInstruments) EngineControlBars(engine, fields, powerPercent)
+            }
+            if (compact && showInstruments) EngineControlBars(engine, fields, powerPercent, controlsLayout, showValues = !tableVisible)
         }
     }
 }

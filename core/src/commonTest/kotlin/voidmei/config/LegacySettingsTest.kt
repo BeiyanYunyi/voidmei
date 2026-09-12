@@ -352,7 +352,7 @@ class LegacySettingsTest {
         val unsupported = """(item "自定义字体" :target fontChoice :type input :value (run arbitrary))"""
         val report = LegacySettingsReader.read("(panel p $unsupported)")
         assertFalse(report.hasChanges)
-        assertEquals(listOf(UnmigratedLegacySetting("自定义字体", "fontChoice")), report.unmigrated)
+        assertEquals(listOf(UnmigratedLegacySetting("自定义字体", "fontChoice", listOf("p"))), report.unmigrated)
         val current = AppSettings(hudOpacity = .4f)
         assertEquals(current, report.applyTo(current))
         val mixed = LegacySettingsReader.read("""(panel p $unsupported

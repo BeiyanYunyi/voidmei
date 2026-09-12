@@ -26,12 +26,12 @@ internal fun CompressorStageBar(flight: ConnectionState.Flying, index: Int, mode
         .singleOrNull { it.engineIndex == index }?.recommendedStage?.takeIf { it in 1..count }
     val label = "$index 号增压器 · $stage / $count 档" +
         (recommended?.let { " · 建议 $it 档（长线）" } ?: "")
-    Text(label, style = MaterialTheme.typography.bodySmall,
+    Text(label, style = engineLabelStyle(MaterialTheme.typography.bodySmall),
         color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
     val track = MaterialTheme.colorScheme.outline
     val marker = MaterialTheme.colorScheme.primary
     val recommendationMarker = MaterialTheme.colorScheme.tertiary
-    Canvas(Modifier.fillMaxWidth().height(20.dp).testTag("hud-compressor-stage-$index").semantics {
+    Canvas(Modifier.engineHorizontalDimensions(20.dp).testTag("hud-compressor-stage-$index").semantics {
         contentDescription = label
         progressBarRangeInfo = ProgressBarRangeInfo(stage.toFloat(), 1f..count.toFloat(), count - 2)
         if (recommended != null) stateDescription = "模型建议 $recommended 档；圆点为当前档位，长线为建议档位"

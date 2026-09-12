@@ -60,6 +60,7 @@ data class AppSettings(
     val hudShadeColor: String? = null,
     val hudUnitColor: String? = null,
     val hudAttitudeAoaLimits: Boolean = true,
+    val hudAttitudeNorthPointer: Boolean = false,
     val hudNumberFont: String? = null,
     val textFont: String? = null,
     val numberFont: String? = null,
@@ -84,7 +85,7 @@ data class AppSettings(
         require(recordingDirectory.isNotBlank())
         require(pollIntervalMs in 10..5000)
         require(hudOpacity.isFinite() && hudOpacity in 0f..1f)
-        require(hudReadingColumns in 0..2)
+        require(hudReadingColumns in 0..16)
         require(hudFontScale.isFinite() && hudFontScale in 0.75f..2f)
         require(hudScenePresets.size <= 16 && hudScenePresets.keys.all {
             it.isNotBlank() && it == it.trim() && it.length <= 80 && it.none { char -> char.isISOControl() }
@@ -210,6 +211,7 @@ object SettingsJson {
                 value.jsonPrimitive.let { require(it.isString); it.content }
             }?.distinct() ?: defaults.hudFields,
             hudCompassHeadingUp = root["hudCompassHeadingUp"]?.jsonPrimitive?.boolean ?: defaults.hudCompassHeadingUp,
+            hudAttitudeNorthPointer = root["hudAttitudeNorthPointer"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.hudAttitudeNorthPointer,
             hudAttitudeAoaLimits = root["hudAttitudeAoaLimits"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.hudAttitudeAoaLimits,
             hudAttitudeEarthFixed = root["hudAttitudeEarthFixed"]?.jsonPrimitive?.boolean ?: defaults.hudAttitudeEarthFixed,
             hudAttitude = root["hudAttitude"]?.jsonPrimitive?.boolean ?: defaults.hudAttitude,
@@ -288,6 +290,7 @@ object SettingsJson {
         fields["numberFont"] = settings.numberFont?.let(::JsonPrimitive) ?: JsonNull
         fields["textFont"] = settings.textFont?.let(::JsonPrimitive) ?: JsonNull
         fields["hudNumberFont"] = settings.hudNumberFont?.let(::JsonPrimitive) ?: JsonNull
+        fields["hudAttitudeNorthPointer"] = JsonPrimitive(settings.hudAttitudeNorthPointer)
         fields["hudAttitudeAoaLimits"] = JsonPrimitive(settings.hudAttitudeAoaLimits)
         fields["hudAttitudeEarthFixed"] = JsonPrimitive(settings.hudAttitudeEarthFixed)
         fields["hudAttitude"] = JsonPrimitive(settings.hudAttitude)

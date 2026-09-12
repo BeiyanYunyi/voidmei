@@ -18,6 +18,7 @@ fun AppSettings.withHudLayout(source: AppSettings): AppSettings = copy(
     hudHiddenLabels = source.hudHiddenLabels,
     hudAttitude = source.hudAttitude,
     hudAttitudeEarthFixed = source.hudAttitudeEarthFixed,
+    hudAttitudeNorthPointer = source.hudAttitudeNorthPointer,
     hudAttitudeAoaLimits = source.hudAttitudeAoaLimits,
     hudCompassHeadingUp = source.hudCompassHeadingUp,
     hudMechanization = source.hudMechanization,

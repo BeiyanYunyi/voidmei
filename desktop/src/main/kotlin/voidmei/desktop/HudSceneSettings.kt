@@ -1,10 +1,15 @@
 package voidmei.desktop
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalFocusManager
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import voidmei.config.*
 import kotlin.math.roundToInt
 
@@ -35,6 +40,20 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
             else "仅保留本次设置页面中的最近一次移除；恢复时适配当前画布，编号冲突时使用新编号。")
     }
     if (!expanded) return
+    val directory = remember { BringIntoViewRequester() }
+    val anchors = remember(scene.regions.map { it.id }) { scene.regions.associate { it.id to BringIntoViewRequester() } }
+    var directoryExpanded by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val focus = LocalFocusManager.current
+    var navigation by remember { mutableStateOf<Job?>(null) }
+    fun navigate(requester: BringIntoViewRequester) {
+        focus.clearFocus()
+        navigation?.cancel()
+        navigation = scope.launch {
+            withFrameNanos { }
+            requester.bringIntoView()
+        }
+    }
     HudDisplaySettings(scene) { onChange(settings.copy(hudSceneLayout = it)) }
     key(editorRevision) { HudCanvasSizeSettings(scene) { onChange(settings.copy(hudSceneLayout = it)) } }
     Text("添加区域（${scene.regions.size}/32）")
@@ -48,10 +67,18 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
     }
     Text("同类区域可重复添加；读数字段默认沿用 HUD 设置，也可独立选择。至少保留一个区域。")
     Text("区域列表从底层到顶层排列；重叠时，顶层区域会覆盖下层。")
+    Column(Modifier.bringIntoViewRequester(directory)) {
+        HudRegionNavigator(scene.regions, directoryExpanded, { directoryExpanded = it }) { id ->
+            anchors[id]?.let(::navigate)
+        }
+    }
     scene.regions.forEachIndexed { layer, region -> key(editorRevision, region.id) {
         fun update(value: HudRegion) = onChange(settings.copy(hudSceneLayout = scene.copy(
             regions = scene.regions.map { if (it.id == region.id) value else it })))
-        Text("${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id}")
+        Text("${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id}",
+            Modifier.bringIntoViewRequester(anchors.getValue(region.id)).testTag("hud-region-editor-${region.id}"))
+        TextButton(onClick = { directoryExpanded = true; navigate(directory) },
+            modifier = Modifier.testTag("hud-region-directory-back-${region.id}")) { Text("返回区域目录") }
         OutlinedTextField(region.title, { value -> update(region.copy(title = value.filterNot { it.isISOControl() }.take(80))) },
             label = { Text("区域标题（可选）") }, supportingText = { Text("最多 80 字符；留空不显示额外标题。") },
             singleLine = true, modifier = Modifier.testTag("hud-region-title-${region.id}"))
@@ -85,17 +112,37 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
                 Modifier.testTag("hud-region-instruments-${region.id}"))
             Text("显示读数附带图形")
         }
+        if (region.content == HudRegionContent.ENGINE) {
+            Row {
+                Switch(region.showEngineReadings, { update(region.copy(showEngineReadings = it)) },
+                    Modifier.testTag("hud-region-engine-readings-${region.id}"))
+                Text("显示读数表格")
+            }
+            Text("关闭表格可只显示仪表；字段选择仍控制仪表内容，缺失数据和告警说明保留。仅有数值、没有图形的字段需要开启表格。")
+        }
         if (region.content == HudRegionContent.ENGINE) Row {
             Switch(region.showEngineInstruments, { update(region.copy(showEngineInstruments = it)) },
                 Modifier.testTag("hud-region-engine-instruments-${region.id}"))
             Text("显示读数附带图形")
+        }
+        if (region.content == HudRegionContent.ENGINE) {
+            EngineControlDimensionsSettings(region) { update(it) }
+            Text("连续控制条布局")
+            FlowRow {
+                EngineControlsLayout.entries.forEach { layout ->
+                    FilterChip(region.engineControlsLayout == layout,
+                        { update(region.copy(engineControlsLayout = layout)) }, enabled = region.showEngineInstruments,
+                        label = { Text(layout.label) }, modifier = Modifier.testTag("hud-region-engine-${layout.name.lowercase()}-${region.id}"))
+                }
+            }
+            Text("混合布局：油门、桨距控制和动力量竖排，混合比与散热器横排。增压器保持水平刻度；整机燃油在飞行读数中设置。")
         }
         if (region.content == HudRegionContent.CONTROLS) Row {
             Switch(region.showControlStick, { update(region.copy(showControlStick = it)) },
                 Modifier.testTag("hud-region-control-stick-${region.id}"))
             Text("显示二维操纵面图（需选择副翼与升降舵）")
         }
-        Text("区域文字大小")
+        Text("区域文字大小：${fontScalePercent(region.fontScale ?: settings.hudFontScale)}%${if (region.fontScale == null) "（继承全局）" else ""}")
         FlowRow {
             listOf<Float?>(null, .75f, 1f, 1.25f, 1.5f, 1.75f, 2f).forEach { scale ->
                 FilterChip(region.fontScale == scale, { update(region.copy(fontScale = scale)) },
@@ -103,7 +150,9 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
                     modifier = Modifier.testTag("hud-region-font-${region.id}-${scale ?: "inherit"}"))
             }
         }
+        HudFontScaleInput(region.fontScale, settings.hudFontScale, "hud-region-font-exact-${region.id}") { update(region.copy(fontScale = it)) }
         if (region.content == HudRegionContent.FLIGHT || region.content == HudRegionContent.ENGINE) {
+            RegionReadingFontSettings(region, ::update)
             Text("区域读数列数")
             FlowRow {
                 listOf(null to "继承全局", 0 to "自动", 1 to "单列", 2 to "双列").forEach { (columns, label) ->
@@ -111,6 +160,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
                         label = { Text(label) }, modifier = Modifier.testTag("hud-region-columns-${region.id}-${columns ?: "inherit"}"))
                 }
             }
+            ReadingColumnsInput(region.readingColumns, "hud-region-columns-custom-${region.id}") { update(region.copy(readingColumns = it)) }
         }
         if (region.content == HudRegionContent.ENGINE) {
             var engineText by remember(region.engineIndex) { mutableStateOf(region.engineIndex.toString()) }
@@ -133,6 +183,16 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
             valueRange = 80f..(scene.width - region.x).toFloat(), modifier = Modifier.testTag("hud-region-width-${region.id}"))
         if (scene.height - region.y > 40) Slider(region.height.toFloat(), { update(region.copy(height = it.roundToInt())) },
             valueRange = 40f..(scene.height - region.y).toFloat(), modifier = Modifier.testTag("hud-region-height-${region.id}"))
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Switch(region.borderEnabled, { update(region.copy(borderEnabled = it)) }, Modifier.testTag("hud-region-border-${region.id}"))
+            Text("显示区域边框")
+        }
+        if (region.borderEnabled) {
+            Text("边框不透明度 ${(region.borderAlpha * 100).roundToInt()}%")
+            Slider(region.borderAlpha, { update(region.copy(borderAlpha = it)) },
+                modifier = Modifier.testTag("hud-region-border-alpha-${region.id}"))
+            Text("边框使用区域内现有留白，不改变位置、尺寸或文字大小。")
+        }
         Text("背景不透明度 ${(region.backgroundAlpha * 100).roundToInt()}%")
         Slider(region.backgroundAlpha, { update(region.copy(backgroundAlpha = it)) },
             modifier = Modifier.testTag("hud-region-background-${region.id}"))

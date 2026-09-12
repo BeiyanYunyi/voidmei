@@ -113,7 +113,7 @@ private fun HudPanelContent(
                     CompressorStageBar(it, index, model, settings.hudEngineFields)
                     HudCompressorAdvice(it, index, model, settings.hudEngineFields)
                 } }
-                if (settings.hudAttitude) AttitudePanel(it.telemetry, compact = true, model = model, earthFixed = settings.hudAttitudeEarthFixed, showAoaLimits = settings.hudAttitudeAoaLimits)
+                if (settings.hudAttitude) AttitudePanel(it.telemetry, compact = true, model = model, earthFixed = settings.hudAttitudeEarthFixed, showNorthPointer = settings.hudAttitudeNorthPointer, showAoaLimits = settings.hudAttitudeAoaLimits)
             }
         }
         HudScrollIndicator(bodyScroll, Modifier.matchParentSize())

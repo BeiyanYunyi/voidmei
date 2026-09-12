@@ -4,7 +4,7 @@ import voidmei.telemetry.HudAltitudeMode
 
 data class LegacyCrosshairImage(val name: String, val enabled: Boolean?, val sizeDp: Int?)
 
-data class UnmigratedLegacySetting(val label: String, val target: String)
+data class UnmigratedLegacySetting(val label: String, val target: String, val sourcePath: List<String> = emptyList())
 
 /** Only settings whose meaning survives the layout rewrite are imported. */
 data class LegacySettings(val intervalMs: Long?, val hudEnabled: Boolean?, val voiceEnabled: Boolean?, val voiceVolume: Int? = null, val alertVoices: Map<String, VoiceChoice> = emptyMap(),
@@ -15,14 +15,98 @@ data class LegacySettings(val intervalMs: Long?, val hudEnabled: Boolean?, val v
     val hudGear: Boolean? = null, val hudFlaps: Boolean? = null, val hudAirbrake: Boolean? = null,
     val hudAoaBarWarningPercent: Double? = null, val hudAoaWarningPercent: Double? = null, val hudFlapBar: Boolean? = null,
     val hudCompassHeadingUp: Boolean? = null, val startInTray: Boolean? = null, val hiddenLabelChoices: Map<String, Boolean> = emptyMap(), val hudCrosshair: Boolean? = null, val hudCrosshairSizeDp: Int? = null, val hudCrosshairImage: String? = null, val pendingCrosshairImage: LegacyCrosshairImage? = null, val hudCrosshairStretch: Boolean? = null, val hudReadingColors: Map<String, String> = emptyMap(), val hudAttitudeAoaLimits: Boolean? = null, val hudNumberFont: String? = null, val hudAltitudeMode: HudAltitudeMode? = null, val httpPort: Int? = null, val textFont: String? = null, val numberFont: String? = null, val connectionNotifications: Boolean? = null, val recordingPerformanceNotifications: Boolean? = null, val softwareRendering: Boolean? = null, val softwareRenderingSource: String? = null, val hudEngineFieldChoices: Map<String, Boolean> = emptyMap(), val voiceDirectory: String? = null,
-    val hudPositions: Map<HudRegionContent, LegacyHudPosition> = emptyMap(), val importHudPositions: Boolean = false) {
+    val hudPositions: Map<HudRegionContent, LegacyHudPosition> = emptyMap(), val importHudPositions: Boolean = false,
+    val createMissingHudRegions: Boolean = false,
+    val hudRegionVisibility: Map<HudRegionContent, Boolean> = emptyMap(),
+    val importHudRegionVisibility: Boolean = false,
+    val legacyScreenSize: LegacyScreenSize? = null,
+    val hudAttitudeNorthPointer: Boolean? = null,
+    val engineControlStyle: LegacyEngineControlStyle? = null, val engineControlStyleRegionId: String? = null,
+    val powerTextSizes: ReadingTextSizes? = null, val powerTextSizesRegionId: String? = null,
+    val enginePanelFonts: Map<String, String> = emptyMap(),
+    val engineFontTargets: Map<String, String> = emptyMap(),
+    val engineRegionsToCreate: List<HudRegion> = emptyList(),
+    val enginePanelPositions: Map<String, LegacyHudPosition> = emptyMap(),
+    val enginePositionTargets: Map<String, String> = emptyMap(),
+    val enginePanelVisibility: Map<String, Boolean> = emptyMap(),
+    val enginePanelTargets: Map<String, String> = emptyMap(),
+    val engineReadingColumns: Int? = null, val engineColumnsRegionId: String? = null,
+    val flightReadingColumns: Int? = null, val importFlightReadingColumns: Boolean = false,
+    val flightLabelFont: String? = null, val importFlightLabelFont: Boolean = false,
+    val flightTextSizes: ReadingTextSizes? = null, val importFlightTextSizes: Boolean = false,
+    val hudRegionBorders: Map<HudRegionContent, Boolean> = emptyMap(), val importHudRegionBorders: Boolean = false,
+    val attitudeSize: LegacyAttitudeSize? = null, val importAttitudeSize: Boolean = false, val legacyDpiScale: Double? = null) {
     val movesCrosshairRight: Boolean get() = hudCrosshair == true || hudCrosshairSizeDp != null || hudCrosshairImage != null
-    val hasChanges: Boolean get() = (importHudPositions && hudPositions.isNotEmpty()) || voiceDirectory != null || hudEngineFieldChoices.isNotEmpty() || softwareRendering != null || recordingPerformanceNotifications != null || numberFont != null || textFont != null || httpPort != null || hudAltitudeMode != null || hudNumberFont != null || hudAttitudeAoaLimits != null || hudReadingColors.isNotEmpty() || intervalMs != null || hudEnabled != null || voiceEnabled != null ||
+    val hasChanges: Boolean get() = (engineControlStyle != null && engineControlStyleRegionId != null) || (powerTextSizes != null && powerTextSizesRegionId != null) || engineFontTargets.keys.any { it in enginePanelFonts } || engineRegionsToCreate.isNotEmpty() || enginePositionTargets.keys.any { it in enginePanelPositions } || enginePanelTargets.keys.any { it in enginePanelVisibility } || (engineReadingColumns != null && engineColumnsRegionId != null) || (importAttitudeSize && attitudeSize != null) || (importHudRegionBorders && hudRegionBorders.isNotEmpty()) || (importFlightTextSizes && flightTextSizes != null) || (importFlightLabelFont && flightLabelFont != null) || (importFlightReadingColumns && flightReadingColumns != null) || hudAttitudeNorthPointer != null || (importHudRegionVisibility && hudRegionVisibility.isNotEmpty()) || (importHudPositions && hudPositions.isNotEmpty()) || voiceDirectory != null || hudEngineFieldChoices.isNotEmpty() || softwareRendering != null || recordingPerformanceNotifications != null || numberFont != null || textFont != null || httpPort != null || hudAltitudeMode != null || hudNumberFont != null || hudAttitudeAoaLimits != null || hudReadingColors.isNotEmpty() || intervalMs != null || hudEnabled != null || voiceEnabled != null ||
         voiceVolume != null || alertVoices.isNotEmpty() || hudFieldChoices.isNotEmpty() ||
         hudAttitude != null || hudAutoHideOnFocusLoss != null || recordingAutoStart != null || connectionNotifications != null ||
         hudGear != null || hudFlaps != null || hudAirbrake != null || hudAoaBarWarningPercent != null || hudAoaWarningPercent != null || hudFlapBar != null || hudCompassHeadingUp != null || startInTray != null || hiddenLabelChoices.isNotEmpty() || hudCrosshair != null || hudCrosshairSizeDp != null || hudCrosshairImage != null || hudCrosshairStretch != null
+    fun applyToScene(current: HudSceneLayout?): HudSceneLayout? {
+        val baseCreated = if (importHudPositions && createMissingHudRegions) current?.let { scene ->
+            (hudPositions.keys - scene.regions.map { it.content }.toSet()).fold(scene) { layout, type -> layout.addRegion(type) }
+        } else current
+        require(engineRegionsToCreate.all { it.content == HudRegionContent.ENGINE }) { "仅支持补建发动机分区" }
+        require(engineRegionsToCreate.map { it.id }.distinct().size == engineRegionsToCreate.size) { "补建分区 ID 重复" }
+        val created = baseCreated?.let { scene ->
+            val additions = engineRegionsToCreate.filter { candidate -> scene.regions.none { it.id == candidate.id } }
+            require(scene.regions.size + additions.size <= 32) { "补建后超过 32 个分区" }
+            scene.copy(regions = scene.regions + additions)
+        }
+        val sized = if (importAttitudeSize && attitudeSize != null && created != null) attitudeSize.applyTo(created,
+            requireNotNull(legacyScreenSize) { "尺寸迁移需要原屏幕宽高" }, requireNotNull(legacyDpiScale) { "尺寸迁移需要原 DPI 缩放" }) else created
+        val basePositioned = if (importHudPositions) sized?.withLegacyPositions(hudPositions, false, legacyScreenSize) else sized
+        val selectedEnginePositions = enginePositionTargets.filterKeys { it in enginePanelPositions }
+        require(selectedEnginePositions.values.distinct().size == selectedEnginePositions.size) { "动力信息和引擎控制位置必须选择不同分区" }
+        val positioned = basePositioned?.copy(regions = basePositioned.regions.map { region ->
+            val key = selectedEnginePositions.entries.firstOrNull { it.value == region.id }?.key
+            if (key != null && region.content == HudRegionContent.ENGINE)
+                region.withLegacyPosition(enginePanelPositions.getValue(key), basePositioned.width, basePositioned.height, legacyScreenSize)
+            else region
+        })
+        val regionVisibility = if (importHudRegionVisibility) positioned?.withLegacyVisibility(hudRegionVisibility) else positioned
+        val selectedEnginePanels = enginePanelTargets.filterKeys { it in enginePanelVisibility }
+        require(selectedEnginePanels.values.distinct().size == selectedEnginePanels.size) { "动力信息和引擎控制必须选择不同分区" }
+        val visibility = regionVisibility?.copy(regions = regionVisibility.regions.map { region ->
+            val key = selectedEnginePanels.entries.firstOrNull { it.value == region.id }?.key
+            if (key != null && region.content == HudRegionContent.ENGINE)
+                region.copy(visible = enginePanelVisibility.getValue(key)) else region
+        })
+        val bordered = if (importHudRegionBorders && visibility != null) {
+            val firstIds = hudRegionBorders.keys.mapNotNull { type -> visibility.regions.firstOrNull { it.content == type }?.id }.toSet()
+            visibility.copy(regions = visibility.regions.map { if (it.id in firstIds) it.copy(borderEnabled = hudRegionBorders.getValue(it.content)) else it })
+        } else visibility
+        val visible = if (engineReadingColumns != null && engineColumnsRegionId != null) bordered?.copy(
+            regions = bordered.regions.map { if (it.id == engineColumnsRegionId && it.content == HudRegionContent.ENGINE)
+                it.copy(readingColumns = engineReadingColumns) else it }) else bordered
+        val selectedEngineFonts = engineFontTargets.filterKeys { it in enginePanelFonts }
+        require(selectedEngineFonts.values.distinct().size == selectedEngineFonts.size) { "动力信息和引擎控制字体必须选择不同分区" }
+        val styled = visible?.copy(regions = visible.regions.map { region ->
+            val key = selectedEngineFonts.entries.firstOrNull { it.value == region.id }?.key
+            if (key != null && region.content == HudRegionContent.ENGINE)
+                region.copy(readingLabelFont = enginePanelFonts.getValue(key)) else region
+        })
+        val textSized = if (powerTextSizes != null && powerTextSizesRegionId != null) styled?.copy(regions = styled.regions.map {
+            if (it.id == powerTextSizesRegionId && it.content == HudRegionContent.ENGINE)
+                it.copy(readingTextSizes = powerTextSizes, readingTextWeights = ReadingTextWeights.legacyFlight, fontScale = 1f) else it
+        }) else styled
+        require(engineControlStyle == null || powerTextSizes == null || engineControlStyleRegionId == null ||
+            engineControlStyleRegionId != powerTextSizesRegionId) { "动力字号和引擎控制字号必须选择不同分区" }
+        val controlSized = if (engineControlStyle != null && engineControlStyleRegionId != null) textSized?.copy(regions = textSized.regions.map {
+            if (it.id == engineControlStyleRegionId && it.content == HudRegionContent.ENGINE) engineControlStyle.applyTo(it) else it
+        }) else textSized
+        val firstFlight = controlSized?.regions?.firstOrNull { it.content == HudRegionContent.FLIGHT }
+        return if (firstFlight != null) controlSized.copy(regions = controlSized.regions.map {
+            if (it.id != firstFlight.id) it else it.copy(
+                readingTextWeights = if (importFlightTextSizes && flightTextSizes != null) ReadingTextWeights.legacyFlight else it.readingTextWeights,
+                readingTextSizes = if (importFlightTextSizes) flightTextSizes ?: it.readingTextSizes else it.readingTextSizes,
+                fontScale = if (importFlightTextSizes && flightTextSizes != null) 1f else it.fontScale,
+                readingColumns = if (importFlightReadingColumns) flightReadingColumns ?: it.readingColumns else it.readingColumns,
+                readingLabelFont = if (importFlightLabelFont) flightLabelFont ?: it.readingLabelFont else it.readingLabelFont)
+        }) else controlSized
+    }
+
     fun applyTo(current: AppSettings) = current.copy(
-        hudSceneLayout = if (importHudPositions) current.hudSceneLayout?.withLegacyPositions(hudPositions) else current.hudSceneLayout,
+        hudSceneLayout = applyToScene(current.hudSceneLayout),
         softwareRendering = softwareRendering ?: current.softwareRendering,
         readingColors = current.readingColors + hudReadingColors.mapKeys { (key, _) ->
             mapOf("fontLabel" to "label", "fontNum" to "value", "fontWarn" to "warning", "fontShade" to "shade", "fontUnit" to "unit").getValue(key)
@@ -32,6 +116,7 @@ data class LegacySettings(val intervalMs: Long?, val hudEnabled: Boolean?, val v
         endpoint = httpPort?.let { replaceTelemetryPort(current.endpoint, it) } ?: current.endpoint,
         hudAltitudeMode = hudAltitudeMode ?: current.hudAltitudeMode,
         hudNumberFont = hudNumberFont ?: current.hudNumberFont,
+        hudAttitudeNorthPointer = hudAttitudeNorthPointer ?: current.hudAttitudeNorthPointer,
         hudAttitudeAoaLimits = hudAttitudeAoaLimits ?: current.hudAttitudeAoaLimits,
         hudLabelColor = hudReadingColors["fontLabel"] ?: current.hudLabelColor,
         hudValueColor = hudReadingColors["fontNum"] ?: current.hudValueColor,
@@ -156,12 +241,51 @@ object LegacySettingsReader {
         require(roots.isNotEmpty() && roots.all { it.children?.firstOrNull()?.let { n -> !n.quoted && n.atom == "panel" } == true }) {
             "仅支持旧版 ui_layout.user.cfg 的 panel 格式"
         }
+        var flightPanelFont: String? = null
+        var flightTextSizes: ReadingTextSizes? = null
+        var powerSizes: ReadingTextSizes? = null
+        var controlStyle: LegacyEngineControlStyle? = null
+        val engineFonts = linkedMapOf<String, String>()
+        val enginePositions = linkedMapOf<String, LegacyHudPosition>()
         val positions = linkedMapOf<HudRegionContent, LegacyHudPosition>()
         val panelContents = mapOf("飞行信息" to HudRegionContent.FLIGHT, "地平仪" to HudRegionContent.ATTITUDE,
             "舵面值" to HudRegionContent.CONTROLS, "起落襟翼" to HudRegionContent.MECHANIZATION)
         roots.forEach { root ->
             val children = root.children!!
-            val content = panelContents[children.getOrNull(1)?.atom] ?: return@forEach
+            val engineKey = mapOf("动力信息" to "engineInfoSwitch", "引擎控制" to "enableEngineControl")[children.getOrNull(1)?.atom]
+            val content = panelContents[children.getOrNull(1)?.atom]
+            if (content == null && engineKey == null) return@forEach
+            if (content == HudRegionContent.FLIGHT || engineKey != null) {
+                val sizeIndices = children.indices.filter { !children[it].quoted && children[it].atom == ":font-size" }
+                require(sizeIndices.size <= 1) { "旧配置重复属性 :font-size" }
+                sizeIndices.singleOrNull()?.let { index ->
+                    val offset = requireNotNull(children.getOrNull(index + 1)?.atom?.toIntOrNull()?.takeIf { it in -6..(if (engineKey == "engineInfoSwitch") 18 else 20) }) {
+                        "旧字号偏移无效：飞行／引擎控制允许 -6–20，动力允许 -6–18 的整数"
+                    }
+                    if (engineKey == "engineInfoSwitch") {
+                        require(powerSizes == null) { "旧配置重复动力字号属性" }
+                        powerSizes = ReadingTextSizes.fromLegacyOffset(offset)
+                    } else if (engineKey == "enableEngineControl") {
+                        require(controlStyle == null) { "旧配置重复引擎控制字号属性" }
+                        controlStyle = LegacyEngineControlStyle(offset)
+                    } else if (flightTextSizes == null) flightTextSizes = ReadingTextSizes.fromLegacyOffset(offset)
+                }
+            }
+            if (content == HudRegionContent.FLIGHT || engineKey != null) {
+                val indices = children.indices.filter { !children[it].quoted && children[it].atom == ":font" }
+                require(indices.size <= 1) { "旧配置重复属性 :font" }
+                indices.singleOrNull()?.let { index ->
+                    val value = children.getOrNull(index + 1)
+                    val font = requireNotNull(value?.atom?.takeUnless { !value.quoted && it.startsWith(":") }) { "旧配置属性缺值 :font" }.trim()
+                    require(font.length <= 200 && font.none { it.isISOControl() }) { "旧面板字体名称无效" }
+                    if (font.isNotEmpty()) {
+                        if (engineKey != null) {
+                            require(engineKey !in engineFonts) { "旧配置重复窗口字体 ${children[1].atom}" }
+                            engineFonts[engineKey] = font
+                        } else if (flightPanelFont == null) flightPanelFont = font
+                    }
+                }
+            }
             fun coordinate(key: String): Double? {
                 val indices = children.indices.filter { !children[it].quoted && children[it].atom == key }
                 require(indices.size <= 1) { "旧配置重复属性 $key" }
@@ -174,16 +298,33 @@ object LegacySettingsReader {
             val x = coordinate(":x")
             val y = coordinate(":y")
             if (x != null || y != null) {
-                require(content !in positions) { "旧配置重复窗口 ${children[1].atom}" }
-                positions[content] = LegacyHudPosition(x ?: .1, y ?: .1)
+                if (engineKey != null) {
+                    require(engineKey !in enginePositions) { "旧配置重复窗口 ${children[1].atom}" }
+                    enginePositions[engineKey] = LegacyHudPosition(x ?: .1, y ?: .1)
+                } else {
+                    require(content !in positions) { "旧配置重复窗口 ${children[1].atom}" }
+                    positions[requireNotNull(content)] = LegacyHudPosition(x ?: .1, y ?: .1)
+                }
             }
         }
         val unmigrated = mutableListOf<UnmigratedLegacySetting>()
         val targets = mutableMapOf<String, Pair<String, String>>()
         val voiceKeys = voidmei.telemetry.FlightAlert.entries.map { "voice_${it.voice}" }.toSet()
         val colorKeys = setOf("fontLabel", "fontNum", "fontUnit", "fontWarn", "fontShade")
-        val supported = engineControlFields.keys + aircraftControlFields.keys + colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("gpuCompatibilityMode", "enableAltInformation", "enableStatusBar", "GlobalTextFont", "GlobalNumFont", "httpPort", "alwaysShowRadarAltitude", "MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
-        fun walk(node: Node) {
+        val regionSwitches = mapOf("flightInfoSwitch" to HudRegionContent.FLIGHT,
+            "enableAxis" to HudRegionContent.CONTROLS, "enableAttitudeIndicator" to HudRegionContent.ATTITUDE,
+            "enablegearAndFlaps" to HudRegionContent.MECHANIZATION)
+        val borderKeys = mapOf("flightInfoEdge" to HudRegionContent.FLIGHT, "enableAxisEdge" to HudRegionContent.CONTROLS,
+            "enableAttitudeIndicatorEdge" to HudRegionContent.ATTITUDE, "enablegearAndFlapsEdge" to HudRegionContent.MECHANIZATION)
+        val enginePanelKeys = setOf("engineInfoSwitch", "enableEngineControl")
+        val supported = enginePanelKeys + borderKeys.keys + regionSwitches.keys + engineControlFields.keys + aircraftControlFields.keys + colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("attitudeIndicatorWidth", "attitudeIndicatorHeight", "flightInfoFontC", "flightInfoColumn", "attitudeIndicatorDisplayDirection", "gpuCompatibilityMode", "enableAltInformation", "enableStatusBar", "GlobalTextFont", "GlobalNumFont", "httpPort", "alwaysShowRadarAltitude", "MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
+        val targetSources = mutableMapOf<String, List<String>>()
+        var flightRowSize: Int? = null
+        var engineColumns: Int? = null
+        var engineRowFont: String? = null
+        var powerRowSize: Int? = null
+        var controlRowSize: Int? = null
+        fun walk(node: Node, panelTitle: String?, path: List<String>) {
             val children = node.children ?: return
             val kind = children.firstOrNull()?.takeUnless { it.quoted }?.atom
             if (kind !in setOf("panel", "group", "item")) return
@@ -197,17 +338,77 @@ object LegacySettingsReader {
                     }
                 }
                 val target = field(":target")
-                if (target in supported) {
+                if (target == "fontSize" && panelTitle == "飞行信息") {
+                    require(flightRowSize == null) { "旧飞行面板重复字号设置" }
+                    require(field(":type") == "slider") { "旧飞行字号类型不支持" }
+                    flightRowSize = requireNotNull(field(":value")?.toIntOrNull()?.takeIf { it in -6..20 }) {
+                        "旧飞行字号偏移需为 -6–20 内的整数"
+                    }
+                } else if (target == "fontSize" && panelTitle == "动力信息") {
+                    require(powerRowSize == null) { "旧动力面板重复字号设置" }
+                    require(field(":type") == "slider") { "旧动力字号类型不支持" }
+                    powerRowSize = requireNotNull(field(":value")?.toIntOrNull()?.takeIf { it in -6..18 }) { "旧动力字号需为 -6–18 内的整数" }
+                } else if (target == "fontSize" && panelTitle == "引擎控制") {
+                    require(controlRowSize == null) { "旧引擎控制面板重复字号设置" }
+                    require(field(":type") == "slider") { "旧引擎控制字号类型不支持" }
+                    controlRowSize = requireNotNull(field(":value")?.toIntOrNull()?.takeIf { it in -6..20 }) { "旧引擎控制字号需为 -6–20 内的整数" }
+                } else if (target == "hudColumns" && panelTitle == "动力信息") {
+                    require(engineColumns == null) { "旧动力面板重复列数设置" }
+                    require(field(":type") == "slider") { "旧动力列数类型不支持" }
+                    engineColumns = requireNotNull(field(":value")?.toIntOrNull()?.takeIf { it in 1..8 }) {
+                        "旧动力列数需为 1–8 内的整数"
+                    }
+                } else if (target == "fontName" && panelTitle == "动力信息") {
+                    require(engineRowFont == null) { "旧动力面板重复字体设置" }
+                    require(field(":type") == "combo") { "旧动力字体类型不支持" }
+                    engineRowFont = requireNotNull(field(":value")) { "旧动力字体缺值" }.trim()
+                    require(engineRowFont!!.isNotEmpty() && engineRowFont!!.length <= 200 && engineRowFont!!.none { it.isISOControl() }) { "旧动力字体名称无效" }
+                } else if (target in supported) {
                     require(target !in targets) { "旧配置重复设置 $target" }
-                    targets[target!!] = (field(":type") ?: error("$target 缺少类型")) to
+                    targetSources[target!!] = path
+                    targets[target] = (field(":type") ?: error("$target 缺少类型")) to
                         (field(":value") ?: error("$target 缺少值"))
                 } else if (target != null) {
-                    unmigrated += UnmigratedLegacySetting(children.getOrNull(1)?.atom ?: target, target)
+                    unmigrated += UnmigratedLegacySetting(children.getOrNull(1)?.atom ?: target, target, path)
                 }
             }
-            if (kind != "item") children.forEach(::walk)
+            if (kind != "item") {
+                val nextPath = if (kind == "group") path + listOfNotNull(children.getOrNull(1)?.atom) else path
+                children.forEach { walk(it, panelTitle, nextPath) }
+            }
         }
-        roots.forEach(::walk)
+        // Java searches panels in file order: an explicit row in that panel wins over its switch-key.
+        val resolvedRegionSwitches = linkedMapOf<String, Pair<String, String>>()
+        roots.forEach { root ->
+            val previousTargets = targets.keys.toSet()
+            walk(root, root.children?.getOrNull(1)?.atom, listOfNotNull(root.children?.getOrNull(1)?.atom))
+            val children = root.children!!
+            fun panelAttribute(key: String): String? {
+                val indices = children.indices.filter { !children[it].quoted && children[it].atom == key }
+                require(indices.size <= 1) { "旧配置重复属性 $key" }
+                return indices.singleOrNull()?.let { index ->
+                    val value = children.getOrNull(index + 1)
+                    requireNotNull(value?.atom?.takeUnless { !value.quoted && it.startsWith(":") }) { "旧配置属性缺值 $key" }
+                }
+            }
+            val panelTitle = children.getOrNull(1)?.atom
+            if (panelTitle in panelContents && panelAttribute(":alpha") != null)
+                unmigrated += UnmigratedLegacySetting("${panelTitle}的旧透明度未转换；请在分区设置中分别调整背景和内容", ":alpha", listOfNotNull(panelTitle))
+            val switchKey = panelAttribute(":switch-key")
+            (regionSwitches.keys + enginePanelKeys).forEach { key ->
+                if (key !in resolvedRegionSwitches) {
+                    if (key in targets && key !in previousTargets) resolvedRegionSwitches[key] = targets.getValue(key)
+                    else if (switchKey == key) {
+                        val visible = panelAttribute(":visible") ?: "false"
+                        require(visible.toBooleanStrictOrNull() != null) { "旧面板显示状态不是布尔值" }
+                        resolvedRegionSwitches[key] = "switch" to visible
+                    }
+                }
+            }
+            if (switchKey != null && switchKey !in regionSwitches && switchKey !in enginePanelKeys)
+                unmigrated += UnmigratedLegacySetting("${children.getOrNull(1)?.atom ?: "旧面板"}的面板总开关", switchKey, listOfNotNull(panelTitle))
+        }
+        targets.putAll(resolvedRegionSwitches)
         val textFont = targets["GlobalTextFont"]?.let { (type, value) ->
             require(type == "combo") { "GlobalTextFont 类型不支持" }
             value.trim().takeIf { it.isNotEmpty() && it.length <= 200 && it.none { char -> char.isISOControl() } }
@@ -343,6 +544,23 @@ object LegacySettingsReader {
             require(type == "input") { "httpPort 类型不支持" }
             requireNotNull(value.toIntOrNull()?.takeIf { it in 1..65535 }) { "httpPort 需在 1–65535 内" }
         }
+        val flightLabelFont = targets["flightInfoFontC"]?.let { (type, value) ->
+            require(type == "combo") { "flightInfoFontC 类型不支持" }
+            value.trim().takeIf { it.isNotEmpty() && it.length <= 200 && it.none { char -> char.isISOControl() } }
+                ?: run { unmigrated += UnmigratedLegacySetting("飞行标签字体名称无效，保留当前字体", "flightInfoFontC"); null }
+        }
+        val flightColumns = targets["flightInfoColumn"]?.let { (type, value) ->
+            require(type == "slider") { "flightInfoColumn 类型不支持" }
+            requireNotNull(value.toIntOrNull()?.takeIf { it in 1..16 }) { "旧飞行列数需在 1–16 内" }
+        }
+        fun attitudeDimension(key: String): Int? = targets[key]?.let { (type, value) ->
+            require(type == "slider") { "$key 类型不支持" }
+            requireNotNull(value.toIntOrNull()?.takeIf { it in 100..600 }) { "旧姿态宽高需为 100–600 内的整数" }
+        }
+        val attitudeWidth = attitudeDimension("attitudeIndicatorWidth")
+        val attitudeHeight = attitudeDimension("attitudeIndicatorHeight")
+        val attitudeSize = if (attitudeWidth != null || attitudeHeight != null)
+            LegacyAttitudeSize(attitudeWidth ?: 150, attitudeHeight ?: 300, flag("enableAttitudeIndicatorEdge") ?: false) else null
         return LegacySettings(interval, flag("crosshairSwitch"), flag("enableVoiceWarn"), volume, choices,
             fields, mechanicalVisibility("showAttitudeGauge"), flag("autoHideOnFocusLoss"), unmigrated, flag("enableLogging"),
             mechanicalVisibility("showHUDGear"), mechanicalVisibility("showHUDFlaps"),
@@ -350,10 +568,14 @@ object LegacySettingsReader {
                 flag("disableHUDSpeedLabel")?.let { put("ias", it); put("mach", it) }
                 flag("disableHUDHeightLabel")?.let { put("altitude", it) }
                 flag("disableHUDSEPLabel")?.let { put("sep", it) }
-            }, showCrosshair, crosshairSize, hudPositions = positions, hudEngineFieldChoices = engineChoices, softwareRendering = flag("gpuCompatibilityMode"), recordingPerformanceNotifications = flag("enableAltInformation"), connectionNotifications = flag("enableStatusBar"), pendingCrosshairImage = if (!vectorCrosshair)
+            }, showCrosshair, crosshairSize, engineControlStyle = controlStyle ?: controlRowSize?.let(::LegacyEngineControlStyle), powerTextSizes = powerSizes ?: powerRowSize?.let(ReadingTextSizes::fromLegacyOffset), enginePanelFonts = (engineRowFont?.let { mapOf("engineInfoSwitch" to it) }.orEmpty() + engineFonts), enginePanelPositions = enginePositions, enginePanelVisibility = enginePanelKeys.mapNotNull { key -> flag(key)?.let { key to it } }.toMap(), engineReadingColumns = engineColumns, flightReadingColumns = flightColumns, flightLabelFont = flightPanelFont ?: flightLabelFont, flightTextSizes = flightTextSizes ?: flightRowSize?.let(ReadingTextSizes::fromLegacyOffset), attitudeSize = attitudeSize, hudRegionBorders = borderKeys.mapNotNull { (key, content) -> flag(key)?.let { content to it } }.toMap(), hudPositions = positions, hudRegionVisibility = regionSwitches.mapNotNull { (key, content) -> flag(key)?.let { content to it } }.toMap(), hudEngineFieldChoices = engineChoices, softwareRendering = flag("gpuCompatibilityMode"), recordingPerformanceNotifications = flag("enableAltInformation"), connectionNotifications = flag("enableStatusBar"), pendingCrosshairImage = if (!vectorCrosshair)
                 LegacyCrosshairImage(crosshairName!!, flag("displayCrosshair"),
-                    targets["crosshairScale"]?.second?.toIntOrNull()?.times(2)?.takeIf { it in 24..400 }) else null, textFont = textFont, numberFont = globalNumberFont, httpPort = httpPort, hudAltitudeMode = flag("alwaysShowRadarAltitude")?.let { if (it) HudAltitudeMode.ALWAYS_RADAR else HudAltitudeMode.LOW_RADAR }, hudNumberFont = numberFont, hudReadingColors = readingColors, hudAttitudeAoaLimits = flag("attitudeIndicatorDisplayAoALimits")).also {
-            require(it.hasChanges || it.hudPositions.isNotEmpty() || it.unmigrated.isNotEmpty()) { "未找到可迁移的设置" }
+                    targets["crosshairScale"]?.second?.toIntOrNull()?.times(2)?.takeIf { it in 24..400 }) else null, textFont = textFont, numberFont = globalNumberFont, httpPort = httpPort, hudAltitudeMode = flag("alwaysShowRadarAltitude")?.let { if (it) HudAltitudeMode.ALWAYS_RADAR else HudAltitudeMode.LOW_RADAR }, hudNumberFont = numberFont, hudReadingColors = readingColors, hudAttitudeNorthPointer = flag("attitudeIndicatorDisplayDirection"), hudAttitudeAoaLimits = flag("attitudeIndicatorDisplayAoALimits")).also {
+            require(it.hasChanges || it.engineControlStyle != null || it.powerTextSizes != null || it.enginePanelFonts.isNotEmpty() || it.enginePanelPositions.isNotEmpty() || it.enginePanelVisibility.isNotEmpty() || it.engineReadingColumns != null || it.attitudeSize != null || it.hudRegionBorders.isNotEmpty() || it.flightTextSizes != null || it.flightLabelFont != null || it.flightReadingColumns != null || it.hudPositions.isNotEmpty() || it.hudRegionVisibility.isNotEmpty() || it.unmigrated.isNotEmpty()) { "未找到可迁移的设置" }
+        }.let { settings ->
+            settings.copy(unmigrated = settings.unmigrated.map { item ->
+                if (item.sourcePath.isNotEmpty()) item else item.copy(sourcePath = targetSources[item.target].orEmpty())
+            })
         }
     }
 }

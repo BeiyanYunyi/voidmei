@@ -11,6 +11,11 @@ data class AttitudeGeometry(val pitchDeg: Double, val rollDeg: Double) {
             (-horizontal * sin(angle) + vertical * cos(angle))
     }
     companion object {
+        /** North relative to an aircraft-heading-up display; screen Y grows downwards. */
+        fun northDirection(degrees: Double?): Pair<Double, Double>? = heading(degrees)?.let {
+            val angle = it * PI / 180
+            -sin(angle) to -cos(angle)
+        }
         /** War Thunder reports negative aviahorizon_pitch for nose-up; display pitch is nose-up positive. */
         fun fromIndicators(pitch: Double?, roll: Double?): AttitudeGeometry? {
             if (pitch == null || roll == null || !pitch.isFinite() || !roll.isFinite() || pitch !in -90.0..90.0) return null

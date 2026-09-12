@@ -26,11 +26,24 @@ data class HudRegion(
     val showEngineInstruments: Boolean = true,
     val showControlStick: Boolean = false,
     val messageMaxLines: Int = 0, // Zero keeps full messages.
+
     val hiddenLabels: List<String>? = null, // Null inherits label visibility; empty shows every label.
+    val readingLabelFont: String? = null, // Null inherits the global text font.
+    val readingNumberFont: String? = null, // Null inherits the HUD number font.
+    val readingTextSizes: ReadingTextSizes? = null,
+    val readingTextWeights: ReadingTextWeights? = null,
+    val borderEnabled: Boolean = false,
+    val borderAlpha: Float = .6f,
+    val engineControlsLayout: EngineControlsLayout = EngineControlsLayout.HORIZONTAL,
+    val showEngineReadings: Boolean = true,
+    val engineControlDimensions: EngineControlDimensions? = null,
 ) {
     init {
+        for (font in listOf(readingLabelFont, readingNumberFont))
+            require(font == null || (font.isNotBlank() && font.length <= 200 && font.none { it.isISOControl() }))
         require(id.isNotBlank() && id.length <= 100 && id.none { it.isISOControl() })
         require(x in 0..8192 && y in 0..8192 && width in 80..8192 && height in 40..8192)
+        require(borderAlpha.isFinite() && borderAlpha in 0f..1f)
         require(backgroundAlpha.isFinite() && backgroundAlpha in 0f..1f)
         require(contentAlpha.isFinite() && contentAlpha in 0f..1f)
         require(engineIndex > 0)
@@ -39,7 +52,7 @@ data class HudRegion(
         require(hiddenLabels == null || hiddenLabels.all { it.isNotBlank() })
         require(fields == null || fields.all { it.isNotBlank() })
         require(title.length <= 80 && title.none { it.isISOControl() })
-        require(readingColumns == null || readingColumns in 0..2)
+        require(readingColumns == null || readingColumns in 0..16)
         require(fontScale == null || (fontScale.isFinite() && fontScale in .75f..2f))
     }
 }
@@ -156,10 +169,18 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
             put("visible", region.visible)
             put("title", region.title)
             put("readingColumns", region.readingColumns?.let(::JsonPrimitive) ?: JsonNull)
+            put("borderEnabled", region.borderEnabled); put("borderAlpha", region.borderAlpha)
+            put("readingTextWeights", region.readingTextWeights?.toJson() ?: JsonNull)
+            put("readingTextSizes", region.readingTextSizes?.toJson() ?: JsonNull)
+            put("readingLabelFont", region.readingLabelFont?.let(::JsonPrimitive) ?: JsonNull)
+            put("readingNumberFont", region.readingNumberFont?.let(::JsonPrimitive) ?: JsonNull)
             put("fontScale", region.fontScale?.let(::JsonPrimitive) ?: JsonNull)
             put("showFlightInstruments", region.showFlightInstruments)
             put("messageLimit", region.messageLimit)
             put("showFlightStatus", region.showFlightStatus)
+            put("engineControlsLayout", region.engineControlsLayout.name)
+            put("engineControlDimensions", region.engineControlDimensions?.toJson() ?: JsonNull)
+            put("showEngineReadings", region.showEngineReadings)
             put("showEngineInstruments", region.showEngineInstruments)
             put("showControlStick", region.showControlStick)
             put("messageMaxLines", region.messageMaxLines)
@@ -191,7 +212,18 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
                     r["messageMaxLines"]?.jsonPrimitive?.let { require(!it.isString); it.int } ?: 0,
                     r["hiddenLabels"]?.takeUnless { it == JsonNull }?.jsonArray?.map { label ->
                         label.jsonPrimitive.let { require(it.isString); it.content }
-                    })
+                    },
+                    r["readingLabelFont"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
+                    r["readingNumberFont"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content },
+                    r["readingTextSizes"]?.takeUnless { it == JsonNull }?.let(ReadingTextSizes::fromJson),
+                    r["readingTextWeights"]?.takeUnless { it == JsonNull }?.let(ReadingTextWeights::fromJson),
+                    r["borderEnabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: false,
+                    r["borderAlpha"]?.jsonPrimitive?.let { require(!it.isString); it.float } ?: .6f,
+                    r["engineControlsLayout"]?.jsonPrimitive?.let { require(it.isString); EngineControlsLayout.valueOf(it.content) }
+                        ?: if (r["engineControlsVertical"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } == true)
+                            EngineControlsLayout.VERTICAL else EngineControlsLayout.HORIZONTAL,
+                    r["showEngineReadings"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
+                    r["engineControlDimensions"]?.takeUnless { it == JsonNull }?.let(EngineControlDimensions::fromJson))
             }, root["enabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
                 root["displayId"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content })
         }

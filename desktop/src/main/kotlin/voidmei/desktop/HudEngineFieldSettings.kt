@@ -13,6 +13,7 @@ import voidmei.telemetry.HudEngineField
 @Composable
 internal fun HudEngineFieldSettings(ids: List<String>, onChange: (List<String>) -> Unit) {
     Text("发动机显示字段")
+    HudEngineFieldPresets("hud-engine") { onChange(it) }
     val selected = HudEngineField.selected(ids)
     selected.forEachIndexed { index, field ->
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

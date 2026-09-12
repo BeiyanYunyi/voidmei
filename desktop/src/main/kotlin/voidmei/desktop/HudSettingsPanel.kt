@@ -70,12 +70,14 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
                 label = { Text(label) }, modifier = Modifier.testTag("hud-columns-$columns"))
         }
     }
+    ReadingColumnsInput(settings.hudReadingColumns, "hud-columns-custom") { onChange(settings.copy(hudReadingColumns = it)) }
     Text("自动根据文字宽度排列；固定列数按从左到右、从上到下显示。空间不足时标签与读数换行。", style = MaterialTheme.typography.bodySmall)
-    Text("HUD 文字大小 ${(settings.hudFontScale * 100).roundToInt()}%")
+    Text("HUD 文字大小 ${fontScalePercent(settings.hudFontScale)}%")
     Slider(value = settings.hudFontScale,
         onValueChange = { onChange(settings.copy(hudFontScale = it)) },
         valueRange = 0.75f..2f, steps = 24,
         modifier = Modifier.testTag("hud-font-scale").semantics { contentDescription = "HUD 文字大小" })
+    HudFontScaleInput(settings.hudFontScale, settings.hudFontScale, "hud-font-exact") { onChange(settings.copy(hudFontScale = it)) }
     Text("在系统字体缩放基础上调整，仅影响 HUD。", style = MaterialTheme.typography.bodySmall)
     OutlinedTextField(value = settings.hudNumberFont.orEmpty(),
         onValueChange = { name ->
@@ -126,10 +128,14 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
     Text("耐热时估计：热预算区间包含未知初始损耗，按采样温度估算，不是实际剩余寿命。需要匹配的发动机温度模型与有效摄氏温度；无活动计时档位或数据缺失时显示 —。", style = MaterialTheme.typography.bodySmall)
     Text("WEP 燃料／可用时间为估算上限：连接前已用量未知，按模型容量扣除观察到的消耗。断流后重新估算，不表示实际补满；未观测到 WEP 消耗时续航未知，模型或数据缺失时显示 —。", style = MaterialTheme.typography.bodySmall)
     val selected = HudField.selected(settings.hudFields)
-    if (settings.hudAttitude) FilterChip(settings.hudAttitudeAoaLimits,
+    val hasAttitudePanel = settings.hudAttitude || settings.hudSceneLayout?.regions?.any { it.content == voidmei.config.HudRegionContent.ATTITUDE } == true
+    if (hasAttitudePanel) FilterChip(settings.hudAttitudeNorthPointer,
+            { onChange(settings.copy(hudAttitudeNorthPointer = !settings.hudAttitudeNorthPointer)) },
+            label = { Text("姿态图指北针") })
+    if (hasAttitudePanel) FilterChip(settings.hudAttitudeAoaLimits,
         { onChange(settings.copy(hudAttitudeAoaLimits = !settings.hudAttitudeAoaLimits)) },
         label = { Text("姿态图迎角极限线") })
-    if (settings.hudAttitude) FilterChip(settings.hudAttitudeEarthFixed,
+    if (hasAttitudePanel) FilterChip(settings.hudAttitudeEarthFixed,
         { onChange(settings.copy(hudAttitudeEarthFixed = !settings.hudAttitudeEarthFixed)) },
         label = { Text(if (settings.hudAttitudeEarthFixed) "姿态：地面参考" else "姿态：机体参考") })
     FilterChip(settings.hudCrosshair, { onChange(settings.copy(hudCrosshair = !settings.hudCrosshair)) },

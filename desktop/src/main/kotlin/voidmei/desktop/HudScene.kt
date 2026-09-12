@@ -34,7 +34,11 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
             if (layout.displayId == null) 1f else Float.MAX_VALUE).coerceAtLeast(0.01f)
         CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale)) {
             layout.regions.forEach { region -> key(region.id) {
-                CompositionLocalProvider(LocalReadingColumns provides (region.readingColumns ?: settings.hudReadingColumns),
+                val labelFont = remember(region.readingLabelFont) { region.readingLabelFont?.let { resolveTextFont(it).family } }
+                val numberFont = remember(region.readingNumberFont) { region.readingNumberFont?.let { resolveHudNumberFont(it).family } }
+                CompositionLocalProvider(LocalReadingTextWeights provides region.readingTextWeights, LocalReadingTextSizes provides region.readingTextSizes, LocalReadingLabelFont provides labelFont,
+                    LocalReadingNumberFont provides (numberFont ?: LocalReadingNumberFont.current),
+                    LocalReadingColumns provides (region.readingColumns ?: settings.hudReadingColumns),
                     LocalDensity provides Density(density.density * scale,
                         density.fontScale * ((region.fontScale ?: settings.hudFontScale) / settings.hudFontScale))) {
                 val fields = region.fields ?: when (region.content) {
@@ -46,8 +50,9 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                     else -> settings.hudFields
                 }
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields, region.messageLimit, region.messageMaxLines, region.hiddenLabels, settings.hudHiddenLabels,
+                    region.readingLabelFont, region.readingNumberFont, region.readingTextSizes, region.readingTextWeights,
                     region.readingColumns ?: settings.hudReadingColumns, region.fontScale ?: settings.hudFontScale,
-                    region.width, region.height, region.showFlightInstruments, region.showFlightStatus, region.showEngineInstruments, region.showControlStick) {
+                    region.width, region.height, region.showFlightInstruments, region.showFlightStatus, region.showEngineInstruments, region.showEngineReadings, region.engineControlDimensions, region.engineControlsLayout, region.showControlStick) {
                     rememberScrollState()
                 }
                 val regionAlerts = if (region.content == HudRegionContent.ALERTS)
@@ -55,7 +60,8 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                 if (region.visible && (flight == null || region.content != HudRegionContent.ALERTS || regionAlerts.isNotEmpty())) {
                     Box(Modifier.offset(region.x.dp, region.y.dp).size(region.width.dp, region.height.dp)
                         .clipToBounds().testTag("hud-region-${region.id}")
-                        .background(Color(0xFF111820).copy(alpha = region.backgroundAlpha))) {
+                        .background(Color(0xFF111820).copy(alpha = region.backgroundAlpha))
+                        .hudRegionBorder(region.borderEnabled, region.borderAlpha)) {
                         Box(Modifier.fillMaxSize().graphicsLayer { alpha = region.contentAlpha }.padding(12.dp)) {
                         if (flight != null && region.content == HudRegionContent.CROSSHAIR) {
                             val size = minOf(region.width, region.height)
@@ -72,7 +78,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                 Box(Modifier.fillMaxWidth().weight(1f)) {
                                     AttitudePanel(flight.telemetry, compact = true, model = model,
-                                        earthFixed = settings.hudAttitudeEarthFixed, showAoaLimits = settings.hudAttitudeAoaLimits,
+                                        earthFixed = settings.hudAttitudeEarthFixed, showNorthPointer = settings.hudAttitudeNorthPointer, showAoaLimits = settings.hudAttitudeAoaLimits,
                                         fillAvailable = true)
                                 }
                             }
@@ -104,14 +110,16 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     if (HudField.HEADING.id in (region.fields ?: settings.hudFields) && mapEndpoint != null) HudMapGrid(mapEndpoint, sharedMap)
                                 }
                                 HudRegionContent.ENGINE -> {
+                                    CompositionLocalProvider(LocalEngineControlDimensions provides region.engineControlDimensions) {
                                     HudEnginePanel(flight.telemetry.engines, region.engineIndex,
                                     fields = HudEngineField.selected(region.fields ?: settings.hudEngineFields),
                                     warnings = engineReadingWarnings(flight, region.engineIndex, model, alerts, thermal),
-                                    showInstruments = region.showEngineInstruments,
+                                    showInstruments = region.showEngineInstruments, showReadings = region.showEngineReadings, controlsLayout = region.engineControlsLayout,
                                     heatBudget = thermal?.hudBudget(flight, model, region.engineIndex),
                                     powerPercent = flight.enginePowerPercentReading(region.engineIndex, model), tasKmh = flight.telemetry.tasKmh, hiddenLabels = region.hiddenLabels.orEmpty())
                                     if (region.showEngineInstruments) CompressorStageBar(flight, region.engineIndex, model, fields)
                                     HudCompressorAdvice(flight, region.engineIndex, model, fields)
+                                    }
                                 }
                                 HudRegionContent.ATTITUDE -> Unit
                                 HudRegionContent.MECHANIZATION -> {

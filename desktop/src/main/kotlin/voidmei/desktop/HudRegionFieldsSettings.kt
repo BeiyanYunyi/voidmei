@@ -130,6 +130,10 @@ internal fun HudRegionFieldsSettings(region: HudRegion, settings: AppSettings, o
             Modifier.testTag("hud-region-fields-${region.id}"))
         Text("此区域独立选择字段")
     }
+    if (region.content == HudRegionContent.ENGINE) {
+        Text("应用预设将为此区域启用独立字段；可添加两个发动机区域，分别选择动力读数与引擎控制。")
+        HudEngineFieldPresets("hud-region-${region.id}") { onChange(region.copy(fields = it)) }
+    }
     val fields = region.fields ?: return
     var expanded by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起区域字段" else "编辑区域字段（${fields.size}）") }

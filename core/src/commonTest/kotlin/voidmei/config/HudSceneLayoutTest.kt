@@ -133,14 +133,14 @@ class HudSceneLayoutTest {
 
     @Test fun regionalColumnsDistinguishInheritanceFromAutomaticAndPersist() {
         val region = HudRegion("one", HudRegionContent.FLIGHT, 0, 0, 240, 120)
-        for (columns in listOf(null, 0, 1, 2)) {
+        for (columns in listOf(null) + (0..16).toList()) {
             val settings = AppSettings(hudSceneLayout = HudSceneLayout(240, 120, listOf(region.copy(readingColumns = columns))))
             assertEquals(settings, SettingsJson.decode(SettingsJson.encode(settings)))
         }
         val oldJson = kotlinx.serialization.json.Json.parseToJsonElement(SettingsJson.encode(AppSettings(
             hudSceneLayout = HudSceneLayout(240, 120, listOf(region))))).toString().replace(",\"readingColumns\":null", "")
         assertNull(SettingsJson.decode(oldJson).hudSceneLayout!!.regions.single().readingColumns)
-        for (invalid in listOf(-1, 3)) assertFailsWith<IllegalArgumentException> { region.copy(readingColumns = invalid) }
+        for (invalid in listOf(-1, 17)) assertFailsWith<IllegalArgumentException> { region.copy(readingColumns = invalid) }
     }
 
     @Test fun regionTitlesPersistThroughEditingAndOldLayoutsDefaultToEmpty() {

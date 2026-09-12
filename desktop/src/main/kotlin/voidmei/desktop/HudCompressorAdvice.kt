@@ -16,6 +16,6 @@ internal fun HudCompressorAdvice(flight: ConnectionState.Flying, index: Int, mod
         .singleOrNull { it.engineIndex == index } ?: return
     val fuel = parameters.compressorFuel?.let { fuelName(it.id) } ?: "基础燃油"
     Text("#$index 增压器 ${advice.actualStage} → ${advice.recommendedStage}（$fuel、15°C 模型估算）",
-        Modifier.testTag("hud-compressor-advice-$index"), style = MaterialTheme.typography.bodySmall,
+        Modifier.testTag("hud-compressor-advice-$index"), style = engineLabelStyle(MaterialTheme.typography.bodySmall),
         color = LocalReadingColors.current.label ?: Color(0xFF9EB1C0))
 }

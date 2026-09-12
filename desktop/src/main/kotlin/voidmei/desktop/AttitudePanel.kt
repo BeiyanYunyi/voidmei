@@ -23,9 +23,10 @@ import androidx.compose.ui.semantics.stateDescription
 import java.util.Locale
 
 @Composable
-internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model: AircraftAlertModel? = null, earthFixed: Boolean = false, showAoaLimits: Boolean = true, fillAvailable: Boolean = false) {
+internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model: AircraftAlertModel? = null, earthFixed: Boolean = false, showAoaLimits: Boolean = true, fillAvailable: Boolean = false, showNorthPointer: Boolean = false) {
     val attitude = AttitudeGeometry.fromIndicators(telemetry.pitchDeg, telemetry.rollDeg)
     val heading = AttitudeGeometry.heading(telemetry.headingDeg)
+    val north = if (showNorthPointer) AttitudeGeometry.northDirection(telemetry.headingDeg) else null
     val marker = AirflowMarker.fromAngles(telemetry.angleOfAttackDeg, telemetry.sideslipAngleDeg)
     val airflowLimits = if (showAoaLimits) AirflowLimits.fromTelemetry(telemetry, model) else emptyList()
     val headingText = heading?.let { String.format(Locale.ROOT, "%03d", kotlin.math.round(it).toInt() % 360) } ?: "—"
@@ -44,7 +45,9 @@ internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model
                 else Modifier.fillMaxWidth().height(if (compact) 110.dp else 190.dp)
             Canvas(canvasModifier.testTag("attitude-canvas")
                 .semantics { stateDescription = if (earthFixed) "地面参考" else "机体参考"
-                    contentDescription = (when {
+                    contentDescription = (if (showNorthPointer) {
+                        if (north == null) "指北针不可用，航向未知；" else "红色指北针，航向 $headingText°；"
+                    } else "") + (when {
                     marker == null -> "姿态仪，迎角/侧滑十字不可用"
                     marker.outsideScale -> "姿态仪，迎角/侧滑十字超量程"
                     else -> "姿态仪，青色十字表示迎角/侧滑"
@@ -93,8 +96,17 @@ internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model
                             drawLine(color, Offset(x, y - arm), Offset(x, y + arm), 2.dp.toPx())
                         }
                     }
+                    // Keep heading in screen coordinates; pitch/roll transforms only affect the horizon and aircraft.
+                    north?.let { (x, y) ->
+                        val center = Offset(cx, cy)
+                        val vector = Offset(x.toFloat(), y.toFloat()) * (size.minDimension / 4)
+                        drawLine(Color.White, center, center - vector, 2.dp.toPx())
+                        drawLine(Color(0xFFFF6577), center, center + vector, 2.dp.toPx())
+                    }
                 }
             }
+            if (showNorthPointer) Text(if (north == null) "指北针不可用：航向未知" else "红色指北，白色指南",
+                style = MaterialTheme.typography.bodySmall)
             Text("俯仰 ${readingNumber(attitude.pitchDeg)}° · 横滚 ${readingNumber(attitude.rollDeg)}° · " +
                 when { marker == null -> "迎角/侧滑未知"; marker.outsideScale -> "迎角/侧滑超量程"; else -> "青色十字：迎角/侧滑" } +
                 if (airflowLimits.isEmpty()) "" else " · 红虚线：模型迎角限",

@@ -51,4 +51,38 @@ class LegacyHudPositionGuiTest {
         assertEquals(expected, store.load().settings)
         assertEquals(text, Files.readString(file))
     }
+    @Test fun missingRegionPreviewCanBeCancelledThenAppliedWithoutChangingExistingRegion() {
+        val imported = LegacySettingsReader.read("""(panel "舵面值" :x .9 :y .5)""")
+        val original = AppSettings(hudSceneLayout = HudSceneLayout(1000, 600, listOf(
+            HudRegion("flight", HudRegionContent.FLIGHT, 10, 20, 300, 200))))
+        var current by mutableStateOf(original)
+        compose.setContent { MaterialTheme {
+            Column(Modifier.size(800.dp, 650.dp).verticalScroll(rememberScrollState())) {
+                LegacySettingsPanel(currentScene = current.hudSceneLayout, readSettings = { _, _ -> imported }) {
+                    current = it.applyTo(current)
+                }
+            }
+        } }
+        compose.onNodeWithText("导入旧版设置").performClick()
+        compose.onNodeWithText("预览旧设置").performScrollTo().performClick()
+        compose.waitUntil(5000) { compose.onAllNodesWithText("补建缺少的对应分区（1 个）").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("应用预览设置").assertIsNotEnabled()
+        val create = isToggleable() and hasText("补建缺少的对应分区（1 个）")
+        compose.onNode(create).performScrollTo().performClick()
+        compose.onNodeWithText("操纵面 → region-1：(560, 300) dp").performScrollTo().assertIsDisplayed()
+        compose.runOnIdle { assertEquals(original, current) }
+        compose.onNode(create).performScrollTo().performClick()
+        compose.onNodeWithText("应用预览设置").assertIsNotEnabled()
+        compose.onNode(create).performScrollTo().performClick()
+        compose.onNodeWithText("应用预览设置").performScrollTo().performClick()
+        compose.runOnIdle {
+            val regions = current.hudSceneLayout!!.regions
+            assertEquals(original.hudSceneLayout!!.regions.single(), regions.first())
+            assertEquals(HudRegionContent.CONTROLS, regions.last().content)
+            assertEquals(560, regions.last().x)
+            assertEquals(300, regions.last().y)
+            assertEquals(2, regions.size)
+        }
+    }
+
 }
