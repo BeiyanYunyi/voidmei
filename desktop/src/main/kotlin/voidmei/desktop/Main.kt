@@ -109,9 +109,11 @@ fun main(args: Array<String>) {
         }
         val mainState = rememberWindowState(position = restorePosition(settings.mainPosition), width = 940.dp, height = 760.dp)
         val hudState = rememberWindowState(position = restorePosition(settings.hudPosition), width = settings.hudWidthDp.dp, height = 510.dp)
+        val modelWindowState = rememberWindowState(position = restorePosition(settings.modelWindowPosition), width = 760.dp, height = 680.dp)
         var hudContentHeight by remember { mutableStateOf(510.dp) }
         fun finalSettings() = settings.copy(mainPosition = mainState.savedPosition() ?: settings.mainPosition,
-            hudPosition = hudState.savedPosition() ?: settings.hudPosition)
+            hudPosition = hudState.savedPosition() ?: settings.hudPosition,
+            modelWindowPosition = modelWindowState.savedPosition() ?: settings.modelWindowPosition)
         fun closeApp(saveSettings: Boolean = true, acknowledgeRecordingFailure: Boolean = false) {
             if (!closing && recordingExitFailure == null) {
                 closing = true
@@ -164,6 +166,11 @@ fun main(args: Array<String>) {
         LaunchedEffect(mainState, hudState) {
             snapshotFlow { mainState.savedPosition() to hudState.savedPosition() }.collect { (main, hud) ->
                 settings = settings.copy(mainPosition = main ?: settings.mainPosition, hudPosition = hud ?: settings.hudPosition)
+            }
+        }
+        LaunchedEffect(modelWindowState) {
+            snapshotFlow { modelWindowState.savedPosition() }.collect { position ->
+                if (position != null) settings = settings.copy(modelWindowPosition = position)
             }
         }
         var endpoint by remember { mutableStateOf(System.getenv("VOIDMEI_ENDPOINT") ?: settings.endpoint) }
@@ -308,7 +315,8 @@ fun main(args: Array<String>) {
                             TextButton(onClick = {
                                 mainState.position = resetWindowPosition()
                                 hudState.position = resetWindowPosition(64)
-                                settings = settings.copy(mainPosition = null, hudPosition = null)
+                                modelWindowState.position = resetWindowPosition(96)
+                                settings = settings.copy(mainPosition = null, hudPosition = null, modelWindowPosition = null)
                             }) { Text("重置窗口位置") }
                             ResetSettingsPanel(defaults, enabled = !closing && !recordingBusy && writer != null && settingsError == null,
                                 recording = recording is RecordingState.Active) { restored ->
@@ -318,6 +326,7 @@ fun main(args: Array<String>) {
                                 recordingPath = restored.recordingDirectory
                                 mainState.position = resetWindowPosition()
                                 hudState.position = resetWindowPosition(64)
+                                modelWindowState.position = resetWindowPosition(96)
                             }
                             SettingsTransferPanel(finalSettings(),
                                 canRestore = !closing && !recordingBusy && recording !is RecordingState.Active && writer != null && settingsError == null,
@@ -328,6 +337,7 @@ fun main(args: Array<String>) {
                                     recordingPath = restored.recordingDirectory
                                     mainState.position = restorePosition(restored.mainPosition)
                                     hudState.position = restorePosition(restored.hudPosition)
+                                    modelWindowState.position = restorePosition(restored.modelWindowPosition)
                                 })
                             LegacySettingsImport(settings) { updated ->
                                 if (updated.endpoint != settings.endpoint) {
@@ -411,6 +421,7 @@ fun main(args: Array<String>) {
                             voiceError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                             SectionHeading(MainSection.MODEL, anchors)
                             TextButton(enabled = !closing, onClick = { offlineModels = true }) { Text("打开离线模型查看") }
+                            ModelWindowControls(settings, enabled = !closing) { settings = it }
                             FlightModelPanel(flight?.telemetry, settings.fmDataRoot, onModel = { _, _ -> }, session = flightModel, hiddenSections = settings.hiddenModelSections,
                                 onHiddenSections = { settings = settings.copy(hiddenModelSections = it) }, onDataRoot = {
                                 settings = settings.copy(fmDataRoot = it)
@@ -467,6 +478,11 @@ fun main(args: Array<String>) {
                 }
             }
         }
+
+        if (settings.modelWindowEnabled && !closing) ModelFloatingWindow(modelWindowState, settings,
+            (connection as? ConnectionState.Flying)?.telemetry, flightModel,
+            onClose = { settings = settings.copy(modelWindowEnabled = false, modelWindowPosition = modelWindowState.savedPosition() ?: settings.modelWindowPosition) },
+            onChange = { settings = it })
 
         if (offlineModels) Window(onCloseRequest = { offlineModels = false }, title = "VoidMei · 离线模型",
             state = rememberWindowState(width = 960.dp, height = 800.dp)) {
