@@ -12,10 +12,15 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import voidmei.config.AppSettings
 import voidmei.fm.JetThrustModel
+import voidmei.telemetry.Telemetry
+import voidmei.telemetry.triggersJetWindowDismissal
 
 @Composable
-internal fun ModelJetWindow(state: WindowState, settings: AppSettings, models: List<JetThrustModel>, onClose: () -> Unit) {
-    if (!settings.modelWindowEnabled || !settings.modelJetWindowEnabled || models.isEmpty()) return
+internal fun ModelJetWindow(state: WindowState, settings: AppSettings, models: List<JetThrustModel>, telemetry: Telemetry? = null, sessionKey: Any? = null, onClose: () -> Unit) {
+    val active = settings.modelWindowEnabled && settings.modelJetWindowEnabled && models.isNotEmpty()
+    val dismissed = rememberJetWindowDismissed(active && settings.modelJetWindowAutoClose && !settings.modelWindowHotkeyEnabled,
+        telemetry != null, telemetry?.triggersJetWindowDismissal() == true, sessionKey)
+    if (!active || dismissed) return
     Window(onCloseRequest = onClose, title = "VoidMei · 喷气推力", state = state, alwaysOnTop = settings.modelWindowAlwaysOnTop) {
         rememberRendererDiagnostics(window)
         MaterialTheme(typography = textTypography(resolveTextFont(settings.textFont).family)) {

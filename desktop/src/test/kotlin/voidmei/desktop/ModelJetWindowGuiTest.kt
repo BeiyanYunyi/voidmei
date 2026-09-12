@@ -26,6 +26,25 @@ class ModelJetWindowGuiTest {
         compose.onNodeWithTag("model-jet-window-close").performScrollTo().performClick()
         compose.runOnIdle { assertTrue(closed) }
     }
+    @Test fun automaticDismissalClosesNativeWindowWithoutChangingSavedPreferences() {
+        val jet = JetThrustModel("Engine0", listOf(0.0), listOf(0.0), listOf(listOf(1000.0)), null)
+        val telemetry = voidmei.telemetry.TelemetryParser.parse("""{"valid":true}""", """{"valid":true}""")!!.copy(gearPercent = 0.0)
+        var settings by mutableStateOf(AppSettings(modelWindowEnabled = true, modelJetWindowEnabled = true, modelJetWindowAutoClose = true))
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            ModelJetWindow(rememberWindowState(width = 820.dp, height = 700.dp), settings, listOf(jet), telemetry, "A", onClose = {})
+        }
+        fun frames() = Frame.getFrames().filter { it.title == "VoidMei · 喷气推力" && it.isDisplayable }
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitUntil(5000) { frames().singleOrNull()?.isVisible == true }
+        compose.mainClock.advanceTimeBy(10200)
+        compose.waitUntil(5000) { frames().isEmpty() }
+        compose.runOnIdle { assertTrue(settings.modelJetWindowEnabled); assertTrue(settings.modelWindowEnabled); settings = settings.copy(modelWindowHotkeyEnabled = true) }
+        compose.mainClock.advanceTimeByFrame()
+        compose.waitUntil(5000) { frames().singleOrNull()?.isVisible == true }
+        compose.mainClock.advanceTimeBy(12000)
+        assertEquals(1, frames().size)
+    }
     @Test fun linkedWindowRequiresBothSwitchesAndJetDataAndClosesIndependently() {
         val jet = JetThrustModel("Engine0", listOf(0.0), listOf(0.0, 1000.0), listOf(listOf(1000.0, 2000.0)), null)
         var models by mutableStateOf(listOf(jet))

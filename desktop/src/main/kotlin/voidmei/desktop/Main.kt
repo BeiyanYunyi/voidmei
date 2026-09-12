@@ -505,6 +505,8 @@ fun main(args: Array<String>) {
 
         if (!closing) ModelJetWindow(modelJetWindowState, settings,
             if (flightModel.state is FlightModelState.Ready) flightModel.detailResult?.getOrNull()?.jets?.engines.orEmpty() else emptyList(),
+            telemetry = (connection as? ConnectionState.Flying)?.telemetry,
+            sessionKey = Triple(activeEndpoint, generation, (flightModel.state as? FlightModelState.Ready)?.aircraft),
             onClose = { settings = settings.copy(modelJetWindowEnabled = false, modelJetWindowPosition = modelJetWindowState.savedPosition() ?: settings.modelJetWindowPosition) })
 
         if (offlineModels) Window(onCloseRequest = { offlineModels = false }, title = "VoidMei · 离线模型",

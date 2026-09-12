@@ -34,6 +34,12 @@ internal fun ModelWindowControls(settings: AppSettings, enabled: Boolean = true,
         Text("联动独立喷气推力窗口")
     }
     Text("仅在模型浮窗开启且有喷气模型时显示，跟随模型热键；关闭推力窗口只取消此联动。", style = MaterialTheme.typography.bodySmall)
+    Row {
+        Switch(settings.modelJetWindowAutoClose, { onChange(settings.copy(modelJetWindowAutoClose = it)) }, enabled = enabled,
+            modifier = Modifier.testTag("model-jet-auto-close"))
+        Text("无模型热键时延迟关闭推力窗口")
+    }
+    Text("起落架未完全放下，或 TAS > 36 km/h 且任一发动机油门 > 0 时，10 秒后隐藏本次推力窗口；条件恢复不撤销已触发计时，遥测中断会取消计时。重新开关模型浮窗、开启模型热键或切换机型可恢复。", style = MaterialTheme.typography.bodySmall)
     ModelHotkeyEditor(settings, enabled, onChange)
     Text("与主窗口共享当前机型、燃油方案和分类选择；关闭浮窗不退出应用。开启状态与位置会保存。", style = MaterialTheme.typography.bodySmall)
 }

@@ -63,6 +63,7 @@ class ModelFloatingWindowGuiTest {
         compose.onNodeWithTag("model-window-on-top").performClick()
         compose.onNodeWithTag("model-window-hotkey").performClick()
         compose.onNodeWithTag("model-jet-window-enabled").performClick()
-        compose.runOnIdle { assertEquals(initial.copy(modelJetWindowEnabled = true, modelWindowHotkeyEnabled = true, modelWindowEnabled = true, modelWindowAlwaysOnTop = false), settings) }
+        compose.onNodeWithTag("model-jet-auto-close").performClick()
+        compose.runOnIdle { assertEquals(initial.copy(modelJetWindowAutoClose = true, modelJetWindowEnabled = true, modelWindowHotkeyEnabled = true, modelWindowEnabled = true, modelWindowAlwaysOnTop = false), settings) }
     }
 }

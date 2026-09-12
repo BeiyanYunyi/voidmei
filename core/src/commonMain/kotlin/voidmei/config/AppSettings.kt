@@ -18,6 +18,7 @@ data class AppSettings(
     val modelWindowPosition: WindowPosition? = null,
     val modelJetWindowPosition: WindowPosition? = null,
     val modelJetWindowEnabled: Boolean = false,
+    val modelJetWindowAutoClose: Boolean = false,
     val modelWindowEnabled: Boolean = false,
     val modelWindowHotkeyEnabled: Boolean = false,
     val modelWindowHotkey: String = "Ctrl+Shift+M",
@@ -211,6 +212,7 @@ object SettingsJson {
             mainPosition = position("mainPosition"), hudPosition = position("hudPosition"),
             modelWindowPosition = position("modelWindowPosition"),
             modelJetWindowPosition = position("modelJetWindowPosition"),
+            modelJetWindowAutoClose = root["modelJetWindowAutoClose"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.modelJetWindowAutoClose,
             modelJetWindowEnabled = root["modelJetWindowEnabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.modelJetWindowEnabled,
             modelWindowHotkey = root["modelWindowHotkey"]?.jsonPrimitive?.let { require(it.isString); it.content } ?: defaults.modelWindowHotkey,
             modelWindowHotkeyEnabled = root["modelWindowHotkeyEnabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.modelWindowHotkeyEnabled,
@@ -335,6 +337,7 @@ object SettingsJson {
         position("hudPosition", settings.hudPosition)
         position("modelWindowPosition", settings.modelWindowPosition)
         position("modelJetWindowPosition", settings.modelJetWindowPosition)
+        fields["modelJetWindowAutoClose"] = JsonPrimitive(settings.modelJetWindowAutoClose)
         fields["modelJetWindowEnabled"] = JsonPrimitive(settings.modelJetWindowEnabled)
         fields["modelWindowHotkey"] = JsonPrimitive(settings.modelWindowHotkey)
         fields["modelWindowHotkeyEnabled"] = JsonPrimitive(settings.modelWindowHotkeyEnabled)
