@@ -22,7 +22,7 @@ class ModelDetailVisibilityGuiTest {
         val root = Files.createTempDirectory("voidmei-model-sections")
         val directory = Files.createDirectories(root.resolve("aces/gamedata/flightmodels/fm")).parent
         Files.writeString(directory.resolve("test.blkx"), "fmFile:t=\"fm/test.blk\"")
-        Files.writeString(directory.resolve("fm/test.blkx"), "Mass { EmptyMass:r=2500 }\nFlapsDestructionIndSpeedP:p4=0.5,500,1,300")
+        Files.writeString(directory.resolve("fm/test.blkx"), "Mass { EmptyMass:r=2500 }\nFlapsDestructionIndSpeedP:p4=0.5,500,1,300\nAileronPowerLoss:r=0.5")
         val telemetry = TelemetryParser.parse("""{"valid":true}""", """{"valid":true,"type":"test"}""")!!
         var hidden by mutableStateOf(emptySet<ModelDetailSection>())
         var published: FlightModelParameters? = null
@@ -38,15 +38,18 @@ class ModelDetailVisibilityGuiTest {
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true).assertDoesNotExist()
             compose.onNodeWithText("模型 VNE", substring = true).assertExists()
             compose.onNodeWithTag("model-flap-limit-table").assertExists()
+            compose.onNodeWithText("副翼 AileronPowerLoss：0.500").assertExists()
             val previous = published
             val before = calls
             compose.runOnIdle { hidden = ModelDetailSection.entries.toSet() }
+            compose.onNodeWithText("副翼 AileronPowerLoss：0.500").assertDoesNotExist()
             compose.onNodeWithTag("model-field-list").assertDoesNotExist()
             compose.onNodeWithTag("model-flap-limit-table").assertDoesNotExist()
             compose.onNodeWithText("模型 VNE", substring = true).assertDoesNotExist()
             compose.runOnIdle { assertSame(previous, published); assertEquals(before, calls) }
             compose.onNodeWithTag("model-sections-all").performScrollTo().performClick()
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true).assertExists()
+            compose.onNodeWithText("副翼 AileronPowerLoss：0.500").assertExists()
             compose.onNodeWithTag("model-field-list").assertExists()
             compose.onNodeWithTag("model-flap-limit-table").assertExists()
             compose.runOnIdle { assertTrue(hidden.isEmpty()); assertSame(previous, published) }
