@@ -10,6 +10,10 @@ data class WepFuelObservation(val telemetry: Telemetry, val parameters: WepFuelM
 class WepFuelMonitor {
     private val tracker = WepFuelTracker()
     fun update(state: ConnectionState, model: AircraftAlertModel?, timeMs: Long): ConnectionState {
+        if (state == ConnectionState.Delayed) {
+            tracker.pause()
+            return state
+        }
         val flight = state as? ConnectionState.Flying
         val t = flight?.telemetry
         val parameters = model?.parametersFor(t?.aircraft)?.wepFuel

@@ -35,6 +35,10 @@ class EngineThermalMonitor {
     private val tracker = EngineThermalTracker()
 
     fun update(state: ConnectionState, model: AircraftAlertModel?, nowMs: Long): EngineThermalObservation? {
+        if (state == ConnectionState.Delayed) {
+            tracker.pause()
+            return null
+        }
         val telemetry = (state as? ConnectionState.Flying)?.telemetry
         val aircraft = telemetry?.aircraft?.takeIf { it.isNotBlank() }
         val parameters = model?.parametersFor(aircraft)?.engineThermals.orEmpty()

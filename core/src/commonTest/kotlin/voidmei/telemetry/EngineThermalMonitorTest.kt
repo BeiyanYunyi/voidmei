@@ -15,6 +15,19 @@ class EngineThermalMonitorTest {
     private val flight = ConnectionState.Flying(telemetry, FlightMetrics())
     private fun EngineThermalObservation.maximum() = budgets.single().water!!.activeRemaining!!.maximumSeconds
 
+    @Test fun delayHidesObservationAndBoundsUnknownHeatingAndRecovery() {
+        val monitor = EngineThermalMonitor()
+        for (time in 0L..10000L step 2000L) monitor.update(flight, model, time)
+        assertEquals(0.0, monitor.update(flight, model, 10000)!!.maximum())
+        assertNull(monitor.update(ConnectionState.Delayed, null, 11000))
+        assertNull(monitor.update(ConnectionState.Delayed, null, 11500))
+        val recovered = monitor.update(flight, model, 12000)!!
+        assertEquals(ThermalBudgetRange(0.0, 4.0), recovered.budgets.single().water!!.activeRemaining)
+        assertEquals(2.0, monitor.update(flight, model, 14000)!!.maximum())
+        monitor.update(ConnectionState.Delayed, model, 15000)
+        assertEquals(10.0, monitor.update(flight, model, 17000)!!.maximum(), "Long gaps still discard history")
+    }
+
     @Test fun flightLifecycleResetsEvenForBriefInterruptions() {
         val monitor = EngineThermalMonitor()
         assertEquals(10.0, monitor.update(flight, model, 0)!!.maximum())

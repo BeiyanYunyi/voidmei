@@ -21,20 +21,26 @@ data class EngineThermalBudget(val telemetryIndex: Int, val water: ThermalChanne
  * long gaps, backward clocks and model/aircraft changes discard unsupported history.
  * Missing/zero WorkTime does not create a budget; missing/zero RecoverTime does not restore it.
  * Exhaustion saturates at zero. No damage debt or inferred engine-off instant refill is modelled.
+ * Explicit short interruptions widen each prior range for possible heating or recovery.
  */
 class EngineThermalTracker(private val maximumGapMs: Long = 2_500) {
     init { require(maximumGapMs > 0) }
     private var aircraft: String? = null
     private var models: List<EngineThermalParameters> = emptyList()
     private var previousTime: Long? = null
+    private var samplingInterrupted = false
     private val channels = mutableMapOf<Pair<Int, Boolean>, Channel>()
 
     fun reset() {
         aircraft = null
         models = emptyList()
         previousTime = null
+        samplingInterrupted = false
         channels.clear()
     }
+
+    /** Unknown temperatures must not be integrated as if the previous sample were still current. */
+    fun pause() { samplingInterrupted = true }
 
     fun update(aircraft: String, models: List<EngineThermalParameters>, engines: List<Engine>, nowMs: Long): List<EngineThermalBudget> {
         require(aircraft.isNotBlank())
@@ -49,6 +55,8 @@ class EngineThermalTracker(private val maximumGapMs: Long = 2_500) {
         if (elapsed == null) channels.clear()
         previousTime = nowMs
         val seconds = (elapsed ?: 0) / 1000.0
+        val uncertainInterval = samplingInterrupted
+        samplingInterrupted = false
         val actual = engines.groupBy { it.index }
         return models.groupBy { it.telemetryIndex }.mapNotNull { (index, candidates) ->
             val model = candidates.singleOrNull()?.takeIf { index > 0 && valid(it) } ?: return@mapNotNull null
@@ -67,10 +75,17 @@ class EngineThermalTracker(private val maximumGapMs: Long = 2_500) {
                 val state = channels.getOrPut(key) { Channel(bands.map { ThermalBudgetRange(0.0, it.workSeconds!!) }, temperature) }
                 state.remaining = bands.zip(state.remaining).map { (band, range) ->
                     val work = band.workSeconds!!
-                    val delta = if (state.temperature >= threshold(band, water)!!) -channelSeconds
-                        else if ((band.recoverSeconds ?: 0.0) > 0.0 && channelSeconds > 0.0) channelSeconds / band.recoverSeconds!! * work else 0.0
-                    ThermalBudgetRange((range.minimumSeconds + delta).coerceIn(0.0, work),
-                        (range.maximumSeconds + delta).coerceIn(0.0, work))
+                    if (uncertainInterval) {
+                        val recovery = if ((band.recoverSeconds ?: 0.0) > 0.0 && channelSeconds > 0.0)
+                            channelSeconds / band.recoverSeconds!! * work else 0.0
+                        ThermalBudgetRange((range.minimumSeconds - channelSeconds).coerceIn(0.0, work),
+                            (range.maximumSeconds + recovery).coerceIn(0.0, work))
+                    } else {
+                        val delta = if (state.temperature >= threshold(band, water)!!) -channelSeconds
+                            else if ((band.recoverSeconds ?: 0.0) > 0.0 && channelSeconds > 0.0) channelSeconds / band.recoverSeconds!! * work else 0.0
+                        ThermalBudgetRange((range.minimumSeconds + delta).coerceIn(0.0, work),
+                            (range.maximumSeconds + delta).coerceIn(0.0, work))
+                    }
                 }
                 state.temperature = temperature
                 return ThermalChannelBudget(bands.zip(state.remaining).map { (band, range) ->

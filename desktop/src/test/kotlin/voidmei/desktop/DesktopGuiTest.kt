@@ -901,7 +901,7 @@ class DesktopGuiTest {
         compose.onNodeWithText("0.0–8.0 s").assertDoesNotExist()
     }
 
-    @Test fun powerPercentHudLabelsHistoricalFallbackAndClearsAfterGap() {
+    @Test fun powerPercentHudRetainsReferenceAfterDelayAndClearsAfterUnexplainedGap() {
         val calculator = FlightCalculator()
         val t = TelemetryParser.parse("""{"valid":true,"power 1, hp":1000,"throttle 1, %":100,"magneto 1":3}""",
             """{"valid":true,"type":"test"}""")!!
@@ -919,7 +919,13 @@ class DesktopGuiTest {
             flight = ConnectionState.Flying(low, calculator.update(low, 6000))
         }
         compose.onNodeWithText("50 % · 历史全油门峰值").assertIsDisplayed()
-        compose.runOnIdle { flight = ConnectionState.Flying(t, calculator.update(t, 9000)) }
+        compose.runOnIdle {
+            calculator.pause()
+            val low = t.copy(engines = t.engines.map { it.copy(powerHp = 250.0, throttlePercent = 50.0) })
+            flight = ConnectionState.Flying(low, calculator.update(low, 9000))
+        }
+        compose.onNodeWithText("25 % · 历史全油门峰值").assertIsDisplayed()
+        compose.runOnIdle { flight = ConnectionState.Flying(t, calculator.update(t, 12000)) }
         compose.onNodeWithText("— %").assertIsDisplayed()
     }
 

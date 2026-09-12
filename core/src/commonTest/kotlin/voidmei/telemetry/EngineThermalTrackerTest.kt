@@ -13,6 +13,45 @@ class EngineThermalTrackerTest {
         Engine(index, null, null, null, null, water, oil)
     private fun List<EngineThermalBudget>.water(index: Int = 1) = single { it.telemetryIndex == index }.water!!
 
+    @Test fun interruptedRangesContainEveryHeatingAndCoolingSequence() {
+        // Start from fully recovered budgets, then compare uncertain sampling with all
+        // sixteen hot/cold combinations over a two-second gap in the same FM model.
+        fun prepared(): EngineThermalTracker = EngineThermalTracker().also { tracker ->
+            for (time in 0L..6000L step 2000L) tracker.update("test", models, listOf(engine(water = 50.0, oil = 50.0)), time)
+        }
+        val interrupted = prepared()
+        interrupted.pause()
+        val bounds = interrupted.update("test", models, listOf(engine()), 8000).first()
+        assertEquals(ThermalBudgetRange(8.0, 10.0), bounds.water!!.bands.first().remaining)
+        assertEquals(ThermalBudgetRange(2.0, 4.0), bounds.water!!.bands.last().remaining)
+        for (sequence in 0..15) {
+            val observed = prepared()
+            for (step in 0..3) {
+                val hot = sequence and (1 shl step) != 0
+                observed.update("test", models, listOf(engine(water = if (hot) 130.0 else 50.0,
+                    oil = if (hot) 50.0 else 130.0)), 6000L + step * 500)
+            }
+            val actual = observed.update("test", models, listOf(engine()), 8000).first()
+            for ((range, outcome) in listOf(bounds.water!! to actual.water!!, bounds.oil!! to actual.oil!!)) {
+                range.bands.zip(outcome.bands).forEach { (possible, concrete) ->
+                    assertTrue(possible.remaining.minimumSeconds <= concrete.remaining.minimumSeconds)
+                    assertTrue(possible.remaining.maximumSeconds >= concrete.remaining.maximumSeconds)
+                }
+            }
+        }
+    }
+
+    @Test fun interruptedSamplesCannotInventRecoveryWithoutARecoveryRate() {
+        for (recovery in listOf(null, 0.0)) {
+            val tracker = EngineThermalTracker()
+            val parameters = listOf(EngineThermalParameters(1, listOf(bands[2].copy(recoverSeconds = recovery))))
+            for (time in 0L..4000L step 2000L) tracker.update("test", parameters, listOf(engine()), time)
+            tracker.pause()
+            assertEquals(ThermalBudgetRange(0.0, 0.0),
+                tracker.update("test", parameters, listOf(engine()), 6000).water().activeRemaining)
+        }
+    }
+
     @Test fun budgetsAreIndependentAndInitialWearIsUnknown() {
         val tracker = EngineThermalTracker()
         val engines = listOf(engine(), engine(2, 90.0, 110.0))

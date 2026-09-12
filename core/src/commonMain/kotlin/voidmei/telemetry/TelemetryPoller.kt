@@ -27,7 +27,7 @@ class TelemetryPoller(
                 val request = async { readTelemetry() }
                 val timely = withTimeoutOrNull(1000) { request.await() }
                 if (timely == null) {
-                    calculator.reset()
+                    calculator.pause()
                     emit(ConnectionState.Delayed)
                 }
                 timely ?: request.await()

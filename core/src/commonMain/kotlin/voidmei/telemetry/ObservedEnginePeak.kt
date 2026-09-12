@@ -13,11 +13,16 @@ class ObservedEnginePeakTracker {
     private var fullSince: Long? = null
     private var candidate = 0.0
     private var peak: Double? = null
+    private var samplingInterrupted = false
 
     fun reset() {
         aircraft = null; indices = emptySet(); kind = null; previous = null
         fullSince = null; candidate = 0.0; peak = null
+        samplingInterrupted = false
     }
+
+    /** An established reference survives delay; an unfinished full-throttle trial does not. */
+    fun pause() { samplingInterrupted = true; fullSince = null; candidate = 0.0 }
 
     fun update(t: Telemetry, timeMs: Long): ObservedEnginePeak? {
         val engines = t.engines
@@ -41,7 +46,8 @@ class ObservedEnginePeakTracker {
         if (!current.isFinite()) { reset(); return null }
         val last = previous
         if (aircraft != t.aircraft || indices != ids || kind != currentKind || last == null ||
-            timeMs <= last || timeMs - last !in 1..2000) reset()
+            timeMs <= last || (!samplingInterrupted && timeMs - last !in 1..2000)) reset()
+        samplingInterrupted = false
         aircraft = t.aircraft; indices = ids; kind = currentKind; previous = timeMs
         if (engines.all { it.throttlePercent!! >= 100 }) {
             val start = fullSince ?: timeMs.also { fullSince = it }

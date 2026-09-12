@@ -26,6 +26,50 @@ class ObservedEnginePeakTest {
     private fun changed(power: Double = 500.0, throttle: Double = 50.0) = base.copy(
         engines = base.engines.map { it.copy(powerHp = power, throttlePercent = throttle) })
 
+    @Test fun delayedSamplingKeepsConfirmedReferenceButDoesNotBridgeFullThrottleTrials() {
+        val c = FlightCalculator()
+        for (i in 0..5) c.update(base, i * 1000L)
+        c.pause()
+        c.pause()
+        assertEquals(50.0, c.update(changed(), 8000).observedEnginePeak?.percent)
+        assertEquals(1000.0, c.update(changed(), 9000).observedEnginePeak?.reference)
+        // A larger candidate observed for less than five continuous seconds must be discarded.
+        c.update(changed(2000.0, 100.0), 10000)
+        c.update(changed(2000.0, 100.0), 11000)
+        c.pause()
+        for (i in 14..18) assertEquals(1000.0, c.update(base, i * 1000L).observedEnginePeak?.reference)
+        assertEquals(1000.0, c.update(base, 19000).observedEnginePeak?.reference)
+        val warming = FlightCalculator()
+        for (i in 0..4) warming.update(base, i * 1000L)
+        warming.pause()
+        for (i in 7..11) assertNull(warming.update(base, i * 1000L).observedEnginePeak)
+        assertEquals(1000.0, warming.update(base, 12000).observedEnginePeak?.reference)
+    }
+
+    @Test fun pausedReferenceStillRejectsChangedIdentityMissingInputsAndClockRollback() {
+        for (next in listOf(changed().copy(aircraft = "other"), changed().copy(aircraft = null),
+            changed().copy(engines = base.engines.map { it.copy(index = 2) }),
+            changed().copy(engines = base.engines.map { it.copy(powerHp = null) }),
+            changed().copy(engines = base.engines.map { it.copy(throttlePercent = null) }),
+            changed().copy(engines = base.engines.map { it.copy(powerHp = 0.0, magneto = null, thrustKgf = 1000.0) }))) {
+            val c = FlightCalculator()
+            for (i in 0..5) c.update(base, i * 1000L)
+            c.pause()
+            assertNull(c.update(next, 8000).observedEnginePeak)
+        }
+        for (time in listOf(4000L, 5000L)) {
+            val c = FlightCalculator()
+            for (i in 0..5) c.update(base, i * 1000L)
+            c.pause()
+            assertNull(c.update(base, time).observedEnginePeak)
+        }
+        val c = FlightCalculator()
+        for (i in 0..5) c.update(base, i * 1000L)
+        c.pause()
+        c.reset()
+        assertNull(c.update(changed(), 8000).observedEnginePeak)
+    }
+
     @Test fun waitsForFullThrottleAndTracksLargerPeaksWithoutLosingIdleZero() {
         val c = FlightCalculator()
         for (i in 0..4) assertNull(c.update(base, i * 1000L).observedEnginePeak)

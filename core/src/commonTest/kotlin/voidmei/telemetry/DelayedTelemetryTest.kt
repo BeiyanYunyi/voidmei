@@ -7,6 +7,34 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DelayedTelemetryTest {
+    @Test fun establishedPowerAndThrustReferencesSurviveDelayButNotRequestFailure() = runTest {
+        for (jet in listOf(false, true)) {
+            var round = 0
+            val transport = TelemetryTransport { path ->
+                if (path == "/state") round++
+                if (round == 7) delay(1500)
+                if (round == 8) error("connection lost")
+                val output = if (round >= 7) 500 else 1000
+                val throttle = if (round >= 7) 50 else 100
+                if (path == "/state") """{"valid":true,"TAS, km/h":360,"Vy, m/s":2,
+                    "throttle 1, %":$throttle,"power 1, hp":${if (jet) 0 else output},
+                    "thrust 1, kgs":$output,"magneto 1":${if (jet) -1 else 3}}"""
+                else """{"valid":true,"type":"test"}"""
+            }
+            val states = TelemetryPoller(transport, intervalMs = 1000, timeSource = testScheduler.timeSource)
+                .states().take(11).toList()
+            assertEquals(100.0, assertIs<ConnectionState.Flying>(states[6]).metrics.observedEnginePeak?.percent)
+            assertEquals(ConnectionState.Delayed, states[7])
+            val restored = assertIs<ConnectionState.Flying>(states[8])
+            assertEquals(50.0, restored.metrics.observedEnginePeak?.percent)
+            assertEquals(1000.0, restored.metrics.observedEnginePeak?.reference)
+            assertNull(restored.metrics.accelerationMps2)
+            assertNull(restored.metrics.specificExcessPowerMps)
+            assertIs<ConnectionState.Disconnected>(states[9])
+            assertNull(assertIs<ConnectionState.Flying>(states[10]).metrics.observedEnginePeak)
+        }
+    }
+
     @Test fun delayedSampleClearsOldDataWithoutOverlappingRequestsAndResetsDerivedHistory() = runTest {
         var round = 0
         var active = 0

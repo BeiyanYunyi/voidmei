@@ -17,6 +17,35 @@ import voidmei.telemetry.*
 class HudEngineBudgetGuiTest {
     @get:Rule val compose = createComposeRule()
 
+    @Test fun delayedThermalBudgetReturnsAsAnUncertaintyRangeInsteadOfFullCapacity() {
+        val model = AircraftAlertModel("test", FlightModelExtractor.extract(BlkParser.parse("""
+            Engine0 { Main { Type:t=Inline } Temperature { Load1 { WaterTemperature:r=100; WorkTime:r=10; RecoverTime:r=5 } } }
+        """)))
+        val telemetry = TelemetryParser.parse("""{"valid":true,"water temp 1, C":110}""",
+            """{"valid":true,"type":"test"}""")!!
+        val flight = ConnectionState.Flying(telemetry, FlightMetrics())
+        val monitor = EngineThermalMonitor()
+        for (time in 0L..10000L step 2000L) monitor.update(flight, model, time)
+        var state by mutableStateOf<ConnectionState>(flight)
+        var observation by mutableStateOf(monitor.update(flight, model, 10000))
+        val settings = AppSettings(hudSceneLayout = HudSceneLayout(400, 300, listOf(
+            HudRegion("engine", HudRegionContent.ENGINE, 0, 0, 400, 300, fields = listOf("heat_budget")))))
+        compose.setContent { MaterialTheme { Box(Modifier.size(400.dp, 300.dp)) {
+            HudPanel(state, settings, emptyList(), model, thermal = observation) {}
+        } } }
+        compose.onNodeWithText("0.0–0.0 s").assertIsDisplayed()
+        compose.runOnIdle {
+            state = ConnectionState.Delayed
+            observation = monitor.update(state, null, 11000)
+        }
+        compose.onNodeWithText("0.0–0.0 s").assertDoesNotExist()
+        compose.runOnIdle { state = flight; observation = monitor.update(state, model, 12000) }
+        compose.onNodeWithText("0.0–4.0 s").assertIsDisplayed()
+        compose.onNodeWithText("0.0–10.0 s").assertDoesNotExist()
+        compose.runOnIdle { observation = monitor.update(state, model, 14000) }
+        compose.onNodeWithText("0.0–2.0 s").assertIsDisplayed()
+    }
+
     @Test fun previewSuppliesDataAndThermalModelsForSelectedHigherEngineIndices() {
         var missing by mutableStateOf(false)
         var index by mutableStateOf(4)

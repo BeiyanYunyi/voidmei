@@ -31,7 +31,11 @@ class FlightCalculator {
     private val cockpitUnits = CockpitUnitEstimator()
     private val speedTrend = SpeedTrend()
 
-    fun reset() { previous = null; fuelEstimator.reset(); cockpitUnits.reset(); observedPeak.reset(); speedTrend.reset() }
+    private fun resetSampling() { previous = null; fuelEstimator.reset(); cockpitUnits.reset(); speedTrend.reset() }
+    fun reset() { resetSampling(); observedPeak.reset() }
+
+    /** Drop interval-dependent calculations while preserving a validated engine reference. */
+    fun pause() { resetSampling(); observedPeak.pause() }
 
     fun update(current: Telemetry, timeMs: Long): FlightMetrics {
         val prior = previous

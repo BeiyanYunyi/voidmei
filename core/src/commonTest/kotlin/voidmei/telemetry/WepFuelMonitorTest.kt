@@ -15,6 +15,48 @@ class WepFuelMonitorTest {
         """{"valid":true,"type":"test"}""")!!
     private val input = ConnectionState.Flying(t, FlightMetrics())
 
+    @Test fun delayPreservesObservedConsumptionWithoutExtrapolatingAcrossTheGap() {
+        val monitor = WepFuelMonitor()
+        fun remaining(time: Long, flight: ConnectionState.Flying = input) =
+            (monitor.update(flight, model, time) as ConnectionState.Flying).metrics.wepFuel!!.estimate.maximumRemainingKg
+        assertEquals(10.0, remaining(0))
+        assertEquals(9.5, remaining(1000))
+        assertEquals(ConnectionState.Delayed, monitor.update(ConnectionState.Delayed, null, 2000))
+        assertEquals(ConnectionState.Delayed, monitor.update(ConnectionState.Delayed, null, 2500))
+        val idle = input.copy(telemetry = t.copy(engines = t.engines.map { it.copy(throttlePercent = 90.0) }))
+        assertEquals(9.5, remaining(3500, idle), "No assumption about WEP use during the delay")
+        assertEquals(9.5, remaining(4500))
+        assertEquals(9.0, remaining(5500))
+    }
+
+    @Test fun delayDoesNotCarryConsumptionIntoAnotherSessionModelOrTimeOrigin() {
+        for (boundary in listOf(ConnectionState.Connecting, ConnectionState.WaitingForFlight,
+            ConnectionState.Disconnected("offline"))) {
+            val monitor = WepFuelMonitor()
+            monitor.update(input, model, 0)
+            monitor.update(input, model, 1000)
+            monitor.update(ConnectionState.Delayed, model, 2000)
+            monitor.update(boundary, model, 2100)
+            val next = monitor.update(input, model, 3000) as ConnectionState.Flying
+            assertEquals(10.0, next.metrics.wepFuel!!.estimate.maximumRemainingKg)
+        }
+        for (change in listOf("aircraft", "model", "time", "missing")) {
+            val monitor = WepFuelMonitor()
+            monitor.update(input, model, 0)
+            monitor.update(input, model, 1000)
+            monitor.update(ConnectionState.Delayed, model, 2000)
+            val changedModel = when (change) {
+                "aircraft" -> model.copy(aircraft = "other")
+                "model" -> model.copy(parameters = parameters.copy(wepFuel = parameters.wepFuel!!.copy(capacityKg = 20.0)))
+                else -> model
+            }
+            if (change == "missing") monitor.update(input, null, 2200)
+            val changedInput = if (change == "aircraft") input.copy(telemetry = t.copy(aircraft = "other")) else input
+            val next = monitor.update(changedInput, changedModel, if (change == "time") 500 else 3000) as ConnectionState.Flying
+            assertEquals(if (change == "model") 20.0 else 10.0, next.metrics.wepFuel!!.estimate.maximumRemainingKg)
+        }
+    }
+
     @Test fun pipelineProvidesMatchingHudAndRecordedUpperBoundsAndClearsUnavailableModels() {
         val monitor = WepFuelMonitor()
         val first = monitor.update(input, model, 0) as ConnectionState.Flying
