@@ -14,5 +14,6 @@ enum class LegacyModelCategory(val target: String, val label: String, val sectio
     FULL_PART("showFullFlapsWing", "满襟翼", ModelDetailSection.FULL_PART, "按来源显示器件原始参数；迎角未扣安装角，别名与后掠配置分开展示。"),
     FUSELAGE_PART("showFuselage", "机身", ModelDetailSection.FUSELAGE_PART, "按来源显示器件原始参数；迎角未扣安装角，别名与后掠配置分开展示。"),
     FIN_PART("showFin", "Fin（旧垂尾开关）", ModelDetailSection.FIN_PART, "按来源显示器件原始参数；迎角未扣安装角，别名与后掠配置分开展示。"),
-    STAB_PART("showStab", "Stab（旧平尾开关）", ModelDetailSection.STAB_PART, "按来源显示器件原始参数；迎角未扣安装角，别名与后掠配置分开展示。")
+    STAB_PART("showStab", "Stab（旧平尾开关）", ModelDetailSection.STAB_PART, "按来源显示器件原始参数；迎角未扣安装角，别名与后掠配置分开展示。"),
+    MAXIMUM_LIFT("showMaxLiftLoad", "千米过载", ModelDetailSection.MAXIMUM_LIFT, "显示 350 IAS 下基于失速模型的升力过载参考；使用明确燃油质量，不沿用旧简化数字，不表示结构限制或 1000 米状态。")
 }

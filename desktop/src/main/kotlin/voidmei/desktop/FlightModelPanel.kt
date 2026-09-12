@@ -102,6 +102,7 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
                 ModelDetailSection.STAB_PART to voidmei.fm.AerodynamicPartKind.STAB).forEach { (section, kind) ->
                 if (section !in hiddenSections) ModelAerodynamicPartsPanel(kind, parameters.aerodynamicParts)
             }
+            if (ModelDetailSection.MAXIMUM_LIFT !in hiddenSections) ModelMaximumLiftPanel(parameters)
             if (ModelDetailSection.INERTIA !in hiddenSections) ModelInertiaPanel(parameters.inertia)
             if (ModelDetailSection.CONTROLS !in hiddenSections) {
                 ModelControlPowerLoss(parameters.controlPowerLoss)

@@ -44,6 +44,7 @@ class ModelDetailVisibilityGuiTest {
             compose.onNodeWithText("发动机 #1 有效档位算术平均：2.000 s/s").assertExists()
             compose.onNodeWithText("来源：NoFlaps").assertExists()
             compose.onNodeWithText("来源：Fin").assertExists()
+            compose.onNodeWithText("350 km/h IAS 升力过载估算").assertExists()
             val previous = published
             val before = calls
             compose.runOnIdle { hidden = ModelDetailSection.entries.toSet() }
@@ -53,6 +54,7 @@ class ModelDetailVisibilityGuiTest {
             compose.onNodeWithText("副翼 AileronPowerLoss：0.500").assertDoesNotExist()
             compose.onNodeWithText("来源：NoFlaps").assertDoesNotExist()
             compose.onNodeWithText("来源：Fin").assertDoesNotExist()
+            compose.onNodeWithText("350 km/h IAS 升力过载估算").assertDoesNotExist()
             compose.onNodeWithTag("model-field-list").assertDoesNotExist()
             compose.onNodeWithTag("model-flap-limit-table").assertDoesNotExist()
             compose.onNodeWithText("模型 VNE", substring = true).assertDoesNotExist()
@@ -65,6 +67,7 @@ class ModelDetailVisibilityGuiTest {
             compose.onNodeWithText("发动机 #1 有效档位算术平均：2.000 s/s").assertExists()
             compose.onNodeWithText("来源：NoFlaps").assertExists()
             compose.onNodeWithText("来源：Fin").assertExists()
+            compose.onNodeWithText("350 km/h IAS 升力过载估算").assertExists()
             compose.onNodeWithTag("model-field-list").assertExists()
             compose.onNodeWithTag("model-flap-limit-table").assertExists()
             compose.runOnIdle { assertTrue(hidden.isEmpty()); assertSame(previous, published) }
