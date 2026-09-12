@@ -331,7 +331,7 @@ fun main(args: Array<String>) {
                                     mainState.position = restorePosition(restored.mainPosition)
                                     hudState.position = restorePosition(restored.hudPosition)
                                 })
-                            LegacySettingsPanel { imported ->
+                            LegacySettingsPanel(currentScene = settings.hudSceneLayout) { imported ->
                                 val updated = imported.applyTo(settings)
                                 if (imported.httpPort != null) validateEndpoint(updated.endpoint)
                                 settings = updated

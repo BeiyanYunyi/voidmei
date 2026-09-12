@@ -14,13 +14,16 @@ data class LegacySettings(val intervalMs: Long?, val hudEnabled: Boolean?, val v
     val recordingAutoStart: Boolean? = null,
     val hudGear: Boolean? = null, val hudFlaps: Boolean? = null, val hudAirbrake: Boolean? = null,
     val hudAoaBarWarningPercent: Double? = null, val hudAoaWarningPercent: Double? = null, val hudFlapBar: Boolean? = null,
-    val hudCompassHeadingUp: Boolean? = null, val startInTray: Boolean? = null, val hiddenLabelChoices: Map<String, Boolean> = emptyMap(), val hudCrosshair: Boolean? = null, val hudCrosshairSizeDp: Int? = null, val hudCrosshairImage: String? = null, val pendingCrosshairImage: LegacyCrosshairImage? = null, val hudCrosshairStretch: Boolean? = null, val hudReadingColors: Map<String, String> = emptyMap(), val hudAttitudeAoaLimits: Boolean? = null, val hudNumberFont: String? = null, val hudAltitudeMode: HudAltitudeMode? = null, val httpPort: Int? = null, val textFont: String? = null, val numberFont: String? = null, val connectionNotifications: Boolean? = null, val recordingPerformanceNotifications: Boolean? = null) {
+    val hudCompassHeadingUp: Boolean? = null, val startInTray: Boolean? = null, val hiddenLabelChoices: Map<String, Boolean> = emptyMap(), val hudCrosshair: Boolean? = null, val hudCrosshairSizeDp: Int? = null, val hudCrosshairImage: String? = null, val pendingCrosshairImage: LegacyCrosshairImage? = null, val hudCrosshairStretch: Boolean? = null, val hudReadingColors: Map<String, String> = emptyMap(), val hudAttitudeAoaLimits: Boolean? = null, val hudNumberFont: String? = null, val hudAltitudeMode: HudAltitudeMode? = null, val httpPort: Int? = null, val textFont: String? = null, val numberFont: String? = null, val connectionNotifications: Boolean? = null, val recordingPerformanceNotifications: Boolean? = null, val softwareRendering: Boolean? = null, val softwareRenderingSource: String? = null, val hudEngineFieldChoices: Map<String, Boolean> = emptyMap(), val voiceDirectory: String? = null,
+    val hudPositions: Map<HudRegionContent, LegacyHudPosition> = emptyMap(), val importHudPositions: Boolean = false) {
     val movesCrosshairRight: Boolean get() = hudCrosshair == true || hudCrosshairSizeDp != null || hudCrosshairImage != null
-    val hasChanges: Boolean get() = recordingPerformanceNotifications != null || numberFont != null || textFont != null || httpPort != null || hudAltitudeMode != null || hudNumberFont != null || hudAttitudeAoaLimits != null || hudReadingColors.isNotEmpty() || intervalMs != null || hudEnabled != null || voiceEnabled != null ||
+    val hasChanges: Boolean get() = (importHudPositions && hudPositions.isNotEmpty()) || voiceDirectory != null || hudEngineFieldChoices.isNotEmpty() || softwareRendering != null || recordingPerformanceNotifications != null || numberFont != null || textFont != null || httpPort != null || hudAltitudeMode != null || hudNumberFont != null || hudAttitudeAoaLimits != null || hudReadingColors.isNotEmpty() || intervalMs != null || hudEnabled != null || voiceEnabled != null ||
         voiceVolume != null || alertVoices.isNotEmpty() || hudFieldChoices.isNotEmpty() ||
         hudAttitude != null || hudAutoHideOnFocusLoss != null || recordingAutoStart != null || connectionNotifications != null ||
         hudGear != null || hudFlaps != null || hudAirbrake != null || hudAoaBarWarningPercent != null || hudAoaWarningPercent != null || hudFlapBar != null || hudCompassHeadingUp != null || startInTray != null || hiddenLabelChoices.isNotEmpty() || hudCrosshair != null || hudCrosshairSizeDp != null || hudCrosshairImage != null || hudCrosshairStretch != null
     fun applyTo(current: AppSettings) = current.copy(
+        hudSceneLayout = if (importHudPositions) current.hudSceneLayout?.withLegacyPositions(hudPositions) else current.hudSceneLayout,
+        softwareRendering = softwareRendering ?: current.softwareRendering,
         readingColors = current.readingColors + hudReadingColors.mapKeys { (key, _) ->
             mapOf("fontLabel" to "label", "fontNum" to "value", "fontWarn" to "warning", "fontShade" to "shade", "fontUnit" to "unit").getValue(key)
         },
@@ -44,6 +47,7 @@ data class LegacySettings(val intervalMs: Long?, val hudEnabled: Boolean?, val v
         hudCrosshairRight = if (movesCrosshairRight) true else current.hudCrosshairRight,
         hudHiddenLabels = current.hudHiddenLabels.filter { hiddenLabelChoices[it] != false } +
             hiddenLabelChoices.filter { it.value && it.key !in current.hudHiddenLabels }.keys,
+        voiceDirectory = voiceDirectory ?: current.voiceDirectory,
         voiceEnabled = voiceEnabled ?: current.voiceEnabled,
         voiceVolume = voiceVolume ?: current.voiceVolume,
         recordingPerformanceNotifications = recordingPerformanceNotifications ?: current.recordingPerformanceNotifications,
@@ -61,12 +65,20 @@ data class LegacySettings(val intervalMs: Long?, val hudEnabled: Boolean?, val v
         hudFlaps = hudFlaps ?: current.hudFlaps,
         hudAirbrake = hudAirbrake ?: current.hudAirbrake,
         hudAutoHideOnFocusLoss = hudAutoHideOnFocusLoss ?: current.hudAutoHideOnFocusLoss,
+        hudEngineFields = (current.hudEngineFields.filter { hudEngineFieldChoices[it] != false } +
+            hudEngineFieldChoices.filterValues { it }.keys.filter { it !in current.hudEngineFields }).distinct(),
         hudFields = (current.hudFields.filter { hudFieldChoices[it] != false } +
             hudFieldChoices.filterValues { it }.keys.filter { it !in current.hudFields }).distinct(),
     )
 }
 
 object LegacySettingsReader {
+    private val engineControlFields = linkedMapOf(
+        "disableEngineInfoThrottle" to "throttle", "disableEngineInfoPitch" to "rpm_control",
+        "disableEngineInfoMixture" to "mixture", "disableEngineInfoRadiator" to "radiator",
+        "disableEngineInfoCompressor" to "compressor")
+    private val aircraftControlFields = linkedMapOf("disableEngineInfoPower" to "power_percent",
+        "disableEngineInfoLFuel" to "fuel_percent")
     private val hudSwitchFields = linkedMapOf("showHUDAltitude" to "altitude", "showHUDEnergy" to "energy",
         "showHUDSep" to "sep", "showHUDGLoad" to "load", "showHUDAoA" to "aoa", "showHUDManeuverBar" to "fuel_mass_share")
     private val fieldIds = linkedMapOf(
@@ -144,11 +156,33 @@ object LegacySettingsReader {
         require(roots.isNotEmpty() && roots.all { it.children?.firstOrNull()?.let { n -> !n.quoted && n.atom == "panel" } == true }) {
             "仅支持旧版 ui_layout.user.cfg 的 panel 格式"
         }
+        val positions = linkedMapOf<HudRegionContent, LegacyHudPosition>()
+        val panelContents = mapOf("飞行信息" to HudRegionContent.FLIGHT, "地平仪" to HudRegionContent.ATTITUDE,
+            "舵面值" to HudRegionContent.CONTROLS, "起落襟翼" to HudRegionContent.MECHANIZATION)
+        roots.forEach { root ->
+            val children = root.children!!
+            val content = panelContents[children.getOrNull(1)?.atom] ?: return@forEach
+            fun coordinate(key: String): Double? {
+                val indices = children.indices.filter { !children[it].quoted && children[it].atom == key }
+                require(indices.size <= 1) { "旧配置重复属性 $key" }
+                return indices.singleOrNull()?.let { index ->
+                    requireNotNull(children.getOrNull(index + 1)?.atom?.toDoubleOrNull()?.takeIf { it.isFinite() }) {
+                        "旧窗口坐标 $key 无效"
+                    }
+                }
+            }
+            val x = coordinate(":x")
+            val y = coordinate(":y")
+            if (x != null || y != null) {
+                require(content !in positions) { "旧配置重复窗口 ${children[1].atom}" }
+                positions[content] = LegacyHudPosition(x ?: .1, y ?: .1)
+            }
+        }
         val unmigrated = mutableListOf<UnmigratedLegacySetting>()
         val targets = mutableMapOf<String, Pair<String, String>>()
         val voiceKeys = voidmei.telemetry.FlightAlert.entries.map { "voice_${it.voice}" }.toSet()
         val colorKeys = setOf("fontLabel", "fontNum", "fontUnit", "fontWarn", "fontShade")
-        val supported = colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("enableAltInformation", "enableStatusBar", "GlobalTextFont", "GlobalNumFont", "httpPort", "alwaysShowRadarAltitude", "MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
+        val supported = engineControlFields.keys + aircraftControlFields.keys + colorKeys + voiceKeys + fieldIds.keys + hudSwitchFields.keys + setOf("gpuCompatibilityMode", "enableAltInformation", "enableStatusBar", "GlobalTextFont", "GlobalNumFont", "httpPort", "alwaysShowRadarAltitude", "MonoNumFont", "attitudeIndicatorDisplayAoALimits", "displayCrosshair", "crosshairName", "crosshairScale", "disableHUDSpeedLabel", "disableHUDHeightLabel", "disableHUDSEPLabel", "autoStartGameMode", "attitudeIndicatorInertialMode", "enableFlapAngleBar", "showSpeedBar", "miniHUDaoaWarningRatio", "miniHUDaoaBarWarningRatio", "showHUDGear", "showHUDFlaps", "showHUDAirbrake", "drawHUDtext", "showHUDSpeed", "hudMach", "enableLogging", "autoHideOnFocusLoss", "showAttitudeGauge", "dataPollIntervalMs", "Interval", "crosshairSwitch", "enableVoiceWarn", "voiceVolume")
         fun walk(node: Node) {
             val children = node.children ?: return
             val kind = children.firstOrNull()?.takeUnless { it.quoted }?.atom
@@ -244,6 +278,10 @@ object LegacySettingsReader {
             require(entry.first == "data") { "$target 数据开关类型不支持" }
             fieldIds.getValue(target) to (entry.second.toBooleanStrictOrNull() ?: error("$target 不是布尔值"))
         }.toMap().toMutableMap()
+        val engineChoices = engineControlFields.mapNotNull { (target, id) -> flag(target)?.let { id to !it } }.toMap()
+        aircraftControlFields.forEach { (target, id) ->
+            flag(target)?.let { disabled -> fields[id] = fields[id] == true || !disabled }
+        }
         val textVisible = flag("drawHUDtext")
         hudSwitchFields.forEach { (target, id) ->
             val enabled = flag(target)
@@ -312,10 +350,10 @@ object LegacySettingsReader {
                 flag("disableHUDSpeedLabel")?.let { put("ias", it); put("mach", it) }
                 flag("disableHUDHeightLabel")?.let { put("altitude", it) }
                 flag("disableHUDSEPLabel")?.let { put("sep", it) }
-            }, showCrosshair, crosshairSize, recordingPerformanceNotifications = flag("enableAltInformation"), connectionNotifications = flag("enableStatusBar"), pendingCrosshairImage = if (!vectorCrosshair)
+            }, showCrosshair, crosshairSize, hudPositions = positions, hudEngineFieldChoices = engineChoices, softwareRendering = flag("gpuCompatibilityMode"), recordingPerformanceNotifications = flag("enableAltInformation"), connectionNotifications = flag("enableStatusBar"), pendingCrosshairImage = if (!vectorCrosshair)
                 LegacyCrosshairImage(crosshairName!!, flag("displayCrosshair"),
                     targets["crosshairScale"]?.second?.toIntOrNull()?.times(2)?.takeIf { it in 24..400 }) else null, textFont = textFont, numberFont = globalNumberFont, httpPort = httpPort, hudAltitudeMode = flag("alwaysShowRadarAltitude")?.let { if (it) HudAltitudeMode.ALWAYS_RADAR else HudAltitudeMode.LOW_RADAR }, hudNumberFont = numberFont, hudReadingColors = readingColors, hudAttitudeAoaLimits = flag("attitudeIndicatorDisplayAoALimits")).also {
-            require(it.hasChanges || it.unmigrated.isNotEmpty()) { "未找到可迁移的设置" }
+            require(it.hasChanges || it.hudPositions.isNotEmpty() || it.unmigrated.isNotEmpty()) { "未找到可迁移的设置" }
         }
     }
 }

@@ -15,11 +15,13 @@ internal fun readLegacySettings(path: Path, resourceRoot: Path? = null): LegacyS
     require(Files.isRegularFile(path)) { "请选择普通旧版设置文件" }
     val bytes = Files.newInputStream(path).use { it.readNBytes(LegacySettingsReader.MAX_BYTES + 1) }
     require(bytes.size <= LegacySettingsReader.MAX_BYTES) { "旧配置超过 1 MiB" }
-    return resolveLegacyCrosshair(LegacySettingsReader.read(Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString()), path, resourceRoot)
+    val settings = LegacySettingsReader.read(Charsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(bytes)).toString())
+    val resolved = resolveLegacyRenderer(resolveLegacyCrosshair(settings, path, resourceRoot), path, resourceRoot)
+    return resolveLegacyVoices(resolved, path, resourceRoot)
 }
 
 @Composable
-fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettingsFile,
+fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (String) -> String? = ::chooseLegacySettingsFile,
     readSettings: (Path, Path?) -> LegacySettings = ::readLegacySettings, onApply: (LegacySettings) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     TextButton(onClick = { expanded = !expanded }) { Text("导入旧版设置") }
@@ -34,7 +36,7 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
     var generation by remember { mutableLongStateOf(0L) }
     val scope = rememberCoroutineScope()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("迁移自动记录与托盘启动偏好、刷新间隔、已支持的 HUD 字段、姿态、机械化、准星、表格配色、迎角预警阈值及语音设置；具体变更见预览。旧窗口布局、屏幕位置和透明度尚不迁移，其余 Kotlin 设置与原文件保持不变。")
+        Text("迁移自动记录与托盘启动偏好、刷新间隔、已支持的 HUD 字段、姿态、机械化、准星、表格配色、迎角预警阈值及语音设置；具体变更见预览。可选按旧屏幕比例调整已有分区位置；窗口尺寸和透明度尚不迁移。具体位置见预览。")
         OutlinedTextField(path, { path = it; preview = null; status = null }, Modifier.fillMaxWidth(),
             label = { Text("旧版布局文件路径（UTF-8）") }, enabled = !busy, singleLine = true)
         TextButton(enabled = !busy, onClick = {
@@ -43,6 +45,8 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
         OutlinedTextField(resourceRoot, { resourceRoot = it; preview = null; status = null }, Modifier.fillMaxWidth(),
             label = { Text("旧程序资源目录（留空使用配置所在目录）") }, enabled = !busy, singleLine = true)
         Text("图片查找位置：所选目录/image/gunsight/旧图片名.png。")
+        Text("软件渲染优先读取所选目录/gpu_compat.properties；不存在时使用布局文件中的开关。")
+        Text("语音查找位置：所选目录/voice/；导入保留外部文件引用，不复制语音包。")
         Button(enabled = !busy && path.isNotBlank(), onClick = {
             val selected = path
             val selectedRoot = resourceRoot.takeIf { it.isNotBlank() }
@@ -75,12 +79,44 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
                 }
                 if (showUnmigrated) {
                     imported.unmigrated.take(100).forEach { item ->
-                        Text("${item.label.take(120)}（${item.target.take(120)}）：尚不支持迁移")
+                        Text("${item.label.take(120)}（${item.target.take(120)}）")
                     }
                     if (imported.unmigrated.size > 100) Text("仅显示前 100 项；其余请查看原文件。")
                 }
             }
-            if (!imported.hasChanges) Text("此文件没有可应用的设置。")
+            var importPositions by remember(imported, currentScene) { mutableStateOf(false) }
+            val positioned = currentScene?.withLegacyPositions(imported.hudPositions)
+            val matched = currentScene?.regions.orEmpty().map { it.content }.toSet().intersect(imported.hudPositions.keys)
+            if (imported.hudPositions.isNotEmpty()) {
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Checkbox(importPositions, { importPositions = it }, enabled = matched.isNotEmpty())
+                    Text("迁移已有分区位置")
+                }
+                Text("按当前画布比例换算旧屏幕坐标；每种类型只移动第一个分区，超出画布时移回边缘。保留分区尺寸、显示开关、透明度和显示器选择。")
+                if (matched.isEmpty()) Text("请先在 HUD 设置中创建对应分区，再重新预览。")
+                imported.hudPositions.keys.forEach { content ->
+                    val region = positioned?.regions?.firstOrNull { it.content == content }
+                    Text(if (region == null) "${content.label}：没有对应分区，跳过"
+                        else "${content.label} → ${region.title.ifBlank { region.id }}：(${region.x}, ${region.y}) dp")
+                }
+                Text("MiniHUD、动力信息和引擎控制没有一一对应的分区，位置需手动调整。")
+            }
+            val selected = imported.copy(importHudPositions = importPositions && matched.isNotEmpty())
+            if (!selected.hasChanges) Text(if (imported.hudPositions.isEmpty()) "此文件没有可应用的设置。" else "此文件没有已选择的可应用设置。")
+            if (imported.hudEngineFieldChoices.isNotEmpty()) {
+                Text("引擎控制开关应用到全局发动机读数字段；保留当前发动机编号、面板开关及分区独立字段。尚未开启发动机读数时，请在 HUD 设置中选择发动机编号。")
+                imported.hudEngineFieldChoices.forEach { (id, enabled) ->
+                    val field = voidmei.telemetry.HudEngineField.entries.first { it.id == id }
+                    Text("发动机 ${field.label}：${if (enabled) "显示" else "隐藏"}")
+                }
+                if ("rpm_control" in imported.hudEngineFieldChoices)
+                    Text("旧引擎控制“桨距”对应转速控制百分比，不是桨叶角度。")
+            }
+            imported.softwareRendering?.let {
+                Text("软件渲染：${if (it) "开启" else "关闭"}（重启后生效）；保留当前 HUD 兼容显示选择。")
+                Text("渲染设置来源：${imported.softwareRenderingSource ?: "布局文件 gpuCompatibilityMode"}")
+                Text("启动参数或 SKIKO_RENDER_API 环境变量仍优先于此设置。")
+            }
             imported.numberFont?.let { Text("全局数字字体：$it（需在当前系统安装）") }
             imported.textFont?.let { Text("全局文字字体：$it（需在当前系统安装）") }
             imported.httpPort?.let { Text("遥测端口：$it；保留已保存的主机地址，点击“连接”后切换当前连接。") }
@@ -166,10 +202,14 @@ fun LegacySettingsPanel(chooseFile: (String) -> String? = ::chooseLegacySettings
             imported.alertVoices.forEach { (key, choice) ->
                 Text("$key：${choice.pack} · ${if (choice.enabled) "开启" else "关闭"}")
             }
+            imported.voiceDirectory?.let {
+                Text("语音目录：$it；确认后使用此目录中的外部语音文件，请保留该目录。")
+                Text("单条告警的包名和开关保持导入值。缺失文件沿用默认回退；导入时不播放声音，确认后可在语音设置中试听。")
+            }
             imported.voiceVolume?.let { Text("语音音量：$it") }
             imported.voiceEnabled?.let { Text("语音：${if (it) "开启" else "关闭"}") }
-            Button(enabled = imported.hasChanges, onClick = {
-                try { onApply(imported); preview = null; status = "已应用，随 Kotlin 设置保存" }
+            Button(enabled = selected.hasChanges, onClick = {
+                try { onApply(selected); preview = null; status = "已应用，随 Kotlin 设置保存" }
                 catch (e: IllegalArgumentException) { status = "应用失败：${e.message}" }
             }) { Text("应用预览设置") }
         }

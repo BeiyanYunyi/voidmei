@@ -1698,7 +1698,7 @@ class DesktopGuiTest {
             compose.onNodeWithText("预览旧设置").performClick()
             compose.waitUntil(5000) { compose.onAllNodesWithText("此文件没有可应用的设置。").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("未迁移 1 项：查看").performScrollTo().performClick()
-            compose.onNodeWithText("自定义字体（fontChoice）：尚不支持迁移").assertExists()
+            compose.onNodeWithText("自定义字体（fontChoice）").assertExists()
             compose.onNodeWithText("应用预览设置").assertIsNotEnabled()
             compose.runOnIdle { assertFalse(applied) }
             assertEquals(original, Files.readString(file))
