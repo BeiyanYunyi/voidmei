@@ -32,6 +32,109 @@ nix run path:.#legacy-java
 
 整个重写仍未完成验收：Windows／macOS 原生窗口与输入行为、物理多显示器及 DPI、真实游戏连续飞行与计算对照、发行包可移植性等仍需相应证据。Linux 原生 Wayland 的全局热键支持也不能从 X11 测试推导。文末“完整替换的验收清单”仍保留，不能将下面任一次局部通过视为整个重写完成。
 
+## 当前版本集成复核（2026-09-11）
+
+对 `ef4eafb` 的现有 Kotlin 实现重新编译并执行共享 JVM／JS 和桌面测试，而非只复用测试缓存；随后执行完整 GUI 回归及默认独立 Nix 包检查：
+
+| 检查 | 结果 |
+| --- | --- |
+| 共享 JVM | 486 项通过 |
+| 共享 JS/Node | 483 项通过 |
+| 桌面单元／集成 | 141 项通过 |
+| Compose GUI（隔离 X11） | 320 项通过 |
+| 默认 `kotlin-offline` 包 | 构建成功 |
+| 独立包模拟遥测 | 十区域 HUD、延迟样本、配对 CSV 与正常退出检查通过 |
+
+以上测试均无失败、错误或跳过。包测试使用 80 ms 轮询，校验 86 对飞行／发动机记录样本；正常退出码为 0。隔离显示中的主窗口后端为 SOFTWARE_FAST，兼容 HUD 为 OPENGL，并显式使用 Mesa 软件驱动；不据此认定物理 GPU 加速或真实游戏完整验收。
+
+本机测试日志为 `/tmp/voidmei-kmp-current-tests.log`、`/tmp/voidmei-kmp-current-gui.log`、`/tmp/voidmei-kmp-current-build.log`、`/tmp/voidmei-kmp-current-smoke.log`。独立包入口为 `/tmp/voidmei-kmp-current/bin/voidmei-kotlin`。这些是本机临时验证路径，其他机器应使用首页的构建与运行命令。
+
+首页已按当前 Kotlin 默认入口整理；原 Java 8 编译与平台运行说明完整保留在 [旧版指南](legacy-java.md)。本轮没有新增业务功能，也没有将下方完整替换清单标为完成。
+
+## 滑油压力原值迁移
+
+对照旧 `src/parser/Indicators.java` 补齐座舱 `oil_pressure`。共享解析只读取精确的未编号键，保留零值，过滤负数、旧哨兵值、非数值及非有限值；不从 `oil_pressure1` 或 state 的类似字段补值。主窗口与可选 HUD 字段 `oil_pressure_raw` 标明仪表原值、单位及发动机归属未确定，不借用燃油低压告警。
+
+飞行 CSV 在原列末尾追加 `oil_pressure_raw`，历史分析和回放可选择该字段；缺失值保留空单元格并断开曲线，旧文件没有该列时不补零。共享 JVM／JS 和桌面单元测试、五项相关 GUI 回归通过（`/tmp/voidmei-oil-pressure.log`）。GUI 覆盖零值、缺失值、延迟清除旧读数、字段隐藏以及与燃油低压告警隔离。
+
+默认独立 Nix 包构建通过（`/tmp/voidmei-oil-pressure-nix.log`）。隔离 X11 整包检查通过（`/tmp/voidmei-oil-pressure-package.log`）：84 对 CSV 样本逐行验证滑油压力 2.75、0 与未知值，确认未误读相似编号字段；十区域 HUD、延迟恢复及正常退出回归通过。报告在 `/tmp/voidmei-package-smoke-7_b41tcf/`。这些是合成 HTTP 输入，不扩展真实游戏或其他平台的验收结论。
+
+## 短暂延迟保留 WEP 已观察消耗
+
+WepFuelMonitor 原先把 Delayed 作为完整无效会话传入 tracker，恢复后会重新从模型满容量估计。现在 Delayed 暂停累计并清除显示，保留此前已观察消耗；恢复后的第一份有效样本不外推未知区间，之后使用新油门继续累计。结果仍是剩余燃料与续航上限，未知期间可能存在未计入的消耗。真正断线、等待飞行、换机、模型变化、时间回退和输入无效继续重置。
+
+共享 JVM／JS 与桌面单元回归通过（`/tmp/voidmei-wep-delay.log`），覆盖重复延迟、超过两秒的缺口、恢复时退出 WEP、后续重新加力及会话边界。整包测试增加 `--wep --delayed-sample` 联合场景，并纳入现有 Linux CI；与缺油门场景分开，避免混淆两种重置语义。修改的工作流已通过本地 actionlint，未触发远程 CI。
+
+修复前的独立包在同一场景失败（`/tmp/voidmei-wep-delay-before.log`）：记录的 1583 ms 延迟使 WEP 上限由 9.379 kg 回到 10 kg，验证器明确捕获回满。
+
+修复后的默认 Nix 包构建及同场景验证通过（`/tmp/voidmei-wep-delay-nix.log`、`/tmp/voidmei-wep-delay-after.log`）：延迟缺口保持此前剩余上限，之后逐帧消耗与实际采样时间一致，退出时正常保存记录。报告位于 `/tmp/voidmei-package-smoke-5ujh7iyt/`。本轮整包使用隔离 X11 主窗口，验证合成 FM／HTTP 到 CSV 的流程，不扩展实际游戏或其他平台结论。
+
+## 短暂延迟的热预算不确定范围（2026-09-12）
+
+EngineThermalMonitor 在 Delayed 中隐藏观测并暂停温度累计，避免直接清空已积累的模型预算。恢复且两次有效样本间隔不超过原有 2500 ms 限制时，每个水温／油温档位将原下限按整段可能过热扣减、原上限按整段可能冷却增加，均限制在 `[0, WorkTime]`。没有有效 RecoverTime 时上限不增加。不把旧温度外推至未知区间，也不直接回到整个初始范围。下一次正常样本继续使用恢复时的新温度累计。
+
+长缺口、时钟倒退、真实断线、换机及模型变化仍按原规则丢弃无依据的历史；单个温度通道缺失也继续清除该通道。共享测试枚举 16 种过热／冷却顺序，确认不确定区间包含相应完整采样结果，并覆盖缺少恢复参数、重复延迟、耗尽后的可能恢复及随后重新消耗。共享 JVM 494 项、JS 491 项、桌面 141 项和相关 GUI 5 项全部通过（`/tmp/voidmei-thermal-delay.log`、`/tmp/voidmei-thermal-delay-gui.log`）。GUI 验证预算耗尽后经两秒缺口显示 `0.0–4.0 s`，而非初始 `0.0–10.0 s`，之后继续变为 `0.0–2.0 s`。
+
+默认 Kotlin 独立包构建通过（`/tmp/voidmei-thermal-delay-nix.log`），产物入口为 `/tmp/voidmei-kmp-thermal-delay/bin/voidmei-kotlin`。本轮没有新增实际游戏、物理 GPU 或其他平台验证。
+
+## 延迟恢复保留已确认动力峰值（2026-09-12）
+
+TelemetryPoller 的 Delayed 路径改用 FlightCalculator.pause：速度差分、燃油估计和仪表单位连续采样仍重新开始；已确认的全油门功率／推力峰值保留，未完成的五秒候选窗口清空。恢复后使用当前读数除以已确认参考，不显示旧动力值。真实请求失败、等待飞行及新连接仍完全重置；机型、发动机编号、动力类型、必要输入和时钟检查保持有效。
+
+共享 JVM 497 项、JS 494 项、桌面 141 项及相关 GUI 3 项通过（`/tmp/voidmei-peak-delay.log`、`/tmp/voidmei-peak-delay-gui.log`）。真实协程轮询测试覆盖活塞／喷气两种参考的预热、延迟、恢复及请求失败，验证参考保留时 SEP／加速度仍为空；GUI 验证恢复后百分比使用新的 250 hp 与原 1000 hp 参考显示 25%。
+
+默认独立 Nix 包构建通过（`/tmp/voidmei-peak-delay-nix.log`），可运行入口为 `/tmp/voidmei-kmp-peak-delay/bin/voidmei-kotlin`。本轮未扩展真实游戏、物理 GPU 或其他平台验收结论。
+
+## 旧软件渲染设置迁移（2026-09-12）
+
+对照旧 GPUCompatibilityHelper 和 SwitchRowRenderer 后补齐软件渲染迁移。共享解析支持 `gpuCompatibilityMode` 开关；桌面导入优先读取旧资源目录的 `gpu_compat.properties`，使用 Java Properties 的原有编码、转义与缺省值语义。损坏、非法或超过 64 KiB 的独立文件会报告并保留当前渲染设置，避免退回可能过期的布局值。预览显示最终来源及重启要求；确认只更新持久化偏好，HUD 兼容模式和当前后端保持原值。
+
+共享 JVM 499 项、JS 496 项、桌面 143 项及相关 GUI 4 项通过（`/tmp/voidmei-legacy-renderer.log`）。覆盖双向开关、缺省保留、重复／非法值、独立文件优先、显式资源目录、Properties 行续接、损坏文件隔离，以及预览不修改、确认后持久化和保留原文件。
+
+默认独立 Nix 包构建通过（`/tmp/voidmei-legacy-renderer-nix.log`）。清除渲染后端环境变量与 JVM 覆盖后，保存软件渲染偏好的整包启动检查通过（`/tmp/voidmei-legacy-renderer-package.log`）：主窗口和兼容 HUD 均请求并使用 SOFTWARE_FAST，正常退出后偏好保留。该检查与导入 GUI 的持久化验证共同覆盖导入及下次启动路径，不代表实际 GPU 或其他平台验收。
+
+## 旧引擎控制字段迁移（2026-09-12）
+
+对照 EngineControlOverlay 的实际取值补齐七项旧字段开关：油门、转速控制、混合比、水散热器、增压器映射为全局发动机字段，全机动力量及燃油比例映射为全机字段。`disableEngineInfoPitch` 使用的是 getRPMThrottle，因此不映射为桨叶角。支持普通与反向开关；全机字段有多处旧配置来源时合并可见性。当前发动机编号、布局、区域独立字段与未指定字段保留；预览明确说明适用范围。
+
+共享与桌面测试及相关 GUI 回归通过（`/tmp/voidmei-legacy-controls.log`、`/tmp/voidmei-legacy-controls-gui.log`），覆盖反向语义、非法类型、重复应用、未知字段、区域隔离、全机／单机字段区分，以及确认后实际显示所选 2 号发动机的转速控制值而非桨叶角。原配置未改写。
+
+默认独立 Nix 包构建通过（`/tmp/voidmei-legacy-controls-nix.log`），入口为 `/tmp/voidmei-kmp-legacy-controls/bin/voidmei-kotlin`。本轮未新增其他平台、真实游戏或物理 GPU 验收。
+
+## 旧语音目录迁移（2026-09-12）
+
+旧全局语音包选择器实际批量改写各条告警配置；现有导入已保留单条包名与启用状态，但此前没有迁移这些包所在的 voice 目录。桌面导入现在对包含单条语音选择的配置查找旧资源目录下的 voice，预览确认后保存外部路径。目录缺失保留当前路径并报告；单个 WAV 缺失报告默认回退。没有语音选择的配置不修改目录。未复制文件或自动试听，也不覆盖当前全局包和未指定的单条告警。
+
+共享与桌面测试通过（`/tmp/voidmei-legacy-voices.log`）。真实临时 WAV 测试确认经导入配置读取的是旧自定义包样本，静音选择及原文件不变；缺失目录、显式资源目录、单文件缺失和配置往返均有覆盖。相关 GUI 回归通过（`/tmp/voidmei-legacy-voices-gui.log`），验证预览不保存、确认后保存目录和单条选择，及既有取消／未迁移项目展示。
+
+默认独立 Nix 包构建通过（`/tmp/voidmei-legacy-voices-nix.log`），入口为 `/tmp/voidmei-kmp-legacy-voices/bin/voidmei-kotlin`。本轮验证了音频数据来源与配置流程，没有实际扬声器播放或其他平台验收。
+
+### 旧窗口位置的可选迁移（2026-09-12）
+
+核对旧 `ConfigurationService`：各 overlay 的 `:x/:y` 存为主屏幕宽高的比例；`Controller.registerGameModeOverlays` 指明对应面板名称。新增四类已有分区位置迁移（飞行信息、地平仪、舵面值、起落襟翼），按当前画布换算并限制在画布内，每类只移动第一个分区。默认不启用，预览列出最终坐标，缺少对应分区时跳过；确认后通过原设置保存流程持久化。保持区域大小、透明度、字段、开关、层级和显示器选择。MiniHUD、动力信息、引擎控制不做不明确的内容映射。旧 `:alpha` 在读取器中存在，但本次检索未发现传给 overlay `setAlpha` 的调用，故未将其当作可靠运行时透明度迁移。
+
+本轮共享测试 JVM **503**、JS **500**、桌面单元 **145** 均通过，新增核心测试覆盖显式选择、重复类型、边缘约束、非有限与极大坐标、默认值和设置 JSON 往返；旧配置导入 GUI 回归 **11** 项通过，包含真实文件预览、未选择时按钮禁用、确认后的最终坐标及 `SettingsStore` 保存重读。日志 `/tmp/voidmei-position-tests.log`、`/tmp/voidmei-position-gui.log`。这些检查不替代物理多屏／混合 DPI 验收。 新独立包 `/tmp/voidmei-kmp-legacy-position` 构建成功；清除渲染覆盖后的保存偏好 smoke 确认主窗口和兼容 HUD 均使用 `SOFTWARE_FAST` 并正常退出，日志 `/tmp/voidmei-position-package-smoke.log`，产物 `/tmp/voidmei-package-smoke-cr3za6nu`。
+
+### macOS HUD 输入桥接（2026-09-12，目标平台待验收）
+
+新增 `MacPointerRegion`，从当前 AWT 窗口取得平台对象，通过 JDK 的 `CFRetainedResource.execute` 保护原生资源，并在 AppKit 主线程设置／读回 `NSWindow.ignoresMouseEvents`。关闭或卸载时恢复首次启用前的值；校验失败仍保留原值供重试，窗口原生 peer 改变后不使用旧快照。JNA 回调使用显式存活保护，跨线程结果使用原子变量；其他平台不会加载 macOS 原生库。Gradle 启动、测试及打包在 macOS 自动导出 `sun.awt`、`sun.lwawt`、`sun.lwawt.macosx`，不使用私有指针字段或 `Unsafe`。实现面向 OpenJDK 21，其他 JDK 内部窗口结构可能不同。
+
+依据：[OpenJDK 平台窗口](https://github.com/openjdk/jdk21u/blob/master/src/java.desktop/macosx/classes/sun/lwawt/macosx/CPlatformWindow.java)、[原生资源执行保护](https://github.com/openjdk/jdk/blob/master/src/java.desktop/macosx/classes/sun/lwawt/macosx/CFRetainedResource.java)、[AppKit 鼠标策略](https://developer.apple.com/documentation/appkit/nswindow/ignoresmouseevents)、[Apple dispatch 主队列及同步调用](https://github.com/apple-oss-distributions/libdispatch/blob/main/dispatch/queue.h)。使用公开方法反射访问而不缓存裸句柄；这些源码依据不代表已在目标 JDK／macOS 上实测。
+
+本机最终桌面单元 **148** 项通过；Linux 隔离 X11 上原生点击 **6** 项、窗口 GUI **6** 项通过，覆盖 Compose 与兼容 HUD 的穿透、恢复、初始启用及窗口操作。日志 `/tmp/voidmei-macos-pointer-final-tests.log`、`/tmp/voidmei-macos-pointer-regression.log`。原生输入测试新增专用 macOS 桌面入口，但当前没有 macOS 运行环境，尚未执行；不将 Linux 回归当作 macOS 输入验证。目标平台入口为 `VOIDMEI_TEST_ISOLATED_MACOS=1 ./gradlew :desktop:nativeHudPointerTest --rerun-tasks`，应在专用测试桌面运行，随后核对真实安装包和游戏窗口。
+
+### 当前源码统一交付检查（2026-09-12）
+
+完整共享、桌面和 GUI 测试共 **1477** 项通过（503 JVM／500 JS／148 桌面单元／326 GUI），与当前源码对应的 Linux 独立包 `/tmp/voidmei-kmp-acceptance` 已构建并通过模拟录制、WEP 延迟恢复、分区 HUD、保存的渲染偏好和正常退出检查。此次统一运行结果、产物位置和证据边界见 [当前验收状态](kotlin-acceptance.md#当前工作区统一验收2026-09-12)。游戏接口当前仍未运行，跨操作系统实机验证没有新增证据。
+
+### macOS 游戏前台检测（2026-09-12，目标平台待验收）
+
+从鼠标穿透实现提取共用 `MacAppKit`，新增前台应用读取：在 AppKit 主线程和自动释放池内读取 `NSWorkspace.frontmostApplication` 的 PID 与 `executableURL.path`，将复制后的字符串返回 Kotlin。`detectMacGameFocus` 要求两次快照一致，仅以末级可执行文件名 `aces` 识别原生游戏；切换竞争、缺失路径、无效 PID、原生库／调用失败均返回未知，取消查询继续传播。设置界面现允许 macOS 启用“切出游戏时隐藏 HUD”，沿用未知状态保持 HUD 可见的行为。
+
+接口依据：[Apple 前台应用](https://developer.apple.com/documentation/appkit/nsworkspace/frontmostapplication)、[进程 PID](https://developer.apple.com/documentation/appkit/nsrunningapplication/processidentifier)、[可执行 URL](https://developer.apple.com/documentation/appkit/nsrunningapplication/executableurl)。原生游戏的 `aces` 文件名有[官方论坛中的用户原始 macOS 崩溃记录](https://forum.warthunder.com/t/game-crash-on-macos-and-rosetta-2-problem/325895)支持；这仅证明该记录中的程序路径，不构成所有安装方式或版本的兼容保证。
+
+最终 **150** 项桌面单元测试、**2** 项 X11 前台检测 GUI 回归通过，日志 `/tmp/voidmei-macos-focus-tests.log` 和 `/tmp/voidmei-macos-focus-regression.log`。新增 `nativeMacFocusTest` 可在专用 macOS 桌面将自有测试窗口前置，并检查 AppKit 返回当前 JVM PID 及真实可执行文件路径：`VOIDMEI_TEST_ISOLATED_MACOS=1 ./gradlew :desktop:nativeMacFocusTest`。该原生测试已编译，当前 Linux 环境未执行；真实 macOS 前台切换与游戏识别仍未验收。此前统一验收包不包含本次增量，不能以旧包启动结果证明该原生功能。
+
 ## 初期迁移记录（历史快照）
 
 下列章节保留开发过程中各阶段的实现状态和测试记录。诸如“默认 Java”“尚未实现”的描述是当时状态，后续章节可能已实现对应功能；当前入口与 HUD 使用方式以上节为准。测试数量、后端及平台结论也仅适用于记录对应的版本和环境。
