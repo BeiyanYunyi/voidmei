@@ -129,6 +129,17 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
     Text("WEP 燃料／可用时间为估算上限：连接前已用量未知，按模型容量扣除观察到的消耗。断流后重新估算，不表示实际补满；未观测到 WEP 消耗时续航未知，模型或数据缺失时显示 —。", style = MaterialTheme.typography.bodySmall)
     val selected = HudField.selected(settings.hudFields)
     val hasAttitudePanel = settings.hudAttitude || settings.hudSceneLayout?.regions?.any { it.content == voidmei.config.HudRegionContent.ATTITUDE } == true
+    if (hasAttitudePanel) {
+        Text(if (settings.hudAttitudeRefreshMs == 0) "姿态显示：跟随遥测更新" else "姿态显示间隔：${settings.hudAttitudeRefreshMs} ms")
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Switch(settings.hudAttitudeRefreshMs != 0, { onChange(settings.copy(hudAttitudeRefreshMs = if (it) 40 else 0)) }, modifier = Modifier.testTag("attitude-refresh-enabled"))
+            Text("限制 HUD 姿态更新频率")
+        }
+        if (settings.hudAttitudeRefreshMs != 0) Slider(settings.hudAttitudeRefreshMs.toFloat(),
+            { onChange(settings.copy(hudAttitudeRefreshMs = it.roundToInt())) }, valueRange = 10f..100f, steps = 89,
+            modifier = Modifier.testTag("attitude-refresh-interval"))
+        Text("仅影响 HUD 姿态图（含独立姿态分区），不改变遥测、记录、告警或主窗口姿态图。新数据不足时不会提高刷新速度。", style = MaterialTheme.typography.bodySmall)
+    }
     if (hasAttitudePanel) FilterChip(settings.hudAttitudeNorthPointer,
             { onChange(settings.copy(hudAttitudeNorthPointer = !settings.hudAttitudeNorthPointer)) },
             label = { Text("姿态图指北针") })

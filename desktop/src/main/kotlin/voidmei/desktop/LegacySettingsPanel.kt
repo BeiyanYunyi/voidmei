@@ -407,6 +407,7 @@ fun LegacySettingsPanel(currentScene: HudSceneLayout? = null, chooseFile: (Strin
             imported.hudCompassHeadingUp?.let {
                 Text("罗盘坐标系：${if (it) "航向朝上" else "北向朝上"}；姿态图：${if (it) "地面参考" else "机体参考"}。")
             }
+            imported.hudAttitudeRefreshMs?.let { Text("HUD 姿态显示间隔：$it ms；应用于 HUD 姿态图及独立姿态分区，不改变遥测、记录和告警频率。") }
             imported.hudAttitudeNorthPointer?.let {
                 Text("HUD 姿态图指北针：${if (it) "显示" else "隐藏"}；红色指北、白色指南，保留航向读数和独立罗盘设置。")
             }

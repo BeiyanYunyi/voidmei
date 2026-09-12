@@ -23,7 +23,14 @@ import androidx.compose.ui.semantics.stateDescription
 import java.util.Locale
 
 @Composable
-internal fun AttitudePanel(telemetry: Telemetry, compact: Boolean = false, model: AircraftAlertModel? = null, earthFixed: Boolean = false, showAoaLimits: Boolean = true, fillAvailable: Boolean = false, showNorthPointer: Boolean = false) {
+internal fun AttitudePanel(sourceTelemetry: Telemetry, compact: Boolean = false, model: AircraftAlertModel? = null, earthFixed: Boolean = false, showAoaLimits: Boolean = true, fillAvailable: Boolean = false, showNorthPointer: Boolean = false, refreshMs: Int = 0) {
+    val (telemetry, displayedModel) = throttledDisplay(sourceTelemetry to model, refreshMs, sourceTelemetry.aircraft)
+    AttitudeDisplayPanel(telemetry, compact, displayedModel, earthFixed, showAoaLimits, fillAvailable, showNorthPointer)
+}
+
+@Composable
+private fun AttitudeDisplayPanel(telemetry: Telemetry, compact: Boolean, model: AircraftAlertModel?, earthFixed: Boolean,
+    showAoaLimits: Boolean, fillAvailable: Boolean, showNorthPointer: Boolean) {
     val attitude = AttitudeGeometry.fromIndicators(telemetry.pitchDeg, telemetry.rollDeg)
     val heading = AttitudeGeometry.heading(telemetry.headingDeg)
     val north = if (showNorthPointer) AttitudeGeometry.northDirection(telemetry.headingDeg) else null

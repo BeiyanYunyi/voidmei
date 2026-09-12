@@ -61,6 +61,7 @@ data class AppSettings(
     val hudUnitColor: String? = null,
     val hudAttitudeAoaLimits: Boolean = true,
     val hudAttitudeNorthPointer: Boolean = false,
+    val hudAttitudeRefreshMs: Int = 0,
     val hudNumberFont: String? = null,
     val textFont: String? = null,
     val numberFont: String? = null,
@@ -75,6 +76,7 @@ data class AppSettings(
         require(textFont == null || (textFont.isNotBlank() && textFont.length <= 200 && textFont.none { it.isISOControl() }))
         require(hudNumberFont == null || (hudNumberFont.isNotBlank() && hudNumberFont.length <= 200 && hudNumberFont.none { it.isISOControl() }))
         require(listOf(hudLabelColor, hudValueColor, hudWarningColor, hudShadeColor, hudUnitColor).all { it == null || parseHexColor(it) != null })
+        require(hudAttitudeRefreshMs == 0 || hudAttitudeRefreshMs in 10..100)
         require(hudCrosshairSizeDp in 24..400)
         require(hudAoaWarningPercent.isFinite() && hudAoaWarningPercent in 0.0..100.0)
         require(hudAoaBarWarningPercent.isFinite() && hudAoaBarWarningPercent in 0.0..100.0)
@@ -215,6 +217,7 @@ object SettingsJson {
                 value.jsonPrimitive.let { require(it.isString); it.content }
             }?.distinct() ?: defaults.hudFields,
             hudCompassHeadingUp = root["hudCompassHeadingUp"]?.jsonPrimitive?.boolean ?: defaults.hudCompassHeadingUp,
+            hudAttitudeRefreshMs = root["hudAttitudeRefreshMs"]?.jsonPrimitive?.let { require(!it.isString); it.int } ?: defaults.hudAttitudeRefreshMs,
             hudAttitudeNorthPointer = root["hudAttitudeNorthPointer"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.hudAttitudeNorthPointer,
             hudAttitudeAoaLimits = root["hudAttitudeAoaLimits"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: defaults.hudAttitudeAoaLimits,
             hudAttitudeEarthFixed = root["hudAttitudeEarthFixed"]?.jsonPrimitive?.boolean ?: defaults.hudAttitudeEarthFixed,
@@ -295,6 +298,7 @@ object SettingsJson {
         fields["numberFont"] = settings.numberFont?.let(::JsonPrimitive) ?: JsonNull
         fields["textFont"] = settings.textFont?.let(::JsonPrimitive) ?: JsonNull
         fields["hudNumberFont"] = settings.hudNumberFont?.let(::JsonPrimitive) ?: JsonNull
+        fields["hudAttitudeRefreshMs"] = JsonPrimitive(settings.hudAttitudeRefreshMs)
         fields["hudAttitudeNorthPointer"] = JsonPrimitive(settings.hudAttitudeNorthPointer)
         fields["hudAttitudeAoaLimits"] = JsonPrimitive(settings.hudAttitudeAoaLimits)
         fields["hudAttitudeEarthFixed"] = JsonPrimitive(settings.hudAttitudeEarthFixed)

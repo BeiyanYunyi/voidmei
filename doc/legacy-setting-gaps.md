@@ -1,6 +1,6 @@
 # Java 配置剩余差异清单
 
-2026-09-12，使用当前 KMP `LegacySettingsReader` 读取仓库自带 `ui_layout.cfg`。返回 **28 条未迁移记录、23 个不同标识（含 target 和面板属性名）**；`fontSize` 在多个面板出现。此数字表示该文件的配置导入差异，不能直接解释成 23 个未实现功能，也不覆盖用户自定义文件中的全部格式。
+2026-09-12，使用当前 KMP `LegacySettingsReader` 读取仓库自带 `ui_layout.cfg`。返回 **27 条未迁移记录、22 个不同标识（含 target 和面板属性名）**；`fontSize` 在多个面板出现。此数字表示该文件的配置导入差异，不能直接解释成 22 个未实现功能，也不覆盖用户自定义文件中的全部格式。
 
 ## 按实际含义推进
 
@@ -8,7 +8,6 @@
 | --- | --- | --- |
 | 各窗口字号、字体和列数 | `fontSize`、`fontName`、`hudColumns` | Kotlin 已支持 1–16 列，旧 `flightInfoColumn` 可选迁移至第一个飞行读数分区；动力面板 `hudColumns` 可选迁移至用户明确选定的发动机分区。飞行／发动机分区已支持独立读数字体，旧飞行 `:font`／`flightInfoFontC` 可选迁移；动力／控制面板 `:font` 及动力面板历史 `fontName` 已支持可选迁移到明确指定区域的标签字体。剩余旧键具有面板作用域，字号偏移还涉及窗口和图形尺寸。需要按所属面板解析，再映射字号和列数，不能把多个 `fontSize` 合并成一个值。 |
 | 动力与引擎控制独立窗口 | `engineInfoSwitch`、`enableEngineControl` | 旧窗口与当前 FLIGHT／ENGINE 分区结构不同，已提供发动机“动力读数／引擎控制”独立字段预设，可手动分成两个区域；发动机分区已可独立启用整机燃油百分比与水平燃油条。两个显示开关已支持显式选择不同发动机分区后迁移；两个旧窗口的位置也可显式选择不同发动机分区后迁移；导入预览已支持明确选择新建两个区域并套用字段预设；标签字体与动力表格字号已支持可选迁移；已增加可独立保存的横排／竖排／混合布局与表格显示选项，新建控制区域默认无表格混合仪表布局；已支持独立控制条长度与厚度；旧控制字号已可选转换为条长、厚度和文字样式；窗口尺寸、旧间距及整机／逐发动机读数差异仍待补齐，不能据此宣称窗口已对齐。 |
-| 姿态窗口刷新 | `attitudeIndicatorFreqMs` | Java `AttitudeOverlay.onFlightData()` 按事件时间节流后投递 `drawTick()`，当前 KMP 姿态分区直接消费飞行状态；需新增显示节流，不能映射成遥测轮询频率。外框宽高已经支持按原屏幕与 DPI 可选换算；内部图形排布仍有差异。 |
 | 姿态旧颜色选项 | `attitudeIndicatorUseNumColor` | 在当前 Java `AttitudeOverlay` 中只给 `transParentWhite` 赋值，未找到绘制读取。先核实有效行为，不添加无效果开关来缩短清单。 |
 | FM 模型信息浮窗 | `enableFMPrint`、`displayFmKey` | Java 在 `Controller` 注册独立模型数据浮窗，且同一开关控制喷气推力图；全局热键切换浮窗。Kotlin 已有模型详情与原始字段筛选，但尚无等价独立模型浮窗。不能映射成原始字段分类显示；新增热键需先整合现有 `NativeHotkeyBackend` 的独占钩子生命周期。 |
 | 模型选择和曲线状态 | `selectedFM0`、`selectedFM1`、`powerCurveSpeed`、`powerCurveWep` | 需核对旧机型标识、路径以及曲线输入的含义，明确如何恢复到当前模型会话。 |
@@ -31,7 +30,7 @@ nix develop path:. --command gradle -Pvoidmei.systemNode=true :desktop:createDis
 nix develop path:. --command java --class-path 'core/build/libs/core-jvm.jar:desktop/build/compose/binaries/main/app/VoidMei/lib/app/*' script/fixtures/LegacySettingsInventory.java ui_layout.cfg
 ```
 
-本轮使用当前 `core/build/libs/core-jvm.jar`，并从已经构建的独立包提供 Kotlin 运行依赖执行工具，结果位于 `/tmp/voidmei-drag-inventory.tsv`，统计日志 `/tmp/voidmei-drag-inventory.log`。这些临时路径不作为仓库的永久数据源，生产代码或旧配置改变后应重新生成。
+本轮使用当前 `core/build/libs/core-jvm.jar`，并从已经构建的独立包提供 Kotlin 运行依赖执行工具，结果位于 `/tmp/voidmei-attitude-refresh-inventory.tsv`，统计日志 `/tmp/voidmei-attitude-refresh-inventory.log`。这些临时路径不作为仓库的永久数据源，生产代码或旧配置改变后应重新生成。
 
 ## 当前集成验证
 
@@ -100,3 +99,6 @@ Java `FieldOverlay` 调用 `setShadeWidth(10)`，实际绘制由项目自带 Web
 报告保留面板与嵌套分组路径，界面可显示和搜索，清点工具第三列也输出来源。当前五条未迁移 `fontSize` 分别位于：MiniHUD / 外观设置、动力信息 / 外观设置、引擎控制 / 发动机元素、舵面值 / 显示设置、起落襟翼 / 显示设置。不能因为名称相同便视为同一设置。
 
 共享 JVM 538、JS 535、桌面单元 151、相关 GUI 18 项通过，来源搜索截图已检查。日志 `/tmp/voidmei-report-source-tests.log`、`/tmp/voidmei-report-source-gui.log`。本轮只补全报告来源，没有新增迁移映射，仍为 50 条记录、42 个标识。
+
+
+姿态显示刷新已支持 10–100 ms 及关闭节流，旧 `attitudeIndicatorFreqMs` 可在导入预览中迁移。新版作用于 HUD 姿态图及独立姿态分区，不改变遥测；与旧 Java 事件时间重绘策略不同，不保证精确帧率。当前相关验证见 `kotlin-acceptance.md` 的姿态显示刷新记录；上方完整包验证仍对应 `5027abb5`。

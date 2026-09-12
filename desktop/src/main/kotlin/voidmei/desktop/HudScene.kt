@@ -78,7 +78,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                                 Box(Modifier.fillMaxWidth().weight(1f)) {
                                     AttitudePanel(flight.telemetry, compact = true, model = model,
-                                        earthFixed = settings.hudAttitudeEarthFixed, showNorthPointer = settings.hudAttitudeNorthPointer, showAoaLimits = settings.hudAttitudeAoaLimits,
+                                        earthFixed = settings.hudAttitudeEarthFixed, showNorthPointer = settings.hudAttitudeNorthPointer, refreshMs = settings.hudAttitudeRefreshMs, showAoaLimits = settings.hudAttitudeAoaLimits,
                                         fillAvailable = true)
                                 }
                             }
