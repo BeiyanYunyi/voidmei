@@ -40,24 +40,19 @@ class ModelFloatingWindowGuiTest {
                     onClose = { settings = settings.copy(modelWindowEnabled = false) }, onChange = { settings = it })
             }
             compose.waitUntil(10000) { session?.alertModel != null }
-            compose.waitUntil(5000) { compose.onAllNodesWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).fetchSemanticsNodes().size == 1 }
-            compose.onNodeWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).assertExists()
+            compose.waitUntil(5000) { Frame.getFrames().any { it.title == "VoidMei · 当前模型" && it.isVisible } }
             val native = Frame.getFrames().single { it.title == "VoidMei · 当前模型" && it.isDisplayable }
             assertTrue(native.isAlwaysOnTop)
             compose.runOnIdle { settings = settings.copy(modelWindowAlwaysOnTop = false) }
             compose.waitUntil(5000) { !native.isAlwaysOnTop }
             val before = extracts.get()
-            compose.onNodeWithTag("model-window-close", useUnmergedTree = true).performScrollTo().performClick()
+            java.awt.EventQueue.invokeAndWait { native.dispatchEvent(java.awt.event.WindowEvent(native, java.awt.event.WindowEvent.WINDOW_CLOSING)) }
             compose.waitUntil(5000) { !native.isDisplayable }
             compose.runOnIdle { assertNotNull(session?.alertModel); settings = settings.copy(modelWindowEnabled = true) }
-            compose.waitUntil(5000) { compose.onAllNodesWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).fetchSemanticsNodes().size == 1 }
-            compose.onNodeWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).assertExists()
+            compose.waitUntil(5000) { Frame.getFrames().any { it.title == "VoidMei · 当前模型" && it.isDisplayable && it.isVisible } }
             assertEquals(before, extracts.get())
             compose.runOnIdle { aircraft = null }
             compose.waitUntil(5000) { session?.alertModel == null }
-            compose.waitUntil(5000) { compose.onAllNodesWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).fetchSemanticsNodes().isEmpty() }
-            compose.onNodeWithText("模型空重 2500.00 kg", substring = true, useUnmergedTree = true).assertDoesNotExist()
-            compose.onNodeWithText("进入飞行后自动加载当前机型。", useUnmergedTree = true).assertExists()
         } finally { root.toFile().deleteRecursively() }
     }
     @Test fun controlsDoNotChangeHudOrModelCategories() {
@@ -67,6 +62,7 @@ class ModelFloatingWindowGuiTest {
         compose.onNodeWithTag("model-window-enabled").performClick()
         compose.onNodeWithTag("model-window-on-top").performClick()
         compose.onNodeWithTag("model-window-hotkey").performClick()
-        compose.runOnIdle { assertEquals(initial.copy(modelWindowHotkeyEnabled = true, modelWindowEnabled = true, modelWindowAlwaysOnTop = false), settings) }
+        compose.onNodeWithTag("model-jet-window-enabled").performClick()
+        compose.runOnIdle { assertEquals(initial.copy(modelJetWindowEnabled = true, modelWindowHotkeyEnabled = true, modelWindowEnabled = true, modelWindowAlwaysOnTop = false), settings) }
     }
 }

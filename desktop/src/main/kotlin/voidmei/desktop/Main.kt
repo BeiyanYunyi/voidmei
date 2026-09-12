@@ -115,10 +115,12 @@ fun main(args: Array<String>) {
         val mainState = rememberWindowState(position = restorePosition(settings.mainPosition), width = 940.dp, height = 760.dp)
         val hudState = rememberWindowState(position = restorePosition(settings.hudPosition), width = settings.hudWidthDp.dp, height = 510.dp)
         val modelWindowState = rememberWindowState(position = restorePosition(settings.modelWindowPosition), width = 760.dp, height = 680.dp)
+        val modelJetWindowState = rememberWindowState(position = restorePosition(settings.modelJetWindowPosition), width = 820.dp, height = 700.dp)
         var hudContentHeight by remember { mutableStateOf(510.dp) }
         fun finalSettings() = settings.copy(mainPosition = mainState.savedPosition() ?: settings.mainPosition,
             hudPosition = hudState.savedPosition() ?: settings.hudPosition,
-            modelWindowPosition = modelWindowState.savedPosition() ?: settings.modelWindowPosition)
+            modelWindowPosition = modelWindowState.savedPosition() ?: settings.modelWindowPosition,
+            modelJetWindowPosition = modelJetWindowState.savedPosition() ?: settings.modelJetWindowPosition)
         fun closeApp(saveSettings: Boolean = true, acknowledgeRecordingFailure: Boolean = false) {
             if (!closing && recordingExitFailure == null) {
                 closing = true
@@ -176,6 +178,11 @@ fun main(args: Array<String>) {
         LaunchedEffect(modelWindowState) {
             snapshotFlow { modelWindowState.savedPosition() }.collect { position ->
                 if (position != null) settings = settings.copy(modelWindowPosition = position)
+            }
+        }
+        LaunchedEffect(modelJetWindowState) {
+            snapshotFlow { modelJetWindowState.savedPosition() }.collect { position ->
+                if (position != null) settings = settings.copy(modelJetWindowPosition = position)
             }
         }
         var endpoint by remember { mutableStateOf(System.getenv("VOIDMEI_ENDPOINT") ?: settings.endpoint) }
@@ -321,7 +328,8 @@ fun main(args: Array<String>) {
                                 mainState.position = resetWindowPosition()
                                 hudState.position = resetWindowPosition(64)
                                 modelWindowState.position = resetWindowPosition(96)
-                                settings = settings.copy(mainPosition = null, hudPosition = null, modelWindowPosition = null)
+                                modelJetWindowState.position = resetWindowPosition(128)
+                                settings = settings.copy(mainPosition = null, hudPosition = null, modelWindowPosition = null, modelJetWindowPosition = null)
                             }) { Text("重置窗口位置") }
                             ResetSettingsPanel(defaults, enabled = !closing && !recordingBusy && writer != null && settingsError == null,
                                 recording = recording is RecordingState.Active) { restored ->
@@ -332,6 +340,7 @@ fun main(args: Array<String>) {
                                 mainState.position = resetWindowPosition()
                                 hudState.position = resetWindowPosition(64)
                                 modelWindowState.position = resetWindowPosition(96)
+                                modelJetWindowState.position = resetWindowPosition(128)
                             }
                             SettingsTransferPanel(finalSettings(),
                                 canRestore = !closing && !recordingBusy && recording !is RecordingState.Active && writer != null && settingsError == null,
@@ -343,6 +352,7 @@ fun main(args: Array<String>) {
                                     mainState.position = restorePosition(restored.mainPosition)
                                     hudState.position = restorePosition(restored.hudPosition)
                                     modelWindowState.position = restorePosition(restored.modelWindowPosition)
+                                    modelJetWindowState.position = restorePosition(restored.modelJetWindowPosition)
                                 })
                             LegacySettingsImport(settings) { updated ->
                                 if (updated.endpoint != settings.endpoint) {
@@ -492,6 +502,10 @@ fun main(args: Array<String>) {
             (connection as? ConnectionState.Flying)?.telemetry, flightModel,
             onClose = { settings = settings.copy(modelWindowEnabled = false, modelWindowPosition = modelWindowState.savedPosition() ?: settings.modelWindowPosition) },
             onChange = { settings = it })
+
+        if (!closing) ModelJetWindow(modelJetWindowState, settings,
+            if (flightModel.state is FlightModelState.Ready) flightModel.detailResult?.getOrNull()?.jets?.engines.orEmpty() else emptyList(),
+            onClose = { settings = settings.copy(modelJetWindowEnabled = false, modelJetWindowPosition = modelJetWindowState.savedPosition() ?: settings.modelJetWindowPosition) })
 
         if (offlineModels) Window(onCloseRequest = { offlineModels = false }, title = "VoidMei · 离线模型",
             state = rememberWindowState(width = 960.dp, height = 800.dp)) {

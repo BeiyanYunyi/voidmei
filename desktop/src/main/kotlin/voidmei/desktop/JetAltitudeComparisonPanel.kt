@@ -18,8 +18,8 @@ import java.util.Locale
 import voidmei.fm.JetThrustModel
 
 @Composable
-internal fun JetAltitudeComparisonPanel(model: JetThrustModel) {
-    var expanded by rememberSaveable(model) { mutableStateOf(false) }
+internal fun JetAltitudeComparisonPanel(model: JetThrustModel, initiallyExpanded: Boolean = false) {
+    var expanded by rememberSaveable(model) { mutableStateOf(initiallyExpanded) }
     var page by rememberSaveable(model) { mutableStateOf(0) }
     var afterburner by rememberSaveable(model) { mutableStateOf(model.afterburnerKgf != null) }
     var speedFraction by rememberSaveable(model) { mutableStateOf(0f) }
