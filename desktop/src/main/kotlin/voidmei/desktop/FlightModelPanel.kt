@@ -95,6 +95,13 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
             }
             if (ModelDetailSection.THERMAL_RECOVERY !in hiddenSections) ModelThermalRecoveryPanel(parameters.engineThermals)
             if (ModelDetailSection.WEP_FUEL !in hiddenSections) ModelWepFuelPanel(parameters.wepFuel)
+            listOf(ModelDetailSection.CLEAN_PART to voidmei.fm.AerodynamicPartKind.CLEAN,
+                ModelDetailSection.FULL_PART to voidmei.fm.AerodynamicPartKind.FULL,
+                ModelDetailSection.FUSELAGE_PART to voidmei.fm.AerodynamicPartKind.FUSELAGE,
+                ModelDetailSection.FIN_PART to voidmei.fm.AerodynamicPartKind.FIN,
+                ModelDetailSection.STAB_PART to voidmei.fm.AerodynamicPartKind.STAB).forEach { (section, kind) ->
+                if (section !in hiddenSections) ModelAerodynamicPartsPanel(kind, parameters.aerodynamicParts)
+            }
             if (ModelDetailSection.INERTIA !in hiddenSections) ModelInertiaPanel(parameters.inertia)
             if (ModelDetailSection.CONTROLS !in hiddenSections) {
                 ModelControlPowerLoss(parameters.controlPowerLoss)

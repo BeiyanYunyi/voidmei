@@ -2,6 +2,16 @@
 
 2026-09-12，根据当前工作区源码及本机执行结果核对。此页区分已有实现、尚未实现与尚未验证；不以测试总数代表完整替换。
 
+## 五类气动器件参数（2026-09-12）
+
+新增无襟翼、满襟翼、机身、Fin、Stab 器件分类和五个旧开关的可选迁移。提取 CdMin、Cl0、alphaCritLow／High、ClCritLow／High，保留零和符号、原始字段路径及可用后掠比例；NoFlaps／FlapsPolar0、FullFlaps／FlapsPolar1 和各后掠来源分别展示，不跨来源拼接或补零。重复来源不提取，非法或重复字段局部保持未知并报告问题；展示每次展开 8 个来源，换模型后分页重置。
+
+沿用旧字段组路由：FuselagePlane.Polar 对应机身，HorStabPlane.Polar 对应旧 Fin，VerStabPlane.Polar 对应旧 Stab。因旧名和现代路径不直观一致，界面保留 Fin／Stab 字段组及完整来源，不按名字推断物理方向。迎角明确为未扣安装角的原始字段值，尚未复刻 Java 的安装角修正；分类迁移预览说明此差异。
+
+共享 JVM 573、JS 570、桌面单元 151、相关 GUI 37 项通过，无失败、错误或跳过。日志 `/tmp/voidmei-aerodynamic-parts-tests.log` 与最终 `/tmp/voidmei-aerodynamic-parts-final.log`。覆盖别名并存、多个后掠来源、重复／非法数据、符号和未知值、实际模型页隐藏恢复、五个旧开关应用、分页和换模型重置，以及模型／曲线回归。
+
+真实配置清点降至 31 条记录、26 个不同标识，见 `/tmp/voidmei-aerodynamic-parts-inventory.tsv` 和 `/tmp/voidmei-aerodynamic-parts-inventory.log`。当前显示分类 18 类、支持 13 类旧显示意图；旧模型开关剩余升力、阻力和指定工况最大升力过载三类。原始字段显示不代表所有旧派生值完全复刻。本轮未打包。
+
 ## 模型详情增量完整集成验收（2026-09-12）
 
 对生产源码 `8ea750f5` 完成完整回归及最新独立包构建，包含模型分类、曲线状态保留、旧分类选择迁移、襟翼节点表、三舵 PowerLoss、转动惯量、共享加力燃料和耐热恢复。共享 JVM 571、JS 568、桌面单元 151、完整 GUI 177 类 393 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-model-details-integrated.log`。未变化的 Gradle 任务可复用已有结果，完整 GUI 任务实际执行。
