@@ -3,6 +3,7 @@ package voidmei.desktop
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.*
@@ -40,6 +41,8 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
     val fuel = fuels?.options?.firstOrNull { it.id == fuelId }
     val calculation = parameterResult?.getOrNull()
     val selectedParameters = calculation?.parameters
+    // Scope retained inputs to the loaded model and fuel calculation, outside display branches.
+    val curveStates = key(ready, calculation) { rememberSaveableStateHolder() }
     LaunchedEffect(ready, selectedParameters, details) {
         onModel(ready?.aircraft?.takeIf { selectedParameters != null }, selectedParameters)
         onSnapshot(if (ready != null && selectedParameters != null && details != null)
@@ -155,14 +158,14 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
                         Text("当前高度/TAS 模型功率：军用 ${military?.powerHp.display()} · WEP ${wep?.powerHp.display()} hp/台")
                         Text("按海平面 15°C 估算 · $fuelLabel；未计入损伤或实时油门。", style = MaterialTheme.typography.bodySmall)
                         built.wepIssue?.let { Text("WEP 不可用：$it", color = MaterialTheme.colorScheme.error) }
-                        PowerCurvePanel(built, fuelLabel)
+                        curveStates.SaveableStateProvider("piston-$engineIndex") { PowerCurvePanel(built, fuelLabel) }
                     } else Text("功率模型不可用：${model.exceptionOrNull()?.message}", color = MaterialTheme.colorScheme.error)
             }
             if (engines.issues.isNotEmpty()) Text("发动机参数不可用：${engines.issues.joinToString("；")}", color = MaterialTheme.colorScheme.error)
             }
             if (ModelDetailSection.JET !in hiddenSections) {
                 val jets = prepared.jets
-                jets.engines.forEach { jet ->
+                jets.engines.forEachIndexed { jetIndex, jet ->
                     val altitude = telemetry?.altitudeM
                     val speed = telemetry?.tasKmh
                     val military = if (altitude != null && speed != null) jet.thrust(altitude, speed) else null
@@ -170,7 +173,7 @@ internal fun FlightModelPanel(telemetry: Telemetry?, dataRoot: String,
                     Text("${jet.source} · 喷气推力表 ${jet.altitudesM.size} × ${jet.velocitiesKmh.size}")
                     Text("当前高度/TAS 查表：军用 ${military.display()} · 加力 ${afterburner.display()} kgf/台")
                     Text("范围 ${jet.altitudesM.first().display()}–${jet.altitudesM.last().display()} m / ${jet.velocitiesKmh.first().display()}–${jet.velocitiesKmh.last().display()} km/h；范围外或缺失点不估算。", style = MaterialTheme.typography.bodySmall)
-                    JetThrustCurvePanel(jet)
+                    curveStates.SaveableStateProvider("jet-$jetIndex") { JetThrustCurvePanel(jet) }
             }
             if (jets.issues.isNotEmpty()) Text("喷气推力表不可用：${jets.issues.joinToString("；")}", color = MaterialTheme.colorScheme.error)
             }

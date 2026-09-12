@@ -3,6 +3,7 @@ package voidmei.desktop
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.util.Locale
@@ -10,9 +11,9 @@ import java.util.Locale
 @Composable
 internal fun PowerConditionsPanel(speed: Double, temperature: Double, equivalent: Boolean,
     onApply: (Double, Double) -> Unit) {
-    var speedDraft by remember(speed) { mutableStateOf(speed.toString()) }
-    var temperatureDraft by remember(temperature) { mutableStateOf(temperature.toString()) }
-    var error by remember(speedDraft, temperatureDraft) { mutableStateOf(false) }
+    var speedDraft by rememberSaveable(speed) { mutableStateOf(speed.toString()) }
+    var temperatureDraft by rememberSaveable(temperature) { mutableStateOf(temperature.toString()) }
+    var error by rememberSaveable(speedDraft, temperatureDraft) { mutableStateOf(false) }
     val speedType = if (equivalent) "EAS" else "TAS"
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(speedDraft, { speedDraft = it }, Modifier.fillMaxWidth(), singleLine = true,

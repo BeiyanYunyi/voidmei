@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -27,11 +28,11 @@ private data class PowerCurves(val military: List<PistonPowerPoint?>, val wep: L
 
 @Composable
 internal fun PowerCurvePanel(model: PistonModels, fuelLabel: String = "未选择燃油修正") {
-    var expanded by remember(model) { mutableStateOf(false) }
-    var equivalentAirspeed by remember { mutableStateOf(false) }
-    var speed by remember(model) { mutableStateOf(0.0) }
-    var temperature by remember(model) { mutableStateOf(15.0) }
-    var probe by remember(model) { mutableStateOf(0f) }
+    var expanded by rememberSaveable(model) { mutableStateOf(false) }
+    var equivalentAirspeed by rememberSaveable { mutableStateOf(false) }
+    var speed by rememberSaveable(model) { mutableStateOf(0.0) }
+    var temperature by rememberSaveable(model) { mutableStateOf(15.0) }
+    var probe by rememberSaveable(model) { mutableStateOf(0f) }
     TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起功率曲线" else "展开功率曲线") }
     if (!expanded) return
     var curves by remember(model, speed, temperature, equivalentAirspeed) { mutableStateOf<PowerCurves?>(null) }
