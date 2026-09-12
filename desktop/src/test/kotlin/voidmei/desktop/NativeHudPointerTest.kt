@@ -26,8 +26,9 @@ class NativeHudPointerTest {
 
     private fun requireIsolatedDesktop() {
         check((com.sun.jna.Platform.isLinux() && System.getenv("VOIDMEI_TEST_ISOLATED_X11") == "1") ||
-            (com.sun.jna.Platform.isWindows() && System.getenv("VOIDMEI_TEST_ISOLATED_WINDOWS") == "1")) {
-            "Use a dedicated Xvfb display or an isolated interactive Windows test desktop"
+            (com.sun.jna.Platform.isWindows() && System.getenv("VOIDMEI_TEST_ISOLATED_WINDOWS") == "1") ||
+            (com.sun.jna.Platform.isMac() && System.getenv("VOIDMEI_TEST_ISOLATED_MACOS") == "1")) {
+            "Use a dedicated Xvfb display or an isolated interactive Windows/macOS test desktop"
         }
         System.getProperty("voidmei.testPackagedApp")?.let { directory ->
             val packaged = java.io.File(directory, "lib/app").canonicalFile.toPath()

@@ -31,12 +31,13 @@ internal fun supportsX11Focus(environment: Map<String, String> = System.getenv()
     !environment["DISPLAY"].isNullOrBlank() && environment["WAYLAND_DISPLAY"].isNullOrBlank() &&
         !environment["XDG_SESSION_TYPE"].equals("wayland", ignoreCase = true)
 
-internal fun supportsGameFocus(): Boolean = com.sun.jna.Platform.isWindows() ||
+internal fun supportsGameFocus(): Boolean = com.sun.jna.Platform.isWindows() || com.sun.jna.Platform.isMac() ||
     (com.sun.jna.Platform.isLinux() && supportsX11Focus())
 
 internal fun currentGameFocus(): GameFocus = try {
     when {
         com.sun.jna.Platform.isWindows() -> detectGameFocus(WindowsForegroundProcess)
+        com.sun.jna.Platform.isMac() -> detectMacGameFocus()
         com.sun.jna.Platform.isLinux() && supportsX11Focus() ->
             X11ForegroundProcess().use { detectGameFocus(it, setOf("aces", "aces.exe")) }
         else -> GameFocus.UNKNOWN

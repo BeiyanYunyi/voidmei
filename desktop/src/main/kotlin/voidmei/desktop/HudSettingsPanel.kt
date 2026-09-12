@@ -24,16 +24,16 @@ internal fun HudSettingsPanel(settings: AppSettings, onChange: (AppSettings) -> 
         Switch(settings.hudAutoHideOnFocusLoss, { onChange(settings.copy(hudAutoHideOnFocusLoss = it)) },
             Modifier.testTag("hud-auto-hide-focus"),
             enabled = supportsGameFocus() || settings.hudAutoHideOnFocusLoss)
-        Text("切出游戏时隐藏 HUD（Windows / Linux X11）")
+        Text("切出游戏时隐藏 HUD（Windows / Linux X11 / macOS）")
     }
     if (!supportsGameFocus()) Text("当前会话无法检测游戏前台，HUD 将保持显示。", style = MaterialTheme.typography.bodySmall)
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Switch(settings.hudClickThrough || settings.hudSceneLayout?.enabled == true, { onChange(settings.copy(hudClickThrough = it)) },
             Modifier.testTag("hud-click-through"),
             enabled = settings.hudSceneLayout?.enabled != true && System.getProperty("os.name", "").lowercase().let {
-                it.contains("linux") || it.startsWith("windows")
+                it.contains("linux") || it.startsWith("windows") || it.startsWith("mac")
             } || settings.hudSceneLayout?.enabled != true && settings.hudClickThrough)
-        Text("HUD 鼠标穿透（Linux / Windows）")
+        Text("HUD 鼠标穿透（Linux / Windows / macOS）")
     }
     Text(if (settings.hudSceneLayout?.enabled == true)
         "分区模式始终穿透鼠标，请在预览中调整区域。返回纵向 HUD 布局后可关闭穿透。"

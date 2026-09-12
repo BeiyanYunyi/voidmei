@@ -1,3 +1,4 @@
+import java.time.Duration
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 
@@ -8,6 +9,12 @@ plugins {
 }
 
 kotlin { jvmToolchain(21) }
+// macOS NSWindow access uses OpenJDK's retained AWT peer; no private fields or Unsafe.
+val macAwtExports = if (System.getProperty("os.name").startsWith("Mac"))
+    listOf("sun.awt", "sun.lwawt", "sun.lwawt.macosx").map { "--add-exports=java.desktop/$it=ALL-UNNAMED" }
+    else emptyList()
+tasks.withType<Test>().configureEach { jvmArgs(macAwtExports) }
+
 tasks.processResources {
     from(rootProject.file("voice")) { include("*.wav"); into("voice") }
 }
@@ -42,6 +49,17 @@ tasks.register<Test>("nativeHudTransparencyTest") {
     systemProperty("java.awt.headless", "false")
 }
 tasks.test { exclude("**/HudScenePerformanceTest.class") }
+tasks.test { exclude("**/NativeMacFocusTest.class") }
+tasks.register<Test>("nativeMacFocusTest") {
+    description = "Checks AppKit foreground PID and executable path on a dedicated macOS desktop."
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    include("**/NativeMacFocusTest.class")
+    outputs.upToDateWhen { false }
+    systemProperty("java.awt.headless", "false")
+    timeout.set(Duration.ofSeconds(60))
+}
 tasks.register<Test>("nativeHudScenePerformanceTest") {
     description = "Measures compatible full-display HUD updates on an isolated composited display."
     group = "verification"
@@ -77,7 +95,7 @@ tasks.register<Test>("guiTest") {
     systemProperty("java.awt.headless", "false")
 }
 tasks.register<Test>("nativeHudPointerTest") {
-    description = "Tests HUD mouse input on an isolated X11 display or interactive Windows test desktop."
+    description = "Tests HUD mouse input on an isolated X11 display or interactive Windows/macOS test desktop."
     group = "verification"
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
@@ -117,6 +135,7 @@ tasks.register<Test>("packagedHudPointerTest") {
 compose.desktop {
     application {
         mainClass = "voidmei.desktop.MainKt"
+        jvmArgs += macAwtExports
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "VoidMei"

@@ -10,9 +10,11 @@ internal fun HudPointerInput(window: Window, enabled: Boolean, onError: (String?
     val report by rememberUpdatedState(onError)
     val controller = remember(window) {
         val windows = WindowsPointerRegion(window)
+        val mac = MacPointerRegion(window)
         HudPointerController({
             when {
                 com.sun.jna.Platform.isWindows() -> windows.setClickThrough(it)
+                com.sun.jna.Platform.isMac() -> mac.setClickThrough(it)
                 com.sun.jna.Platform.isLinux() -> X11PointerRegion.setClickThrough(window, it)
                 else -> error("当前平台尚不支持 HUD 鼠标穿透")
             }
