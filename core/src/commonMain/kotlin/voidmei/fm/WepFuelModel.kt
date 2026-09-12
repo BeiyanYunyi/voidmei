@@ -1,7 +1,16 @@
 package voidmei.fm
 
 /** Shared tank capacity; consumption in kg/s for each telemetry engine while throttle exceeds 100%. */
-data class WepFuelModel(val capacityKg: Double, val consumptionKgPerSecond: Map<Int, Double>)
+data class WepFuelModel(val capacityKg: Double, val consumptionKgPerSecond: Map<Int, Double>) {
+    /** Full shared tank, all engines continuously consuming at their model rates. */
+    fun fullConsumptionDurationSeconds(): Double? {
+        if (!capacityKg.isFinite() || capacityKg <= 0 || consumptionKgPerSecond.isEmpty() ||
+            consumptionKgPerSecond.any { (index, rate) -> index <= 0 || !rate.isFinite() || rate < 0 }) return null
+        val total = consumptionKgPerSecond.values.sum()
+        if (!total.isFinite() || total <= 0) return null
+        return (capacityKg / total).takeIf { it.isFinite() && it > 0 }
+    }
+}
 
 object WepFuelExtractor {
     fun extract(document: BlkBlock): WepFuelModel? {

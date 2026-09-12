@@ -22,7 +22,7 @@ class ModelDetailVisibilityGuiTest {
         val root = Files.createTempDirectory("voidmei-model-sections")
         val directory = Files.createDirectories(root.resolve("aces/gamedata/flightmodels/fm")).parent
         Files.writeString(directory.resolve("test.blkx"), "fmFile:t=\"fm/test.blk\"")
-        Files.writeString(directory.resolve("fm/test.blkx"), "Mass { EmptyMass:r=2500 }\nFlapsDestructionIndSpeedP:p4=0.5,500,1,300\nAileronPowerLoss:r=0.5\nMomentOfInertia:p3=1,2,3")
+        Files.writeString(directory.resolve("fm/test.blkx"), "Mass { EmptyMass:r=2500; MaxNitro:r=120 }\nFlapsDestructionIndSpeedP:p4=0.5,500,1,300\nAileronPowerLoss:r=0.5\nMomentOfInertia:p3=1,2,3\nEngineType0 { Main { Type:t=Inline } Afterburner { NitroConsumption:r=0.25 } }\nEngine0 { Type:i=0 }")
         val telemetry = TelemetryParser.parse("""{"valid":true}""", """{"valid":true,"type":"test"}""")!!
         var hidden by mutableStateOf(emptySet<ModelDetailSection>())
         var published: FlightModelParameters? = null
@@ -40,9 +40,11 @@ class ModelDetailVisibilityGuiTest {
             compose.onNodeWithTag("model-flap-limit-table").assertExists()
             compose.onNodeWithText("副翼 AileronPowerLoss：0.500").assertExists()
             compose.onNodeWithText("俯仰 P：3.000").assertExists()
+            compose.onNodeWithText("全发动机持续加力理论时限：8.00 分钟").assertExists()
             val previous = published
             val before = calls
             compose.runOnIdle { hidden = ModelDetailSection.entries.toSet() }
+            compose.onNodeWithText("全发动机持续加力理论时限：8.00 分钟").assertDoesNotExist()
             compose.onNodeWithText("俯仰 P：3.000").assertDoesNotExist()
             compose.onNodeWithText("副翼 AileronPowerLoss：0.500").assertDoesNotExist()
             compose.onNodeWithTag("model-field-list").assertDoesNotExist()
@@ -53,6 +55,7 @@ class ModelDetailVisibilityGuiTest {
             compose.onNodeWithText("模型空重 2500.00 kg", substring = true).assertExists()
             compose.onNodeWithText("副翼 AileronPowerLoss：0.500").assertExists()
             compose.onNodeWithText("俯仰 P：3.000").assertExists()
+            compose.onNodeWithText("全发动机持续加力理论时限：8.00 分钟").assertExists()
             compose.onNodeWithTag("model-field-list").assertExists()
             compose.onNodeWithTag("model-flap-limit-table").assertExists()
             compose.runOnIdle { assertTrue(hidden.isEmpty()); assertSame(previous, published) }
