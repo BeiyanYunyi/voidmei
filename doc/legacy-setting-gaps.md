@@ -12,7 +12,7 @@
 | 姿态旧颜色选项 | `attitudeIndicatorUseNumColor` | 在当前 Java `AttitudeOverlay` 中只给 `transParentWhite` 赋值，未找到绘制读取。先核实有效行为，不添加无效果开关来缩短清单。 |
 | FM 原始信息窗口 | `enableFMPrint`、`displayFmKey` | Kotlin 已有原始字段筛选面板（`ModelFieldsPanel`）；旧独立窗口开关及显示键还需核对行为后迁移。 |
 | 模型选择和曲线状态 | `selectedFM0`、`selectedFM1`、`powerCurveSpeed`、`powerCurveWep` | 需核对旧机型标识、路径以及曲线输入的含义，明确如何恢复到当前模型会话。 |
-| 模型分类显示 | `showWeight`、`showCritSpeed`、`showGLoadLimits`、`showFlapLimits`、`showControlEffectiveness`、`showNitro`、`showHeatRecovery`、`showMaxLiftLoad`、`showInertia`、`showLift`、`showDrag`、`showNoFlapsWing`、`showFullFlapsWing`、`showFuselage`、`showFin`、`showStab` | 当前已有模型详情与原始字段筛选，但不等同于这些旧分类选择。逐项对照显示内容、单位、缺失数据和选择状态。 |
+| 模型分类显示 | `showWeight`、`showCritSpeed`、`showGLoadLimits`、`showFlapLimits`、`showControlEffectiveness`、`showNitro`、`showHeatRecovery`、`showMaxLiftLoad`、`showInertia`、`showLift`、`showDrag`、`showNoFlapsWing`、`showFullFlapsWing`、`showFuselage`、`showFin`、`showStab` | 当前已有可保存的 10 类模型详情显示选择与原始字段筛选，实时和离线页面共用，但尚未映射这些旧分类选择。逐项对照显示内容、单位、缺失数据和选择状态。 |
 | 全局语音包选择 | `globalVoicePack` | Java 的选择动作批量修改单条语音配置；Kotlin 已有语音 ZIP 安装和单条语音迁移。不能把保存的全局选择直接覆盖已迁移的单条选择。 |
 | 绘制与调试 | `AAEnable`、`enableLayoutDebug` | Java 的渲染选项／MiniHUD 布局调试与 Compose 后端不同，需对照实际功能，不直接映射为软件渲染或用户 HUD 开关。 |
 | 操作按钮 | `openComparison`、`openPowerCurve`、`importConfig`、`factoryReset` | 这些是操作入口，不是读取旧配置时应自动执行的动作。比较、导入及恢复默认已有 Kotlin 入口，应单独验收对应功能。 |

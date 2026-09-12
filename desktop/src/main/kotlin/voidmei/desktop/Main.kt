@@ -411,7 +411,8 @@ fun main(args: Array<String>) {
                             voiceError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                             SectionHeading(MainSection.MODEL, anchors)
                             TextButton(enabled = !closing, onClick = { offlineModels = true }) { Text("打开离线模型查看") }
-                            FlightModelPanel(flight?.telemetry, settings.fmDataRoot, onModel = { _, _ -> }, session = flightModel, onDataRoot = {
+                            FlightModelPanel(flight?.telemetry, settings.fmDataRoot, onModel = { _, _ -> }, session = flightModel, hiddenSections = settings.hiddenModelSections,
+                                onHiddenSections = { settings = settings.copy(hiddenModelSections = it) }, onDataRoot = {
                                 settings = settings.copy(fmDataRoot = it)
                             })
                             SectionHeading(MainSection.RECORDS, anchors)
@@ -474,7 +475,7 @@ fun main(args: Array<String>) {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.padding(24.dp).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OfflineModelPanel(settings.fmDataRoot)
+                        OfflineModelPanel(settings.fmDataRoot, settings.hiddenModelSections) { settings = settings.copy(hiddenModelSections = it) }
                     }
                 }
             }

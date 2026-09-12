@@ -8,7 +8,8 @@ import androidx.compose.ui.unit.dp
 import java.util.Locale
 
 @Composable
-internal fun OfflineModelPanel(initialDataRoot: String) {
+internal fun OfflineModelPanel(initialDataRoot: String, hiddenSections: Set<voidmei.config.ModelDetailSection> = emptySet(),
+    onHiddenSections: ((Set<voidmei.config.ModelDetailSection>) -> Unit)? = null) {
     var root by remember { mutableStateOf(initialDataRoot) }
     var rootDraft by remember { mutableStateOf(initialDataRoot) }
     var draft by remember { mutableStateOf("") }
@@ -44,6 +45,6 @@ internal fun OfflineModelPanel(initialDataRoot: String) {
     selected?.let { aircraft ->
         Text("查看机型：$aircraft")
         FlightModelPanel(null, root, onModel = { _, _ -> }, onDataRoot = { root = it }, aircraftOverride = aircraft,
-            showDirectoryControls = false, onSnapshot = { currentModel = it?.takeIf { model -> model.aircraft == aircraft } })
+            hiddenSections = hiddenSections, onHiddenSections = onHiddenSections, showDirectoryControls = false, onSnapshot = { currentModel = it?.takeIf { model -> model.aircraft == aircraft } })
     } ?: Text("数据目录：$root")
 }

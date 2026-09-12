@@ -67,6 +67,7 @@ data class AppSettings(
     val hudAltitudeMode: HudAltitudeMode = HudAltitudeMode.SEA_LEVEL,
     val hudSceneLayout: HudSceneLayout? = null,
     val hudScenePresets: Map<String, HudSceneLayout> = emptyMap(),
+    val hiddenModelSections: Set<ModelDetailSection> = emptySet(),
 ) {
     init {
         require(readingColors.keys.all { it in setOf("label", "value", "warning", "shade", "unit") } && readingColors.values.all { parseHexColor(it) != null })
@@ -198,6 +199,9 @@ object SettingsJson {
                 require(!it.isString); it.int
             } ?: defaults.hudWidthDp,
             mainPosition = position("mainPosition"), hudPosition = position("hudPosition"),
+            hiddenModelSections = root["hiddenModelSections"]?.jsonArray?.map { value ->
+                value.jsonPrimitive.let { require(it.isString); ModelDetailSection.valueOf(it.content) }
+            }?.toSet() ?: emptySet(),
             fmDataRoot = root["fmDataRoot"]?.jsonPrimitive?.content ?: defaults.fmDataRoot,
             recordingDirectory = root["recordingDirectory"]?.jsonPrimitive?.content ?: defaults.recordingDirectory,
             voiceEnabled = root["voiceEnabled"]?.jsonPrimitive?.boolean ?: defaults.voiceEnabled,
@@ -263,6 +267,7 @@ object SettingsJson {
         fields["hudFontScale"] = JsonPrimitive(settings.hudFontScale)
         fields["hudWidthDp"] = JsonPrimitive(settings.hudWidthDp)
         fields["hudEngineIndex"] = settings.hudEngineIndex?.let(::JsonPrimitive) ?: JsonNull
+        fields["hiddenModelSections"] = JsonArray(settings.hiddenModelSections.sortedBy { it.ordinal }.map { JsonPrimitive(it.name) })
         fields["fmDataRoot"] = JsonPrimitive(settings.fmDataRoot)
         fields["recordingDirectory"] = JsonPrimitive(settings.recordingDirectory)
         fields["recordingPerformanceNotifications"] = JsonPrimitive(settings.recordingPerformanceNotifications)
