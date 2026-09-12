@@ -49,6 +49,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xcompmgr stalonetray
           python script/test_hud_compositing.py ./gradlew :desktop:guiTest
+      - name: Test native desktop tray menus
+        if: runner.os == 'Linux'
+        shell: bash
+        run: dbus-run-session -- env VOIDMEI_TEST_ISOLATED_DBUS=1 ./gradlew :desktop:nativeStatusNotifierTrayTest
       - name: Test native tray manager loss and recovery
         if: runner.os == 'Linux'
         shell: bash

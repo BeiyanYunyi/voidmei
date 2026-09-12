@@ -1,7 +1,7 @@
 { lib, stdenvNoCC, gradle, jdk21, nodejs, makeWrapper, binutils, glibcLocales, makeDesktopItem
 , libx11, libxext, libxrender, libxi, libxtst, libxrandr
 , libxkbcommon, libxcb, libxt, libxinerama, libGL, fontconfig, freetype
-, gtk3, gsettings-desktop-schemas
+, gtk3, glib, gsettings-desktop-schemas
 }:
 let
   desktopItem = makeDesktopItem {
@@ -53,7 +53,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     makeWrapper "$out/lib/voidmei/bin/VoidMei" "$out/bin/voidmei-kotlin" \
       --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [
         libx11 libxext libxrender libxi libxtst libxrandr libxkbcommon
-        libxcb libxt libxinerama libGL fontconfig freetype gtk3
+        libxcb libxt libxinerama libGL fontconfig freetype gtk3 glib
       ]} \
       --set-default XDG_DATA_DIRS /usr/local/share:/usr/share \
       --prefix XDG_DATA_DIRS : ${lib.concatMapStringsSep ":" (pkg: "${pkg}/share/gsettings-schemas/${pkg.name}") [ gtk3 gsettings-desktop-schemas ]}

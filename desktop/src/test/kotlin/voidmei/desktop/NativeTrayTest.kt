@@ -41,7 +41,7 @@ class NativeTrayTest {
             EventQueue.invokeAndWait {
                 initial = SystemTray.getSystemTray().trayIcons.size
                 main = Frame("Native tray restore test").apply { setSize(320, 180); isVisible = true; isVisible = false }
-                registration = assertNotNull(installDesktopTray({ restoreDesktopWindow(main!!) }, {}, {}) { available += it })
+                registration = assertNotNull(installAwtDesktopTray(desktopTrayImage(), { restoreDesktopWindow(main!!) }, {}, {}) { available += it })
                 assertEquals(initial + 1, SystemTray.getSystemTray().trayIcons.size)
             }
             checkProxyClicks(main!!)

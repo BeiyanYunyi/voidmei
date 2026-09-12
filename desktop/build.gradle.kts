@@ -159,3 +159,19 @@ tasks.register<Test>("nativeTrayTest") {
         }
     }
 }
+
+tasks.test { exclude("**/NativeStatusNotifierTrayTest.class") }
+tasks.register<Test>("nativeStatusNotifierTrayTest") {
+    description = "Checks native Linux tray menus, actions and lifecycle on an isolated D-Bus session."
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    include("**/NativeStatusNotifierTrayTest.class")
+    systemProperty("java.awt.headless", "true")
+    outputs.upToDateWhen { false }
+    doFirst {
+        require(System.getenv("VOIDMEI_TEST_ISOLATED_DBUS") == "1") {
+            "Run under dbus-run-session with VOIDMEI_TEST_ISOLATED_DBUS=1"
+        }
+    }
+}

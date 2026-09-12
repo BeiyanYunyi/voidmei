@@ -11,7 +11,13 @@ internal interface DesktopTray : AutoCloseable {
 
 /** Returns null when the desktop cannot provide a recoverable tray entry. */
 internal fun installDesktopTray(onShow: () -> Unit, onHud: () -> Unit, onExit: () -> Unit, onAvailability: (Boolean) -> Unit = {}): DesktopTray? {
+    val image = desktopTrayImage()
+    StatusNotifierTray.install(image, onShow, onHud, onExit, onAvailability)?.let { return it }
     if (!SystemTray.isSupported()) return null
+    return installAwtDesktopTray(image, onShow, onHud, onExit, onAvailability)
+}
+
+internal fun desktopTrayImage(): BufferedImage {
     val image = BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB)
     image.createGraphics().let { g ->
         try {
@@ -20,6 +26,11 @@ internal fun installDesktopTray(onShow: () -> Unit, onHud: () -> Unit, onExit: (
             g.drawLine(8, 8, 16, 24); g.drawLine(16, 24, 24, 8)
         } finally { g.dispose() }
     }
+    return image
+}
+
+internal fun installAwtDesktopTray(image: BufferedImage, onShow: () -> Unit, onHud: () -> Unit, onExit: () -> Unit,
+    onAvailability: (Boolean) -> Unit = {}): DesktopTray {
     val menu = PopupMenu()
     fun item(label: String, action: () -> Unit) = MenuItem(label).also {
         it.addActionListener { action() }; menu.add(it)

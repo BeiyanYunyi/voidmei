@@ -24,7 +24,7 @@ in {
             export JAVA_HOME=${pkgs.jdk21}
             export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath (with pkgs; [
               libx11 libxext libxrender libxi libxtst libxrandr
-              libxkbcommon libxcb libxt libxinerama libGL fontconfig freetype gtk3
+              libxkbcommon libxcb libxt libxinerama libGL fontconfig freetype gtk3 glib
             ])}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
             export XDG_DATA_DIRS="${gtkSchemaPath}:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
             project_dir="''${VOIDMEI_PROJECT_DIR:-$PWD}"
@@ -120,7 +120,7 @@ in {
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (with pkgs; [
             libx11 libxext libxrender libxi libxtst libxrandr
             libxkbcommon libxcb libxt libxinerama
-            libGL fontconfig freetype gtk3
+            libGL fontconfig freetype gtk3 glib
           ]);
           shellHook = ''
             export XDG_DATA_DIRS="${gtkSchemaPath}:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
