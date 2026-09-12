@@ -41,6 +41,18 @@ public final class CloseWindowAgent {
                 while (!Files.exists(Path.of(requestPath))) Thread.sleep(50);
                 EventQueue.invokeLater(() -> {
                     try {
+                    if (Files.exists(Path.of(requestPath).getParent().resolve("require-model-window"))) {
+                        Frame model = null;
+                        int count = 0;
+                        for (Frame candidate : Frame.getFrames()) {
+                            if (candidate.isDisplayable() && "VoidMei · 当前模型".equals(candidate.getTitle())) { model = candidate; count++; }
+                        }
+                        if (count != 1 || !model.isVisible()) throw new AssertionError("Expected one visible model window");
+                        if (model.isAlwaysOnTop() || model.getX() != 120 || model.getY() != 90)
+                            throw new AssertionError("Saved model window preferences not applied: " + model.getBounds());
+                        Files.writeString(Path.of(requestPath).getParent().resolve("model-window-probe.json"),
+                            "{\"visible\":true,\"count\":1,\"alwaysOnTop\":false,\"x\":120,\"y\":90}");
+                    }
                     for (Frame frame : Frame.getFrames()) {
                         if (frame.isDisplayable() && "VoidMei · Kotlin".equals(frame.getTitle())) {
                             if (Files.exists(Path.of(requestPath).getParent().resolve("require-single-hud"))) {

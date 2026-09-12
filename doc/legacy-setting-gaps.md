@@ -34,7 +34,7 @@ nix develop path:. --command java --class-path 'core/build/libs/core-jvm.jar:des
 
 ## 当前集成验证
 
-生产源码 `5027abb5` 共享 JVM 584、JS 581、桌面单元 151、完整 GUI 181 类 398 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-aero-integrated.log`。独立包 `/tmp/voidmei-kmp-aero-details` 已通过隔离 Linux 启动、保存渲染器设置、AWT 心跳、窗口位置保存及正常退出验证，报告 `/tmp/voidmei-package-smoke-3madh4iu/report.json`。实际游戏与跨平台验证仍未完成。
+生产源码 `960a4b97` 共享 JVM 591、JS 588、桌面单元 153、完整 GUI 184 类 405 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-window-hotkey-integrated.log`。独立包 `/tmp/voidmei-kmp-model-window` 已通过隔离 Linux 启动、保存渲染器偏好、AWT 心跳、主窗口位置与正常退出，以及模型浮窗实际可见、位置／置顶状态和设置保存检查，报告 `/tmp/voidmei-package-smoke-xiize_pz/report.json`。实际游戏与跨平台验证仍未完成。
 
 ## 历史集成验证
 
@@ -101,4 +101,4 @@ Java `FieldOverlay` 调用 `setShadeWidth(10)`，实际绘制由项目自带 Web
 共享 JVM 538、JS 535、桌面单元 151、相关 GUI 18 项通过，来源搜索截图已检查。日志 `/tmp/voidmei-report-source-tests.log`、`/tmp/voidmei-report-source-gui.log`。本轮只补全报告来源，没有新增迁移映射，仍为 50 条记录、42 个标识。
 
 
-姿态显示刷新已支持 10–100 ms 及关闭节流，旧 `attitudeIndicatorFreqMs` 可在导入预览中迁移。新版作用于 HUD 姿态图及独立姿态分区，不改变遥测；与旧 Java 事件时间重绘策略不同，不保证精确帧率。当前相关验证见 `kotlin-acceptance.md` 的姿态显示刷新记录；上方完整包验证仍对应 `5027abb5`。
+姿态显示刷新已支持 10–100 ms 及关闭节流，旧 `attitudeIndicatorFreqMs` 可在导入预览中迁移。新版作用于 HUD 姿态图及独立姿态分区，不改变遥测；与旧 Java 事件时间重绘策略不同，不保证精确帧率。当前相关验证见 `kotlin-acceptance.md` 的姿态显示刷新记录；上方完整包验证对应 `960a4b97`。

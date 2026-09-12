@@ -2,6 +2,16 @@
 
 2026-09-12，根据当前工作区源码及本机执行结果核对。此页区分已有实现、尚未实现与尚未验证；不以测试总数代表完整替换。
 
+## 姿态刷新、模型浮窗与热键整包验收（2026-09-12）
+
+对生产源码 `960a4b97` 完成完整回归与独立安装包构建。共享 JVM 591、JS 588、桌面单元 153、完整 GUI 184 类 405 项通过，无失败、错误或跳过，日志 `/tmp/voidmei-window-hotkey-integrated.log`。完整 GUI 实际运行约 90 秒，未变化的任务复用结果；原生热键 2 项结果复用此前已实测的 `/tmp/voidmei-expanded-keys-final.log`，本次 Gradle 标记该任务 UP-TO-DATE。
+
+独立包 `/tmp/voidmei-kmp-model-window` 指向 `/nix/store/4jnzjjpz2kxg6irli142chw1kcyq5q52-voidmei-kotlin-2.0.0`，构建日志 `/tmp/voidmei-window-hotkey-package.log`。新增外部整包检查 `script/smoke_model_window.py`，使用现有关闭探针的可选标记核对该进程内真实模型窗口，不改生产启动逻辑。
+
+隔离 Linux X11 报告 `/tmp/voidmei-package-smoke-xiize_pz/report.json` 确认模型窗口唯一且可见、位置 120/90、非置顶；保存的 Alt+LEFT 绑定、监听关闭、75 ms 姿态刷新、模型窗口开启与位置在正常退出后保持。主窗口及 HUD 使用保存的 SOFTWARE_FAST，AWT 心跳通过，主窗口退出前最终位置 85/77 保存、正常退出码 0，日志 `/tmp/voidmei-model-window-smoke.log`。检查不启用全局监听，不证明本整包游戏内热键效果、完整模型内容、全部 UI 响应、音频、物理关闭按钮、多显示器或其他平台；原生按键有独立 X11 测试证据。
+
+真实旧配置差异仍为 26 条记录、21 个标识。旧 `enableFMPrint` 对喷气推力图的关联，以及其他窗口与模型选择状态差异继续保留，尚不满足完整替换 Java 版的验收范围。
+
 ## 扩展模型按键与搜索（2026-09-12）
 
 模型按键从 38 种扩展至 89 种，新增数字 0–9、F13–F24、方向／导航／编辑键、常用标点、Print Screen、Pause 和菜单键。编码取自当前 JNativeHook 2.2.2 依赖，并由测试逐一比对；旧同编码可使用已有可选迁移流程。数字保存为 DIGIT0–DIGIT9，界面与导入预览显示直观数字；旧字母和 F1–F12 保存格式不变。锁定键、独立修饰键及其他专用／小键盘位置区分尚未覆盖，未知编码继续报告。
