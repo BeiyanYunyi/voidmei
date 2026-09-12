@@ -52,7 +52,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                 val scroll = key(flight != null, flight?.telemetry?.aircraft, region.content, region.engineIndex, fields, region.messageLimit, region.messageMaxLines, region.hiddenLabels, settings.hudHiddenLabels,
                     region.readingLabelFont, region.readingNumberFont, region.readingTextSizes, region.readingTextWeights,
                     region.readingColumns ?: settings.hudReadingColumns, region.fontScale ?: settings.hudFontScale,
-                    region.width, region.height, region.showFlightInstruments, region.showFlightStatus, region.showEngineInstruments, region.showEngineReadings, region.engineControlDimensions, region.engineControlsLayout, region.showControlStick) {
+                    region.width, region.height, region.showFlightInstruments, region.showFlightStatus, region.showEngineInstruments, region.showEngineReadings, region.showAircraftFuel, region.engineControlDimensions, region.engineControlsLayout, region.showControlStick) {
                     rememberScrollState()
                 }
                 val regionAlerts = if (region.content == HudRegionContent.ALERTS)
@@ -117,6 +117,7 @@ internal fun HudScene(connection: ConnectionState, settings: AppSettings, layout
                                     showInstruments = region.showEngineInstruments, showReadings = region.showEngineReadings, controlsLayout = region.engineControlsLayout,
                                     heatBudget = thermal?.hudBudget(flight, model, region.engineIndex),
                                     powerPercent = flight.enginePowerPercentReading(region.engineIndex, model), tasKmh = flight.telemetry.tasKmh, hiddenLabels = region.hiddenLabels.orEmpty())
+                                    if (region.showAircraftFuel) EngineAircraftFuelPanel(flight, alerts, region.showEngineInstruments)
                                     if (region.showEngineInstruments) CompressorStageBar(flight, region.engineIndex, model, fields)
                                     HudCompressorAdvice(flight, region.engineIndex, model, fields)
                                     }

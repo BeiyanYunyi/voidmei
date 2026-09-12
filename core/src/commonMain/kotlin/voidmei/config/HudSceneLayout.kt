@@ -37,6 +37,7 @@ data class HudRegion(
     val engineControlsLayout: EngineControlsLayout = EngineControlsLayout.HORIZONTAL,
     val showEngineReadings: Boolean = true,
     val engineControlDimensions: EngineControlDimensions? = null,
+    val showAircraftFuel: Boolean = false,
 ) {
     init {
         for (font in listOf(readingLabelFont, readingNumberFont))
@@ -180,6 +181,7 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
             put("showFlightStatus", region.showFlightStatus)
             put("engineControlsLayout", region.engineControlsLayout.name)
             put("engineControlDimensions", region.engineControlDimensions?.toJson() ?: JsonNull)
+            put("showAircraftFuel", region.showAircraftFuel)
             put("showEngineReadings", region.showEngineReadings)
             put("showEngineInstruments", region.showEngineInstruments)
             put("showControlStick", region.showControlStick)
@@ -223,7 +225,8 @@ data class HudSceneLayout(val width: Int, val height: Int, val regions: List<Hud
                         ?: if (r["engineControlsVertical"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } == true)
                             EngineControlsLayout.VERTICAL else EngineControlsLayout.HORIZONTAL,
                     r["showEngineReadings"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
-                    r["engineControlDimensions"]?.takeUnless { it == JsonNull }?.let(EngineControlDimensions::fromJson))
+                    r["engineControlDimensions"]?.takeUnless { it == JsonNull }?.let(EngineControlDimensions::fromJson),
+                    r["showAircraftFuel"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: false)
             }, root["enabled"]?.jsonPrimitive?.let { require(!it.isString); it.boolean } ?: true,
                 root["displayId"]?.takeUnless { it == JsonNull }?.jsonPrimitive?.let { require(it.isString); it.content })
         }

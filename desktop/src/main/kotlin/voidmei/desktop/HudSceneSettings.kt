@@ -126,6 +126,12 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
             Text("显示读数附带图形")
         }
         if (region.content == HudRegionContent.ENGINE) {
+            Row {
+                Switch(region.showAircraftFuel, { update(region.copy(showAircraftFuel = it)) },
+                    Modifier.testTag("hud-region-aircraft-fuel-${region.id}"))
+                Text("显示整机燃油余量")
+            }
+            Text("整架飞机的燃油余量，不按发动机拆分。关闭读数附带图形后仍显示数值和告警。")
             EngineControlDimensionsSettings(region) { update(it) }
             Text("连续控制条布局")
             FlowRow {
@@ -135,7 +141,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
                         label = { Text(layout.label) }, modifier = Modifier.testTag("hud-region-engine-${layout.name.lowercase()}-${region.id}"))
                 }
             }
-            Text("混合布局：油门、桨距控制和动力量竖排，混合比与散热器横排。增压器保持水平刻度；整机燃油在飞行读数中设置。")
+            Text("混合布局：油门、桨距控制和动力量竖排，混合比与散热器横排。增压器和整机燃油保持水平刻度。")
         }
         if (region.content == HudRegionContent.CONTROLS) Row {
             Switch(region.showControlStick, { update(region.copy(showControlStick = it)) },
