@@ -1,6 +1,7 @@
 { lib, stdenvNoCC, gradle, jdk21, nodejs, makeWrapper, binutils, glibcLocales, makeDesktopItem
 , libx11, libxext, libxrender, libxi, libxtst, libxrandr
 , libxkbcommon, libxcb, libxt, libxinerama, libGL, fontconfig, freetype
+, gtk3, gsettings-desktop-schemas
 }:
 let
   desktopItem = makeDesktopItem {
@@ -52,8 +53,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     makeWrapper "$out/lib/voidmei/bin/VoidMei" "$out/bin/voidmei-kotlin" \
       --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [
         libx11 libxext libxrender libxi libxtst libxrandr libxkbcommon
-        libxcb libxt libxinerama libGL fontconfig freetype
-      ]}
+        libxcb libxt libxinerama libGL fontconfig freetype gtk3
+      ]} \
+      --set-default XDG_DATA_DIRS /usr/local/share:/usr/share \
+      --prefix XDG_DATA_DIRS : ${lib.concatMapStringsSep ":" (pkg: "${pkg}/share/gsettings-schemas/${pkg.name}") [ gtk3 gsettings-desktop-schemas ]}
     mkdir -p "$out/share/applications" "$out/share/icons/hicolor/16x16/apps"
     cp ${desktopItem}/share/applications/voidmei-kotlin.desktop "$out/share/applications/"
     cp image/16x16.png "$out/share/icons/hicolor/16x16/apps/voidmei-kotlin.png"
