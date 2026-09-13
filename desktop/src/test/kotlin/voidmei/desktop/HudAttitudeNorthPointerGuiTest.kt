@@ -77,7 +77,7 @@ class HudAttitudeNorthPointerGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(700.dp, 650.dp).verticalScroll(rememberScrollState())) {
             HudSettingsPanel(settings) { settings = it }
         } } }
-        compose.onNodeWithText("HUD 字段设置").performScrollTo().performClick()
+        compose.openHudSettingsPage("instruments")
         compose.onNodeWithText("姿态图指北针").performScrollTo().performClick()
         compose.onNodeWithText("姿态：机体参考").performScrollTo().performClick()
         compose.onNodeWithText("姿态图迎角极限线").performScrollTo().performClick()

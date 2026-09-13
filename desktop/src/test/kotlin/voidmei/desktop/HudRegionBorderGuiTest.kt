@@ -39,7 +39,7 @@ class HudRegionBorderGuiTest {
         val initialEdge = edge()
         val initialReading = reading()
         val initialBounds = region.getUnclippedBoundsInRoot()
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-border-one").performScrollTo().performClick()
         assertNotEquals(initialEdge, edge())
         assertEquals(initialReading, reading())

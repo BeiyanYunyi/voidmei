@@ -52,13 +52,19 @@ class HudMultiColumnsGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(800.dp, 650.dp).verticalScroll(rememberScrollState())) {
             HudSettingsPanel(current) { current = it }
         } } }
-        compose.onNodeWithText("HUD 字段设置").performScrollTo().performClick()
+        compose.openHudSettingsPage("layout")
         compose.onNodeWithTag("hud-columns-custom-toggle").performScrollTo().performClick()
         compose.onNodeWithTag("hud-columns-custom").performScrollTo().performTextReplacement("17")
         compose.onNodeWithTag("hud-columns-custom-apply").assertIsNotEnabled()
         compose.onNodeWithTag("hud-columns-custom").performTextReplacement("4")
         compose.onNodeWithTag("hud-columns-custom-apply").performScrollTo().performClick()
-        compose.onNodeWithText("调整分区位置与透明度").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-editor-flight").assertDoesNotExist()
+        compose.openHudSettingsPage("regions")
+        compose.onNodeWithTag("hud-settings-tab-general").assertDoesNotExist()
+        compose.onNodeWithTag("hud-settings-tab-regions").assertDoesNotExist()
+        compose.onNodeWithText("HUD 字段设置").assertDoesNotExist()
+        compose.onNodeWithTag("hud-region-columns-custom-flight-toggle").assertDoesNotExist()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-columns-custom-flight-toggle").performScrollTo().performClick()
         compose.onNodeWithTag("hud-region-columns-custom-flight").performScrollTo().performTextReplacement("12")
         compose.onNodeWithTag("hud-region-columns-custom-flight-apply").performScrollTo().performClick()

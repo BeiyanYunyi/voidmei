@@ -33,7 +33,14 @@ class HudRegionNavigatorGuiTest {
                 HudSceneSettings(current) { current = it }
             }
         } }
-        compose.onNodeWithText("调整分区位置与透明度").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-geometry-first").assertDoesNotExist()
+        compose.onNodeWithTag("hud-region-geometry-second").assertDoesNotExist()
+        compose.onNodeWithTag("hud-region-geometry-last").assertDoesNotExist()
+        compose.onNodeWithTag("hud-region-editor-first").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-geometry-first").assertExists()
+        compose.onNodeWithTag("hud-region-editor-first").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-geometry-first").assertDoesNotExist()
+        compose.onNodeWithTag("hud-region-editor-first").performScrollTo().performClick()
         compose.onNodeWithTag("hud-region-geometry-first").performScrollTo().performClick()
         compose.onNodeWithTag("hud-region-input-width-first").performScrollTo().performTextReplacement("unfinished")
         compose.onNodeWithTag("hud-region-directory-back-first").performScrollTo().performClick()

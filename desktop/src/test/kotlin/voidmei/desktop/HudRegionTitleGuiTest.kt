@@ -29,7 +29,7 @@ class HudRegionTitleGuiTest {
                 HudSceneDragOverlay(settings.hudSceneLayout!!, { _, _, _ -> })
             }
         } } }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-title-one").performScrollTo().performTextReplacement("能量与机动")
         compose.onNode(hasText("能量与机动") and hasAnyAncestor(hasTestTag("hud-region-one"))).assertExists()
         compose.onNode(hasText("能量与机动") and hasAnyAncestor(hasTestTag("hud-drag-region-one"))).assertExists()

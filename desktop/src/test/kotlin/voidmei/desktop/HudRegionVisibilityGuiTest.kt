@@ -35,7 +35,7 @@ class HudRegionVisibilityGuiTest {
             }
         } } }
         compose.onNodeWithText("2300 RPM").assertIsDisplayed()
-        compose.onNodeWithText("调整分区位置与透明度").performScrollTo().performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-visible-engine").performScrollTo().performClick()
         compose.onNodeWithText("2300 RPM").assertDoesNotExist()
         compose.onNodeWithTag("hud-region-engine").assertDoesNotExist()

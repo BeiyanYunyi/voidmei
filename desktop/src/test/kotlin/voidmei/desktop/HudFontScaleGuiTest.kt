@@ -27,19 +27,22 @@ class HudFontScaleGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
             HudSettingsPanel(settings) { settings = it }
         } } }
-        compose.onNodeWithText("HUD 字段设置").performClick()
+        compose.openHudSettingsPage("layout")
         compose.onNodeWithTag("hud-width").performSemanticsAction(SemanticsActions.SetProgress) { it(680f) }
         compose.onNodeWithText("HUD 宽度 680 dp").assertIsDisplayed()
         compose.runOnIdle { assertEquals(680, settings.hudWidthDp) }
+        compose.openHudSettingsPage("font")
         compose.onNodeWithTag("hud-font-scale").performSemanticsAction(SemanticsActions.SetProgress) { it(1.5f) }
-        compose.onNodeWithText("HUD 文字大小 150%").assertIsDisplayed()
+        compose.onNodeWithText("全局 HUD 文字大小 150%").assertIsDisplayed()
         compose.runOnIdle { assertEquals(1.5f, settings.hudFontScale) }
+        compose.openHudSettingsPage("engine")
         compose.onNodeWithText("发动机读数").performScrollTo().performClick()
         compose.onNodeWithText("HUD 发动机编号").performTextReplacement("10")
         compose.runOnIdle { assertEquals(10, settings.hudEngineIndex) }
         compose.onNodeWithText("HUD 发动机编号").performTextReplacement("0")
         compose.onNodeWithText("请输入正整数；仍显示上次有效编号。").assertExists()
         compose.runOnIdle { assertEquals(10, settings.hudEngineIndex) }
+        compose.openHudSettingsPage("reset")
         compose.onNodeWithText("恢复默认").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(1f, settings.hudFontScale); assertNull(settings.hudEngineIndex); assertEquals(440, settings.hudWidthDp) }
     }

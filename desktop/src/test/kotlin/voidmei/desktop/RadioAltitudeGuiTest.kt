@@ -23,12 +23,13 @@ class RadioAltitudeGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(700.dp).verticalScroll(rememberScrollState())) {
             HudSettingsPanel(settings) { settings = it }
         } } }
-        compose.onNodeWithText("HUD 字段设置").performClick()
+        compose.openHudSettingsPage("layout")
         for (mode in listOf(HudAltitudeMode.LOW_RADAR, HudAltitudeMode.ALWAYS_RADAR, HudAltitudeMode.SEA_LEVEL)) {
             compose.onNodeWithTag("hud-altitude-${mode.id}").performScrollTo().performClick().assertIsSelected()
             assertEquals(mode, settings.hudAltitudeMode)
         }
         compose.onNodeWithTag("hud-altitude-always_radar").performClick()
+        compose.openHudSettingsPage("reset")
         compose.onNodeWithText("恢复默认").performScrollTo().performClick()
         assertEquals(HudAltitudeMode.SEA_LEVEL, settings.hudAltitudeMode)
     }

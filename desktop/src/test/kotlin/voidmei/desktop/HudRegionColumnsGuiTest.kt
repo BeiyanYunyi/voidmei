@@ -35,7 +35,7 @@ class HudRegionColumnsGuiTest {
         }
         assertTrue(isSingle("one"))
         assertFalse(isSingle("two"))
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-columns-one-2").performScrollTo().performClick()
         assertFalse(isSingle("one"))
         compose.runOnIdle { settings = settings.copy(hudReadingColumns = 1) }

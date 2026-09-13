@@ -80,6 +80,7 @@ class HudWindowGuiTest {
         compose.setContent {
             androidx.compose.foundation.layout.Column { HudSettingsPanel(settings) { settings = it } }
         }
+        compose.onNodeWithTag("settings-open-hud-behavior").performClick()
         compose.onNodeWithTag("hud-compatibility").performClick()
         compose.runOnIdle {
             assertTrue(settings.hudCompatibilityMode)

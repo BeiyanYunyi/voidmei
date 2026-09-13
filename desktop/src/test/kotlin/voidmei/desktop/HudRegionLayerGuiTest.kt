@@ -35,7 +35,7 @@ class HudRegionLayerGuiTest {
             } }
         }
         assertEquals(0, whitePixels(), "The opaque region should cover the speed reading")
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-layer-down-speed").performScrollTo().assertIsNotEnabled()
         compose.onNodeWithTag("hud-region-layer-up-speed").performClick()
         assertTrue(whitePixels() > 10, "Moving speed forward must reveal its actual pixels")

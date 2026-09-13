@@ -41,7 +41,7 @@ class RegionReadingFontGuiTest {
             return result.single().layoutInput.style.fontFamily
         }
         val inheritedLabel = family("one", "IAS")
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("region-fonts-one").performScrollTo().performClick()
         fun change(tag: String, value: String) {
             compose.onNodeWithTag(tag).performScrollTo().performTextReplacement(value)

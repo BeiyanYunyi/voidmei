@@ -69,7 +69,7 @@ class EngineReadingsVisibilityGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(600.dp, 650.dp).verticalScroll(rememberScrollState())) {
             HudSceneSettings(settings) { settings = it }
         } } }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-engine-readings-one").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(listOf(one.copy(showEngineReadings = false), original.hudSceneLayout!!.regions[1]), settings.hudSceneLayout!!.regions) }
     }

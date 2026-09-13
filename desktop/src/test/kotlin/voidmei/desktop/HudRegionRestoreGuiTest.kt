@@ -24,7 +24,7 @@ class HudRegionRestoreGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(600.dp, 600.dp).verticalScroll(rememberScrollState())) {
             HudSceneSettings(settings) { settings = it }
         } } }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-remove-two").performScrollTo().performClick()
         compose.onNodeWithTag("hud-region-restore").performScrollTo().assertIsDisplayed()
         compose.onNodeWithTag("hud-presets-toggle").performScrollTo().performClick()
@@ -47,10 +47,10 @@ class HudRegionRestoreGuiTest {
                 HudSceneSettings(settings) { settings = it }
             }
         } }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-remove-region-1").performScrollTo().performClick()
         compose.onNodeWithTag("hud-region-add-MAP").performScrollTo().performClick()
-        compose.onNodeWithText("收起分区设置").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-editor-other").performScrollTo().performClick()
         compose.runOnIdle {
             val scene = settings.hudSceneLayout!!
             settings = settings.copy(hudOpacity = .8f, hudSceneLayout = scene.resizeCanvas(240, 120).copy(

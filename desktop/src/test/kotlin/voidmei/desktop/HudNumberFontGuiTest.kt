@@ -29,7 +29,7 @@ class HudNumberFontGuiTest {
                 HudSettingsPanel(settings) { settings = it }
             }
         } }
-        compose.onNodeWithText("HUD 字段设置").performClick()
+        compose.openHudSettingsPage("font")
         compose.onNodeWithTag("hud-number-font-unavailable").assertExists()
         compose.onNodeWithTag("hud-number-font").performScrollTo().performTextReplacement("monospace")
         compose.onNodeWithTag("hud-number-font-unavailable").assertDoesNotExist()

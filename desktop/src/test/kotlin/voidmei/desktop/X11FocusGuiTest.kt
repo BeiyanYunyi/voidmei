@@ -27,6 +27,7 @@ class X11FocusGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(600.dp, 800.dp).verticalScroll(rememberScrollState())) {
             HudSettingsPanel(settings) { settings = it }
         } } }
+        compose.openHudSettingsPage("behavior")
         compose.onNodeWithTag("hud-auto-hide-focus").assertIsEnabled().performClick()
         compose.runOnIdle { assertTrue(settings.hudAutoHideOnFocusLoss) }
         compose.onNodeWithTag("hud-auto-hide-focus").performClick()

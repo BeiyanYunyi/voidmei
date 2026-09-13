@@ -50,7 +50,7 @@ class VerticalEngineControlsGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(600.dp, 650.dp).verticalScroll(rememberScrollState())) {
             HudSceneSettings(settings) { settings = it }
         } } }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-engine-vertical-one").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(listOf(one.copy(engineControlsLayout = EngineControlsLayout.VERTICAL), original.hudSceneLayout!!.regions[1]), settings.hudSceneLayout!!.regions)

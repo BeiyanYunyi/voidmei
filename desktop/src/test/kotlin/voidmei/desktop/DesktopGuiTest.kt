@@ -2007,7 +2007,7 @@ class DesktopGuiTest {
                 }
             }
         }
-        compose.onNodeWithText("HUD 字段设置").performClick()
+        compose.openHudSettingsPage("fields")
         compose.onNodeWithTag("hud-label-ias").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(listOf("ias"), settings.hudHiddenLabels) }
         compose.onNodeWithTag("hud-up-ias").assertIsNotEnabled()
@@ -2017,11 +2017,13 @@ class DesktopGuiTest {
         compose.runOnIdle { assertEquals(listOf("ias"), settings.hudFields) }
         compose.onNodeWithTag("hud-add-power").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(listOf("ias", "power"), settings.hudFields) }
+        compose.openHudSettingsPage("instruments")
         compose.onNodeWithText("姿态：机体参考").performScrollTo().performClick()
         compose.runOnIdle { assertTrue(settings.hudAttitudeEarthFixed) }
         compose.onNodeWithText("姿态：地面参考").assertExists()
         compose.onNodeWithText("姿态图").performScrollTo().performClick()
         compose.runOnIdle { assertFalse(settings.hudAttitude) }
+        compose.openHudSettingsPage("reset")
         compose.onNodeWithText("恢复默认").performClick()
         compose.runOnIdle {
             assertEquals(HudField.defaults, settings.hudFields)

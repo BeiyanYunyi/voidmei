@@ -23,7 +23,7 @@ class AttitudeRefreshGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(800.dp, 700.dp).verticalScroll(rememberScrollState())) {
             HudSettingsPanel(settings) { settings = it }
         } } }
-        compose.onNodeWithText("HUD 字段设置").performScrollTo().performClick()
+        compose.openHudSettingsPage("instruments")
         compose.onNodeWithTag("attitude-refresh-enabled").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(40, settings.hudAttitudeRefreshMs); assertEquals(25L, settings.pollIntervalMs) }
         compose.onNodeWithTag("attitude-refresh-interval").performScrollTo().performSemanticsAction(SemanticsActions.SetProgress) { it(75f) }

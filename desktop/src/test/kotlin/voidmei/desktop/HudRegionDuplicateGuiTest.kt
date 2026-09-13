@@ -26,11 +26,12 @@ class HudRegionDuplicateGuiTest {
                 HudSceneSettings(settings) { settings = it }
             }
         } }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-duplicate-source").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(listOf(source, source.copy(id = "region-1", x = 36, y = 46)), settings.hudSceneLayout!!.regions)
         }
+        compose.onNodeWithTag("hud-region-editor-region-1").performScrollTo().performClick()
         compose.onNodeWithTag("hud-region-engine-region-1").performScrollTo().performTextReplacement("1")
         compose.onNodeWithTag("hud-region-title-region-1").performScrollTo().performTextReplacement("左发动机")
         compose.onNodeWithTag("hud-region-columns-region-1-2").performScrollTo().performClick()

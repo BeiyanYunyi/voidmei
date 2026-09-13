@@ -24,13 +24,13 @@ class HudResetRecoveryGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.verticalScroll(rememberScrollState())) {
             HudSettingsPanel(settings) { settings = it }
         } } }
-        compose.onNodeWithText("HUD 字段设置").performClick()
+        compose.openHudSettingsPage("reset")
         compose.onNodeWithText("恢复默认").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(HudField.defaults, settings.hudFields); assertEquals(440, settings.hudWidthDp) }
         compose.onNodeWithText("恢复默认").performScrollTo().performClick()
-        compose.onNodeWithText("收起 HUD 字段设置").performScrollTo().performClick()
+        compose.onNodeWithTag("settings-back-HUD 布局").performScrollTo().performClick()
         compose.runOnIdle { settings = settings.copy(pollIntervalMs = 80, hudEnabled = true, recordingAutoStart = true) }
-        compose.onNodeWithText("HUD 字段设置").performScrollTo().performClick()
+        compose.openHudSettingsPage("reset")
         compose.onNodeWithText("恢复重置前布局").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(original.copy(pollIntervalMs = 80, hudEnabled = true, recordingAutoStart = true), settings) }
         compose.onNodeWithText("恢复重置前布局").assertDoesNotExist()

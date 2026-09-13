@@ -30,7 +30,7 @@ class HudFlightStatusGuiTest {
             Box(Modifier.size(600.dp, 200.dp)) { HudPanel(connection, settings, emptyList(), null) {} }
         } } }
         compose.onAllNodesWithText(statusText(flight)).assertCountEquals(2)
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-flight-status-one").performScrollTo().performClick()
         compose.onAllNodesWithText(statusText(flight)).assertCountEquals(1)
         compose.onAllNodesWithText("340 km/h").assertCountEquals(2)

@@ -47,9 +47,10 @@ class HudSceneGuiTest {
                 HudSceneSettings(settings) { settings = it }
             }
         } }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-remove-flight").performScrollTo().assertIsNotEnabled()
         compose.onNodeWithTag("hud-region-add-ENGINE").performScrollTo().performClick()
+        compose.onNodeWithTag("hud-region-editor-region-1").performScrollTo().performClick()
         compose.onNodeWithTag("hud-region-engine-region-1").performScrollTo().performTextReplacement("0")
         compose.runOnIdle { assertEquals(1, settings.hudSceneLayout!!.regions.last().engineIndex) }
         compose.onNodeWithText("请输入正整数；暂未应用此输入。").assertExists()
@@ -75,7 +76,7 @@ class HudSceneGuiTest {
             }
         } }
         compose.onNodeWithTag("hud-scene-toggle").performClick()
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-background-flight").performScrollTo()
             .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.SetProgress) { it(.25f) }
         compose.runOnIdle { assertEquals(.25f, settings.hudSceneLayout!!.regions.first().backgroundAlpha) }

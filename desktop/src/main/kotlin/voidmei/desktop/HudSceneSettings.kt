@@ -27,8 +27,6 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
     HudScenePresetSettings(settings, canUseScene, onLoad = { removed = null; editorRevision++ }, onChange = onChange)
     if (scene == null) return
     Text("分区布局自动穿透鼠标。在此调整区域；预览同步显示。画布 ${scene.width} × ${scene.height} dp，空间不足时整体缩小。")
-    var expanded by remember { mutableStateOf(false) }
-    TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "收起分区设置" else "调整分区位置与透明度") }
     removed?.let { (region, layer) ->
         TextButton(onClick = {
             onChange(settings.copy(hudSceneLayout = scene.restoreRegion(region, layer)))
@@ -39,7 +37,7 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
         Text(if (scene.regions.size >= 32) "已达 32 个区域，暂不能恢复；再次移除会替换这条恢复记录。"
             else "仅保留本次设置页面中的最近一次移除；恢复时适配当前画布，编号冲突时使用新编号。")
     }
-    if (!expanded) return
+    val expandedRegions = remember(editorRevision) { mutableStateMapOf<String, Boolean>() }
     val directory = remember { BringIntoViewRequester() }
     val anchors = remember(scene.regions.map { it.id }) { scene.regions.associate { it.id to BringIntoViewRequester() } }
     var directoryExpanded by remember { mutableStateOf(false) }
@@ -69,141 +67,149 @@ internal fun HudSceneSettings(settings: AppSettings, onChange: (AppSettings) -> 
     Text("区域列表从底层到顶层排列；重叠时，顶层区域会覆盖下层。")
     Column(Modifier.bringIntoViewRequester(directory)) {
         HudRegionNavigator(scene.regions, directoryExpanded, { directoryExpanded = it }) { id ->
+            expandedRegions[id] = true
             anchors[id]?.let(::navigate)
         }
     }
     scene.regions.forEachIndexed { layer, region -> key(editorRevision, region.id) {
         fun update(value: HudRegion) = onChange(settings.copy(hudSceneLayout = scene.copy(
             regions = scene.regions.map { if (it.id == region.id) value else it })))
-        Text("${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id}",
-            Modifier.bringIntoViewRequester(anchors.getValue(region.id)).testTag("hud-region-editor-${region.id}"))
-        TextButton(onClick = { directoryExpanded = true; navigate(directory) },
-            modifier = Modifier.testTag("hud-region-directory-back-${region.id}")) { Text("返回区域目录") }
-        OutlinedTextField(region.title, { value -> update(region.copy(title = value.filterNot { it.isISOControl() }.take(80))) },
-            label = { Text("区域标题（可选）") }, supportingText = { Text("最多 80 字符；留空不显示额外标题。") },
-            singleLine = true, modifier = Modifier.testTag("hud-region-title-${region.id}"))
-        if (region.content == HudRegionContent.CROSSHAIR) Text("准星居中显示，大小随区域尺寸调整，样式沿用准星图片设置。存在准星区域时替代整窗准星，由区域显示开关控制。")
-        if (region.content == HudRegionContent.COMPASS) Text("独立显示罗盘，随区域尺寸调整，沿用北向固定／航向朝上设置。飞行读数中的航向显示保持独立。")
-        Row {
-            Switch(region.visible, { update(region.copy(visible = it)) }, Modifier.testTag("hud-region-visible-${region.id}"))
-            Text("显示此区域")
+        val expanded = expandedRegions[region.id] == true
+        TextButton(onClick = { expandedRegions[region.id] = !expanded },
+            modifier = Modifier.fillMaxWidth().bringIntoViewRequester(anchors.getValue(region.id))
+                .testTag("hud-region-editor-${region.id}")) {
+            Text("${if (expanded) "▾" else "▸"} ${region.content.label}${if (region.content == HudRegionContent.ENGINE) " #${region.engineIndex}" else ""} · ${region.id} · ${if (expanded) "收起" else "展开"}")
         }
-        Row {
-            TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, false))) },
-                enabled = layer > 0, modifier = Modifier.testTag("hud-region-layer-down-${region.id}")) { Text("下移一层") }
-            TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, true))) },
-                enabled = layer < scene.regions.lastIndex, modifier = Modifier.testTag("hud-region-layer-up-${region.id}")) { Text("上移一层") }
-        }
-        TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.duplicateRegion(region.id))) },
-            enabled = scene.regions.size < 32, modifier = Modifier.testTag("hud-region-duplicate-${region.id}")) { Text("复制此区域") }
-        TextButton(onClick = {
-            removed = region to layer
-            onChange(settings.copy(hudSceneLayout = scene.removeRegion(region.id)))
-        },
-            enabled = scene.regions.size > 1, modifier = Modifier.testTag("hud-region-remove-${region.id}")) { Text("移除此区域") }
-        HudRegionFieldsSettings(region, settings, ::update)
-        if (region.content == HudRegionContent.FLIGHT) Row {
-            Switch(region.showFlightStatus, { update(region.copy(showFlightStatus = it)) },
-                Modifier.testTag("hud-region-flight-status-${region.id}"))
-            Text("显示飞行状态标题（异常连接提示始终保留）")
-        }
-        if (region.content == HudRegionContent.FLIGHT) Row {
-            Switch(region.showFlightInstruments, { update(region.copy(showFlightInstruments = it)) },
-                Modifier.testTag("hud-region-instruments-${region.id}"))
-            Text("显示读数附带图形")
-        }
-        if (region.content == HudRegionContent.ENGINE) {
+        if (expanded) {
+            TextButton(onClick = { directoryExpanded = true; navigate(directory) },
+                modifier = Modifier.testTag("hud-region-directory-back-${region.id}")) { Text("返回区域目录") }
+            OutlinedTextField(region.title, { value -> update(region.copy(title = value.filterNot { it.isISOControl() }.take(80))) },
+                label = { Text("区域标题（可选）") }, supportingText = { Text("最多 80 字符；留空不显示额外标题。") },
+                singleLine = true, modifier = Modifier.testTag("hud-region-title-${region.id}"))
+            if (region.content == HudRegionContent.CROSSHAIR) Text("准星居中显示，大小随区域尺寸调整，样式沿用准星图片设置。存在准星区域时替代整窗准星，由区域显示开关控制。")
+            if (region.content == HudRegionContent.COMPASS) Text("独立显示罗盘，随区域尺寸调整，沿用北向固定／航向朝上设置。飞行读数中的航向显示保持独立。")
             Row {
-                Switch(region.showEngineReadings, { update(region.copy(showEngineReadings = it)) },
-                    Modifier.testTag("hud-region-engine-readings-${region.id}"))
-                Text("显示读数表格")
+                Switch(region.visible, { update(region.copy(visible = it)) }, Modifier.testTag("hud-region-visible-${region.id}"))
+                Text("显示此区域")
             }
-            Text("关闭表格可只显示仪表；字段选择仍控制仪表内容，缺失数据和告警说明保留。仅有数值、没有图形的字段需要开启表格。")
-        }
-        if (region.content == HudRegionContent.ENGINE) Row {
-            Switch(region.showEngineInstruments, { update(region.copy(showEngineInstruments = it)) },
-                Modifier.testTag("hud-region-engine-instruments-${region.id}"))
-            Text("显示读数附带图形")
-        }
-        if (region.content == HudRegionContent.ENGINE) {
             Row {
-                Switch(region.showAircraftFuel, { update(region.copy(showAircraftFuel = it)) },
-                    Modifier.testTag("hud-region-aircraft-fuel-${region.id}"))
-                Text("显示整机燃油余量")
+                TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, false))) },
+                    enabled = layer > 0, modifier = Modifier.testTag("hud-region-layer-down-${region.id}")) { Text("下移一层") }
+                TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.moveRegionLayer(region.id, true))) },
+                    enabled = layer < scene.regions.lastIndex, modifier = Modifier.testTag("hud-region-layer-up-${region.id}")) { Text("上移一层") }
             }
-            Text("整架飞机的燃油余量，不按发动机拆分。关闭读数附带图形后仍显示数值和告警。")
-            EngineControlDimensionsSettings(region) { update(it) }
-            Text("连续控制条布局")
+            TextButton(onClick = { onChange(settings.copy(hudSceneLayout = scene.duplicateRegion(region.id))) },
+                enabled = scene.regions.size < 32, modifier = Modifier.testTag("hud-region-duplicate-${region.id}")) { Text("复制此区域") }
+            TextButton(onClick = {
+                expandedRegions.remove(region.id)
+                removed = region to layer
+                onChange(settings.copy(hudSceneLayout = scene.removeRegion(region.id)))
+            },
+                enabled = scene.regions.size > 1, modifier = Modifier.testTag("hud-region-remove-${region.id}")) { Text("移除此区域") }
+            HudRegionFieldsSettings(region, settings, ::update)
+            if (region.content == HudRegionContent.FLIGHT) Row {
+                Switch(region.showFlightStatus, { update(region.copy(showFlightStatus = it)) },
+                    Modifier.testTag("hud-region-flight-status-${region.id}"))
+                Text("显示飞行状态标题（异常连接提示始终保留）")
+            }
+            if (region.content == HudRegionContent.FLIGHT) Row {
+                Switch(region.showFlightInstruments, { update(region.copy(showFlightInstruments = it)) },
+                    Modifier.testTag("hud-region-instruments-${region.id}"))
+                Text("显示读数附带图形")
+            }
+            if (region.content == HudRegionContent.ENGINE) {
+                Row {
+                    Switch(region.showEngineReadings, { update(region.copy(showEngineReadings = it)) },
+                        Modifier.testTag("hud-region-engine-readings-${region.id}"))
+                    Text("显示读数表格")
+                }
+                Text("关闭表格可只显示仪表；字段选择仍控制仪表内容，缺失数据和告警说明保留。仅有数值、没有图形的字段需要开启表格。")
+            }
+            if (region.content == HudRegionContent.ENGINE) Row {
+                Switch(region.showEngineInstruments, { update(region.copy(showEngineInstruments = it)) },
+                    Modifier.testTag("hud-region-engine-instruments-${region.id}"))
+                Text("显示读数附带图形")
+            }
+            if (region.content == HudRegionContent.ENGINE) {
+                Row {
+                    Switch(region.showAircraftFuel, { update(region.copy(showAircraftFuel = it)) },
+                        Modifier.testTag("hud-region-aircraft-fuel-${region.id}"))
+                    Text("显示整机燃油余量")
+                }
+                Text("整架飞机的燃油余量，不按发动机拆分。关闭读数附带图形后仍显示数值和告警。")
+                EngineControlDimensionsSettings(region) { update(it) }
+                Text("连续控制条布局")
+                FlowRow {
+                    EngineControlsLayout.entries.forEach { layout ->
+                        FilterChip(region.engineControlsLayout == layout,
+                            { update(region.copy(engineControlsLayout = layout)) }, enabled = region.showEngineInstruments,
+                            label = { Text(layout.label) }, modifier = Modifier.testTag("hud-region-engine-${layout.name.lowercase()}-${region.id}"))
+                    }
+                }
+                Text("混合布局：油门、桨距控制和动力量竖排，混合比与散热器横排。增压器和整机燃油保持水平刻度。")
+            }
+            if (region.content == HudRegionContent.CONTROLS) Row {
+                Switch(region.showControlStick, { update(region.copy(showControlStick = it)) },
+                    Modifier.testTag("hud-region-control-stick-${region.id}"))
+                Text("显示二维操纵面图（需选择副翼与升降舵）")
+            }
+            Text("区域文字大小：${fontScalePercent(region.fontScale ?: settings.hudFontScale)}%${if (region.fontScale == null) "（继承全局）" else ""}")
             FlowRow {
-                EngineControlsLayout.entries.forEach { layout ->
-                    FilterChip(region.engineControlsLayout == layout,
-                        { update(region.copy(engineControlsLayout = layout)) }, enabled = region.showEngineInstruments,
-                        label = { Text(layout.label) }, modifier = Modifier.testTag("hud-region-engine-${layout.name.lowercase()}-${region.id}"))
+                listOf<Float?>(null, .75f, 1f, 1.25f, 1.5f, 1.75f, 2f).forEach { scale ->
+                    FilterChip(region.fontScale == scale, { update(region.copy(fontScale = scale)) },
+                        label = { Text(scale?.let { "${(it * 100).roundToInt()}%" } ?: "继承全局") },
+                        modifier = Modifier.testTag("hud-region-font-${region.id}-${scale ?: "inherit"}"))
                 }
             }
-            Text("混合布局：油门、桨距控制和动力量竖排，混合比与散热器横排。增压器和整机燃油保持水平刻度。")
-        }
-        if (region.content == HudRegionContent.CONTROLS) Row {
-            Switch(region.showControlStick, { update(region.copy(showControlStick = it)) },
-                Modifier.testTag("hud-region-control-stick-${region.id}"))
-            Text("显示二维操纵面图（需选择副翼与升降舵）")
-        }
-        Text("区域文字大小：${fontScalePercent(region.fontScale ?: settings.hudFontScale)}%${if (region.fontScale == null) "（继承全局）" else ""}")
-        FlowRow {
-            listOf<Float?>(null, .75f, 1f, 1.25f, 1.5f, 1.75f, 2f).forEach { scale ->
-                FilterChip(region.fontScale == scale, { update(region.copy(fontScale = scale)) },
-                    label = { Text(scale?.let { "${(it * 100).roundToInt()}%" } ?: "继承全局") },
-                    modifier = Modifier.testTag("hud-region-font-${region.id}-${scale ?: "inherit"}"))
-            }
-        }
-        HudFontScaleInput(region.fontScale, settings.hudFontScale, "hud-region-font-exact-${region.id}") { update(region.copy(fontScale = it)) }
-        if (region.content == HudRegionContent.FLIGHT || region.content == HudRegionContent.ENGINE) {
-            RegionReadingFontSettings(region, ::update)
-            Text("区域读数列数")
-            FlowRow {
-                listOf(null to "继承全局", 0 to "自动", 1 to "单列", 2 to "双列").forEach { (columns, label) ->
-                    FilterChip(region.readingColumns == columns, { update(region.copy(readingColumns = columns)) },
-                        label = { Text(label) }, modifier = Modifier.testTag("hud-region-columns-${region.id}-${columns ?: "inherit"}"))
+            HudFontScaleInput(region.fontScale, settings.hudFontScale, "hud-region-font-exact-${region.id}") { update(region.copy(fontScale = it)) }
+            if (region.content == HudRegionContent.FLIGHT || region.content == HudRegionContent.ENGINE) {
+                RegionReadingFontSettings(region, ::update)
+                Text("区域读数列数")
+                FlowRow {
+                    listOf(null to "继承全局", 0 to "自动", 1 to "单列", 2 to "双列").forEach { (columns, label) ->
+                        FilterChip(region.readingColumns == columns, { update(region.copy(readingColumns = columns)) },
+                            label = { Text(label) }, modifier = Modifier.testTag("hud-region-columns-${region.id}-${columns ?: "inherit"}"))
+                    }
                 }
+                ReadingColumnsInput(region.readingColumns, "hud-region-columns-custom-${region.id}") { update(region.copy(readingColumns = it)) }
             }
-            ReadingColumnsInput(region.readingColumns, "hud-region-columns-custom-${region.id}") { update(region.copy(readingColumns = it)) }
+            if (region.content == HudRegionContent.ENGINE) {
+                var engineText by remember(region.engineIndex) { mutableStateOf(region.engineIndex.toString()) }
+                val validEngine = engineText.toIntOrNull()?.takeIf { it > 0 }
+                OutlinedTextField(engineText, { value ->
+                    engineText = value
+                    value.toIntOrNull()?.takeIf { it > 0 }?.let { update(region.copy(engineIndex = it)) }
+                }, label = { Text("发动机编号") }, singleLine = true, isError = validEngine == null,
+                    supportingText = { Text(if (validEngine == null) "请输入正整数；暂未应用此输入。" else "缺少此编号的数据时显示未知，不替换为其他发动机。") },
+                    modifier = Modifier.testTag("hud-region-engine-${region.id}"))
+            }
+            Text("位置 ${region.x}, ${region.y} dp")
+            HudRegionGeometrySettings(region, scene, ::update)
+            if (scene.width > region.width) Slider(region.x.toFloat(), { update(region.copy(x = it.roundToInt())) },
+                valueRange = 0f..(scene.width - region.width).toFloat(), modifier = Modifier.testTag("hud-region-x-${region.id}"))
+            if (scene.height > region.height) Slider(region.y.toFloat(), { update(region.copy(y = it.roundToInt())) },
+                valueRange = 0f..(scene.height - region.height).toFloat(), modifier = Modifier.testTag("hud-region-y-${region.id}"))
+            Text("尺寸 ${region.width} × ${region.height} dp")
+            if (scene.width - region.x > 80) Slider(region.width.toFloat(), { update(region.copy(width = it.roundToInt())) },
+                valueRange = 80f..(scene.width - region.x).toFloat(), modifier = Modifier.testTag("hud-region-width-${region.id}"))
+            if (scene.height - region.y > 40) Slider(region.height.toFloat(), { update(region.copy(height = it.roundToInt())) },
+                valueRange = 40f..(scene.height - region.y).toFloat(), modifier = Modifier.testTag("hud-region-height-${region.id}"))
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Switch(region.borderEnabled, { update(region.copy(borderEnabled = it)) }, Modifier.testTag("hud-region-border-${region.id}"))
+                Text("显示区域边框")
+            }
+            if (region.borderEnabled) {
+                Text("边框不透明度 ${(region.borderAlpha * 100).roundToInt()}%")
+                Slider(region.borderAlpha, { update(region.copy(borderAlpha = it)) },
+                    modifier = Modifier.testTag("hud-region-border-alpha-${region.id}"))
+                Text("边框使用区域内现有留白，不改变位置、尺寸或文字大小。")
+            }
+            Text("背景不透明度 ${(region.backgroundAlpha * 100).roundToInt()}%")
+            Slider(region.backgroundAlpha, { update(region.copy(backgroundAlpha = it)) },
+                modifier = Modifier.testTag("hud-region-background-${region.id}"))
+            Text("内容不透明度 ${(region.contentAlpha * 100).roundToInt()}%")
+            Slider(region.contentAlpha, { update(region.copy(contentAlpha = it)) },
+                modifier = Modifier.testTag("hud-region-content-${region.id}"))
         }
-        if (region.content == HudRegionContent.ENGINE) {
-            var engineText by remember(region.engineIndex) { mutableStateOf(region.engineIndex.toString()) }
-            val validEngine = engineText.toIntOrNull()?.takeIf { it > 0 }
-            OutlinedTextField(engineText, { value ->
-                engineText = value
-                value.toIntOrNull()?.takeIf { it > 0 }?.let { update(region.copy(engineIndex = it)) }
-            }, label = { Text("发动机编号") }, singleLine = true, isError = validEngine == null,
-                supportingText = { Text(if (validEngine == null) "请输入正整数；暂未应用此输入。" else "缺少此编号的数据时显示未知，不替换为其他发动机。") },
-                modifier = Modifier.testTag("hud-region-engine-${region.id}"))
-        }
-        Text("位置 ${region.x}, ${region.y} dp")
-        HudRegionGeometrySettings(region, scene, ::update)
-        if (scene.width > region.width) Slider(region.x.toFloat(), { update(region.copy(x = it.roundToInt())) },
-            valueRange = 0f..(scene.width - region.width).toFloat(), modifier = Modifier.testTag("hud-region-x-${region.id}"))
-        if (scene.height > region.height) Slider(region.y.toFloat(), { update(region.copy(y = it.roundToInt())) },
-            valueRange = 0f..(scene.height - region.height).toFloat(), modifier = Modifier.testTag("hud-region-y-${region.id}"))
-        Text("尺寸 ${region.width} × ${region.height} dp")
-        if (scene.width - region.x > 80) Slider(region.width.toFloat(), { update(region.copy(width = it.roundToInt())) },
-            valueRange = 80f..(scene.width - region.x).toFloat(), modifier = Modifier.testTag("hud-region-width-${region.id}"))
-        if (scene.height - region.y > 40) Slider(region.height.toFloat(), { update(region.copy(height = it.roundToInt())) },
-            valueRange = 40f..(scene.height - region.y).toFloat(), modifier = Modifier.testTag("hud-region-height-${region.id}"))
-        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-            Switch(region.borderEnabled, { update(region.copy(borderEnabled = it)) }, Modifier.testTag("hud-region-border-${region.id}"))
-            Text("显示区域边框")
-        }
-        if (region.borderEnabled) {
-            Text("边框不透明度 ${(region.borderAlpha * 100).roundToInt()}%")
-            Slider(region.borderAlpha, { update(region.copy(borderAlpha = it)) },
-                modifier = Modifier.testTag("hud-region-border-alpha-${region.id}"))
-            Text("边框使用区域内现有留白，不改变位置、尺寸或文字大小。")
-        }
-        Text("背景不透明度 ${(region.backgroundAlpha * 100).roundToInt()}%")
-        Slider(region.backgroundAlpha, { update(region.copy(backgroundAlpha = it)) },
-            modifier = Modifier.testTag("hud-region-background-${region.id}"))
-        Text("内容不透明度 ${(region.contentAlpha * 100).roundToInt()}%")
-        Slider(region.contentAlpha, { update(region.copy(contentAlpha = it)) },
-            modifier = Modifier.testTag("hud-region-content-${region.id}"))
     } }
 }

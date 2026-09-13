@@ -30,7 +30,7 @@ class HudReadingInstrumentsGuiTest {
             Box(Modifier.size(800.dp, 400.dp)) { HudPanel(hudPreviewFlight(), settings, emptyList(), null) {} }
         } } }
         compose.onAllNodesWithTag("hud-engine-throttle-1").assertCountEquals(2)
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-engine-instruments-one").performScrollTo().performClick()
         compose.onAllNodesWithText("95 %").assertCountEquals(2)
         compose.onAllNodesWithTag("hud-engine-throttle-1").assertCountEquals(1)
@@ -63,7 +63,7 @@ class HudReadingInstrumentsGuiTest {
         } } }
         compose.onAllNodesWithTag("hud-compass").assertCountEquals(2)
         compose.onAllNodesWithTag("hud-throttle-bar").assertCountEquals(2)
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-instruments-one").performScrollTo().performClick()
         compose.onAllNodesWithText("95 %").assertCountEquals(2)
         compose.onAllNodesWithTag("hud-compass").assertCountEquals(1)

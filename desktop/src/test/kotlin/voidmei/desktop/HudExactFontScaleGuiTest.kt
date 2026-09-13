@@ -31,7 +31,7 @@ class HudExactFontScaleGuiTest {
             .getUnclippedBoundsInRoot().let { it.bottom - it.top }
         val initial = height("one")
         val geometry = compose.onNodeWithTag("hud-region-one").getUnclippedBoundsInRoot()
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         val tag = "hud-region-font-exact-one"
         compose.onNodeWithTag("$tag-toggle").performScrollTo().performClick()
         compose.onNodeWithTag(tag).performScrollTo().performTextReplacement("137.5")
@@ -58,7 +58,7 @@ class HudExactFontScaleGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(700.dp, 650.dp).verticalScroll(rememberScrollState())) {
             HudSettingsPanel(settings) { settings = it }
         } } }
-        compose.onNodeWithText("HUD 字段设置").performClick()
+        compose.openHudSettingsPage("font")
         val tag = "hud-font-exact"
         compose.onNodeWithTag("$tag-toggle").performScrollTo().performClick()
         for (invalid in listOf("", "74.99", "200.01", "NaN", "Infinity", "1e2", "125.555")) {
@@ -69,7 +69,7 @@ class HudExactFontScaleGuiTest {
         for (value in listOf("75", "200", "112.25")) {
             compose.onNodeWithTag(tag).performScrollTo().performTextReplacement(value)
             compose.onNodeWithTag("$tag-apply").performScrollTo().performClick()
-            compose.onNodeWithText("HUD 文字大小 $value%").assertExists()
+            compose.onNodeWithText("全局 HUD 文字大小 $value%").assertExists()
         }
         compose.runOnIdle { assertEquals(1.1225f, settings.hudFontScale) }
     }

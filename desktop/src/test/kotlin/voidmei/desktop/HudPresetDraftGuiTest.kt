@@ -23,13 +23,14 @@ class HudPresetDraftGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(600.dp, 600.dp).verticalScroll(rememberScrollState())) {
             HudSceneSettings(settings) { settings = it }
         } } }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         fun draft() {
             compose.onNodeWithTag("hud-canvas-width").performScrollTo().performTextReplacement("700")
             compose.onNodeWithTag("hud-region-geometry-one").performScrollTo().performClick()
             compose.onNodeWithTag("hud-region-input-x-one").performScrollTo().performTextReplacement("100")
         }
         fun assertReset() {
+            compose.expandHudRegionEditors()
             compose.onNodeWithTag("hud-canvas-width").assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.EditableText, androidx.compose.ui.text.AnnotatedString("500")))
             compose.onNodeWithTag("hud-region-input-x-one").assertDoesNotExist()
             compose.onNodeWithTag("hud-region-geometry-one").performScrollTo().performClick()

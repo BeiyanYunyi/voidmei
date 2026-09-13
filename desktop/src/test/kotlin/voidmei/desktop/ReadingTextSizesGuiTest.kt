@@ -40,7 +40,7 @@ class ReadingTextSizesGuiTest {
                 .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(results) }
             return results.single()
         }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("region-fonts-one").performScrollTo().performClick()
         listOf("15", "30", "15").forEachIndexed { i, value ->
             compose.onNodeWithTag("reading-size-one-$i").performScrollTo().performTextReplacement(value)

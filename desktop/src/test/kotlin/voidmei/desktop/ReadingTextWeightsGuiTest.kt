@@ -42,7 +42,7 @@ class ReadingTextWeightsGuiTest {
         }
         val initial = layout("one", "340 km/h").layoutInput.style.fontWeight
         val labelInitial = layout("one", "IAS").layoutInput.style.fontWeight
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("region-fonts-one").performScrollTo().performClick()
         fun choose(index: Int, weight: String) = compose.onNodeWithTag("reading-weight-one-$index-$weight").performScrollTo().performClick()
         choose(0, "700")

@@ -52,7 +52,7 @@ class EngineAircraftFuelGuiTest {
         compose.setContent { MaterialTheme { Column(Modifier.size(800.dp, 700.dp).verticalScroll(rememberScrollState())) {
             if (preview) HudLayoutPreview(settings) else HudSceneSettings(settings) { settings = it }
         } } }
-        compose.onNodeWithText("调整分区位置与透明度").performClick()
+        compose.expandHudRegionEditors()
         compose.onNodeWithTag("hud-region-aircraft-fuel-one").performScrollTo().performClick()
         compose.runOnIdle {
             assertEquals(listOf(one.copy(showAircraftFuel = true), original.hudSceneLayout!!.regions[1]), settings.hudSceneLayout!!.regions)
