@@ -20,7 +20,7 @@ class MapSegmentGuiTest {
         compose.setContent { MaterialTheme { Column { MapObjectPlot(MapSnapshot(bounds, listOf(line))) } } }
         val pixels = compose.onNodeWithTag("map-objects-plot").captureToImage().toPixelMap()
         for (x in listOf(pixels.width / 8, pixels.width / 2, pixels.width * 7 / 8)) {
-            val color = pixels[x, pixels.height / 4]
+            val color = pixels[x, pixels.height / 2]
             assertTrue(color.red > .9f && color.green < .1f && color.blue < .1f)
         }
     }

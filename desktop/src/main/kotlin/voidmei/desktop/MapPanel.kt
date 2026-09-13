@@ -76,10 +76,19 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
         else Text(text, style = style)
     }
     val scaleColor = if (compact) LocalReadingColors.current.label ?: Color.White else Color.White
-    val distanceScale = MapScale.fromBounds(snapshot.bounds)
     var selection by remember(snapshot.bounds) { mutableStateOf<MapSelection?>(null) }
     val currentSnapshot by rememberUpdatedState(snapshot)
     var plotSize by remember { mutableStateOf(IntSize.Zero) }
+    val plotViewport = remember(snapshot, plotSize) {
+        MapViewport.fitObjects(snapshot, plotSize.width.toDouble(), plotSize.height.toDouble())
+    }
+    val visibleWidth = plotViewport?.let {
+        (minOf(plotSize.width.toDouble(), it.left + it.width) - maxOf(0.0, it.left)).coerceAtLeast(0.0)
+    } ?: 0.0
+    val distanceScale = plotViewport?.let {
+        MapScale.fromBounds(snapshot.bounds.copy(minimum = MapPoint(0.0, 0.0),
+            maximum = MapPoint(snapshot.bounds.widthM * visibleWidth / it.width, snapshot.bounds.heightM)))
+    }
     label(if (compact) "地图对象 · ${snapshot.objects.size} · ${backgroundStatus ?: if (background == null) "无底图" else "含底图"}"
         else "地图对象示意 · ${snapshot.objects.size} 个对象 · 每秒更新" + if (interactive) " · 点击点状对象查看详情" else "",
         maxLines = if (compact) 1 else Int.MAX_VALUE)
@@ -92,12 +101,12 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
         if (!interactive) return@pointerInput
         detectTapGestures { tap ->
             val current = currentSnapshot
-            val viewport = MapViewport.fit(current.bounds, size.width.toDouble(), size.height.toDouble())
+            val viewport = MapViewport.fitObjects(current, size.width.toDouble(), size.height.toDouble())
             val obj = viewport?.let { MapHitTest.nearest(current, it, MapPoint(tap.x.toDouble(), tap.y.toDouble()), 12.dp.toPx().toDouble()) }
             selection = obj?.let { MapSelection(it, current.distanceFromPlayerM(it)) }
         }
     }.testTag("map-objects-plot").semantics { contentDescription = if (background == null) "地图对象位置与方向示意，不含底图" else "地图底图与对象位置方向" }) {
-        val viewport = MapViewport.fit(snapshot.bounds, size.width.toDouble(), size.height.toDouble()) ?: return@Canvas
+        val viewport = plotViewport ?: return@Canvas
         fun project(point: MapPoint): Offset {
             val projected = viewport.project(point)
             return Offset(projected.x.toFloat(), projected.y.toFloat())
@@ -148,17 +157,17 @@ internal fun MapObjectPlot(snapshot: MapSnapshot, background: ImageBitmap? = nul
         label("距离标尺：$distance", style = MaterialTheme.typography.bodySmall)
         Canvas((if (plotModifier == null) Modifier.size(side, 16.dp) else Modifier.fillMaxWidth().height(16.dp))
             .testTag("map-distance-scale").semantics { contentDescription = "距离标尺 $distance" }) {
-            val viewport = MapViewport.fit(snapshot.bounds, plotSize.width.toDouble(), plotSize.height.toDouble()) ?: return@Canvas
-            val length = (viewport.width * scale.widthFraction).toFloat()
+            val viewport = plotViewport ?: return@Canvas
+            val length = (visibleWidth * scale.widthFraction).toFloat()
             val y = size.height / 2
-            val x = viewport.left.toFloat()
+            val x = maxOf(0.0, viewport.left).toFloat()
             drawLine(scaleColor, Offset(x, y), Offset(x + length, y), 2.dp.toPx())
             drawLine(scaleColor, Offset(x, y - 4.dp.toPx()), Offset(x, y + 4.dp.toPx()), 2.dp.toPx())
             drawLine(scaleColor, Offset(x + length, y - 4.dp.toPx()), Offset(x + length, y + 4.dp.toPx()), 2.dp.toPx())
         }
     }
     if (!compact) {
-        Text((if (background == null) "归一化坐标示意，不含地图底图。" else "底图与对象按归一化坐标叠加。") + "按地图宽高等比例显示；短线表示方向，范围外点状对象不绘制，线状对象裁剪到地图边界。", style = MaterialTheme.typography.bodySmall)
+        Text((if (background == null) "归一化坐标示意，不含地图底图。" else "底图与对象按归一化坐标叠加。") + "自动缩放至所有可见对象并保留边距，按地图宽高等比例显示；短线表示方向，范围外点状对象不绘制，线状对象裁剪到地图边界。", style = MaterialTheme.typography.bodySmall)
         MapPlayerPosition(snapshot)
     }
 }
