@@ -31,6 +31,8 @@ class HudPresetPreviewGuiTest {
         click("hud-layout-preview")
         compose.waitUntil(5000) { window("HUD 布局预览 · 示例数据")?.isVisible == true }
         val editable = window("HUD 布局预览 · 示例数据")!!
+        // 布局预设已归入分区设置子页。
+        click("settings-open-hud-regions")
         click("hud-presets-toggle")
         click("hud-preset-preview-altitude")
         compose.waitUntil(5000) { window("HUD 布局预览 · altitude · 示例数据")?.isVisible == true }

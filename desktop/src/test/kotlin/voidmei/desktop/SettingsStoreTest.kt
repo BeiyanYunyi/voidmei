@@ -282,10 +282,12 @@ class SettingsStoreTest {
     }
 
     @Test fun newInstallResourcePathsUseUserDataLocationsAndExplicitWorkspace() {
-        val home = Path.of("/users/test")
+        // 使用宿主平台的绝对路径，Windows 的 /user-data 不含盘符。
+        val home = Path.of("/users/test").toAbsolutePath()
+        val dataHome = Path.of("/user-data").toAbsolutePath()
         val cases = listOf(
             Triple("Linux", emptyMap(), home.resolve(".local/share/voidmei")),
-            Triple("Linux", mapOf("XDG_DATA_HOME" to "/user-data"), Path.of("/user-data/voidmei")),
+            Triple("Linux", mapOf("XDG_DATA_HOME" to dataHome.toString()), dataHome.resolve("voidmei")),
             Triple("Linux", mapOf("XDG_DATA_HOME" to "relative"), home.resolve(".local/share/voidmei")),
             Triple("Mac OS X", emptyMap(), home.resolve("Library/Application Support/voidmei")),
             Triple("Windows 11", mapOf("LOCALAPPDATA" to "/local"), Path.of("/local/voidmei")),

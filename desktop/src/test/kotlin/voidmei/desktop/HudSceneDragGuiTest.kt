@@ -103,6 +103,13 @@ class HudSceneDragGuiTest {
             assertFalse(settings.hudEnabled)
             assertFalse(settings.hudClickThrough)
         }
+        // 状态已保存不代表原生预览已绘制最后一帧；等拖拽边框追上最终位置再缩放。
+        compose.waitUntil(5000) {
+            val outline = compose.onNodeWithTag("hud-drag-region-test").fetchSemanticsNode().boundsInRoot
+            val origin = overlay.fetchSemanticsNode().boundsInRoot.topLeft
+            kotlin.math.abs(outline.left - origin.x - 200f * scale) <= 0.5f &&
+                kotlin.math.abs(outline.top - origin.y - 150f * scale) <= 0.5f
+        }
         val handle = compose.onNodeWithTag("hud-resize-region-test").fetchSemanticsNode().boundsInRoot
         val start = handle.center - overlay.fetchSemanticsNode().boundsInRoot.topLeft
         overlay.performTouchInput { swipe(start, start + Offset(40f * scale, 20f * scale), 500) }

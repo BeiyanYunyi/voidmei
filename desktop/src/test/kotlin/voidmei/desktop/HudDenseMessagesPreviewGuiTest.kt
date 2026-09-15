@@ -22,6 +22,8 @@ class HudDenseMessagesPreviewGuiTest {
         compose.onNodeWithText("事件 #11 · 示例事件消息 11").assertExists()
         compose.onNodeWithText("事件 #10 · 示例事件消息 10").assertDoesNotExist()
         compose.onNodeWithText("损伤 #1 · 示例损伤消息 1").assertExists()
+        // 原生窗口中文字出现后，仍需等待滚动范围完成测量。
+        compose.waitUntil(5000) { compose.onAllNodesWithTag("hud-scroll-indicator").fetchSemanticsNodes().size == 2 }
         compose.onAllNodesWithTag("hud-scroll-indicator").assertCountEquals(2)
         compose.onNodeWithText("缺失数据").performSemanticsAction(SemanticsActions.OnClick) { it() }
         compose.waitUntil(5000) { compose.onAllNodesWithText("尚无所选类别的消息").fetchSemanticsNodes().size == 2 }

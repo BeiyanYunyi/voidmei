@@ -125,12 +125,13 @@ class StableHudColumnsGuiTest {
         fun twoColumns() = compose.onNodeWithText("IAS").fetchSemanticsNode().boundsInRoot.top ==
             compose.onNodeWithText(label).fetchSemanticsNode().boundsInRoot.top
         assertTrue(twoColumns())
-        compose.runOnIdle { value = "1234567890 m" }
+        // 留足宽度差，避免不同系统字体恰好落在双列阈值两侧。
+        compose.runOnIdle { value = "12345678901234567890 m" }
         assertFalse(twoColumns())
         repeat(3) {
             compose.runOnIdle { value = "1 m" }
             assertFalse(twoColumns(), "Shorter telemetry must not switch columns back")
-            compose.runOnIdle { value = "1234567890 m" }
+            compose.runOnIdle { value = "12345678901234567890 m" }
             assertFalse(twoColumns())
         }
         compose.runOnIdle { width = 600.dp }

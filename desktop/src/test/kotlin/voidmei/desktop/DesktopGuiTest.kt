@@ -570,7 +570,10 @@ class DesktopGuiTest {
             {"icon":"Player","x":0,"y":0.25},
             {"type":"aircraft","icon":"target","x":0.5,"y":0.25}]""")))
         compose.setContent { MaterialTheme { Column { MapObjectPlot(snapshot) } } }
-        compose.onNodeWithTag("map-objects-plot").performTouchInput { click(androidx.compose.ui.geometry.Offset(width / 2f, height * 3 / 8f)) }
+        // 两个对象在自动缩放后位于左右各 8% 的边距处。
+        compose.onNodeWithTag("map-objects-plot").performTouchInput {
+            click(androidx.compose.ui.geometry.Offset(width * 0.92f, height / 2f))
+        }
         compose.onNodeWithText("点击时对象：aircraft · target").assertIsDisplayed()
         compose.onNodeWithText("点击时到玩家的平面距离：1000 m").assertIsDisplayed()
         compose.runOnIdle { snapshot = snapshot.copy(objects = snapshot.objects.reversed().map { it.copy(position = MapPoint(0.9, 0.9)) }) }
@@ -602,14 +605,17 @@ class DesktopGuiTest {
         val raster = java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_RGB)
         for (y in 0..1) for (x in 0..1) raster.setRGB(x, y, 0x2266CC)
         val bounds = MapBounds(MapPoint(0.0, 0.0), MapPoint(2000.0, 1000.0), 1, null, null)
-        val objects = MapTelemetryParser.objects("""[{"icon":"Player","x":0.5,"y":0.25}]""")
+        // 角点限定缩放范围，验证 2:1 底图与玩家使用同一视口。
+        val objects = MapTelemetryParser.objects("""[{"icon":"Player","x":0.5,"y":0.25},
+            {"x":0,"y":0},{"x":1,"y":1}]""")
         compose.setContent { MaterialTheme { Column { MapObjectPlot(MapSnapshot(bounds, objects), raster.toComposeImageBitmap()) } } }
         val pixels = compose.onNodeWithTag("map-objects-plot").captureToImage().toPixelMap()
         val outside = pixels[pixels.width / 8, pixels.height / 8]
         val inside = pixels[pixels.width / 8, pixels.height * 7 / 16]
         assertTrue(inside.blue > 0.7f && inside.red < 0.2f)
         assertFalse(outside.blue > 0.7f && outside.red < 0.2f)
-        val player = pixels[pixels.width / 2, pixels.height * 3 / 8]
+        // 视口宽 84%、高 42%，上边距 29%；玩家 y = 29% + 25% × 42%。
+        val player = pixels[pixels.width / 2, (pixels.height * 0.395).toInt()]
         assertTrue(player.red > 0.9f && player.green > 0.9f && player.blue < 0.2f)
     }
 
@@ -1830,11 +1836,12 @@ class DesktopGuiTest {
         compose.setContent { MaterialTheme { Column { MapObjectPlot(MapSnapshot(bounds, objects)) } } }
         compose.onNodeWithText("玩家位置 0.250, 0.250").assertExists()
         val pixels = compose.onNodeWithTag("map-objects-plot").captureToImage().toPixelMap()
-        val player = pixels[pixels.width / 4, pixels.height / 4]
+        // 对象范围 x=0.1..0.9 经 8% 边距缩放后宽为画布的 1.05 倍。
+        val player = pixels[(pixels.width * 0.2375).toInt(), (pixels.height * 0.36875).toInt()]
         assertTrue(player.red > 0.9f && player.green > 0.9f && player.blue < 0.1f)
-        val direction = pixels[(pixels.width * 0.29).toInt(), pixels.height / 4]
+        val direction = pixels[(pixels.width * 0.2775).toInt(), (pixels.height * 0.36875).toInt()]
         assertTrue(direction.red > 0.9f && direction.green > 0.9f && direction.blue < 0.1f)
-        val runway = pixels[pixels.width / 2, pixels.height / 2]
+        val runway = pixels[pixels.width / 2, (pixels.height * 0.63125).toInt()]
         assertTrue(runway.blue > 0.9f && runway.red < 0.1f)
     }
 
